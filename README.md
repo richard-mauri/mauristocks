@@ -2,12 +2,13 @@
 
 A lightweight, self-hosted stock watchlist written in Go. It displays regular-session, premarket, and after-hours prices in a compact browser table, without advertisements or a heavyweight charting interface.
 
-**Current application version:** `1.0.0` · **Build:** `ranges-v12` (October 2026).
+**Current application version:** `1.0.0` · **Build:** `v17` (October 2026).
 
 ## Features
 
 - **Session-aware prices:** Shows a regular-session price during market hours and an available extended-session price during premarket or after-hours trading. Prices are labeled by session; extended-session values are based on available intraday bars and are **not guaranteed real-time trade quotes**.
-- **Watchlist:** Starts with 20 symbols: `MU, AMAT, LRCX, SPCX, AVGO, TSM, TSLA, NVDA, JOBY, PLTR, LMT, AMGN, SNA, FTEC, JEPQ, VOO, IAU, FSTA, IBIT, O`. Edit the comma-separated field to change it. Your list is retained in that browser's local storage.
+- **Multiple named watchlists:** The built-in **Default** list contains 20 symbols: `MU, AMAT, LRCX, SPCX, AVGO, TSM, TSLA, NVDA, JOBY, PLTR, LMT, AMGN, SNA, FTEC, JEPQ, VOO, IAU, FSTA, IBIT, O`. Create additional named lists, save edits, and switch between them. Lists and the active selection persist in the browser's local storage; no accounts or database are needed.
+- **Restore Defaults:** A confirmation-protected control switches back to the original built-in 20-symbol list without deleting named lists. The Default list cannot be overwritten or deleted.
 - **Manual and optional automatic refresh:** Never (manual only), 5 seconds, 30 seconds, 1 minute, or 5 minutes. The selected interval is saved in the browser. The app skips automatic refresh when the page is hidden.
 - **Sortable table:** Symbol, Name, Price, Change, Change %, Day Range, and 52-Week Range. The chosen sort remains active as new quotes arrive; rows can reorder after refresh.
 - **Graphical ranges:** Low-to-high day and 52-week scales with a marker showing the displayed price's relative position. Range sorting uses that relative position, not absolute price.
@@ -94,11 +95,28 @@ Commit `go.mod` along with `main.go` and `README.md`. To avoid committing the co
 
 Enter comma-separated symbols and click **Refresh quotes**. Click a column heading to toggle ascending and descending sorting. The selected sort order is applied again on each refresh, so rows may move as prices change.
 
+### Saving and restoring named watchlists
+
+1. Enter or edit the symbols in the comma-separated input field.
+2. Click **Save As New** to name and save a new list (names must be unique, up to 60 characters).
+3. Use the **Watchlist** dropdown to restore the built-in **Default (20 symbols)** or any of your saved named lists. Selecting a list fetches its quotes.
+4. For an existing named list, edit its symbols and click **Save Changes** to update its saved contents.
+5. Click **Delete List** to delete the active named list after confirmation. The built-in Default list is protected.
+6. Click **Restore Defaults** to confirm switching back to the original 20-symbol list; this does not erase any separately saved named lists.
+
+The application remembers the active named list and restores its saved symbols on subsequent visits to the same browser and site address. **Editing the symbol field alone does not update a named list:** use **Save Changes** or **Save As New** to retain it. Switching lists prompts before discarding unsaved edits.
+
+**Upgrade from v16:** On first launch of v17, if the browser previously stored a customized v16 symbol list, the app migrates it into **My Watchlist**. If the old symbols match the built-in defaults, no extra list is created. Migration is local to each browser and site address.
+
 Use **Auto refresh** to choose *Never*, *5 seconds*, *30 seconds*, *1 minute*, or *5 minutes*. A 5-second interval for a 20-stock watchlist can create substantial traffic to the upstream service and may trigger throttling. **Never** or **5 minutes** is the safer starting point.
 
 When fetching, the **Refresh quotes** label remains fixed; its text color changes briefly. Existing quotes remain visible while a new request is in flight.
 
-Watchlist, sort preferences, and refresh interval are saved **per browser** using local storage. They are not synced across devices or backed up on the server.
+Named watchlists, last-selected watchlist, sort preferences, and refresh interval are saved **per browser and site origin** using local storage. They are not synced across devices or backed up on the server. Clearing browser site data removes them. Accessing the same service at `localhost:8082` versus a hosted hostname uses separate storage.
+
+## Appearance
+
+Build v17 uses a compact light theme with black text, alternating pale rows, red/green change figures, and price-cell background shading for short-term momentum. Range low/high labels sit above their graphical scales to prevent overlap.
 
 ## Price and range interpretation
 
@@ -153,10 +171,16 @@ If `git init` was already run locally:
 
 ```sh
 git add main.go go.mod README.md .gitignore
-git commit -m "Add README and stock quote dashboard"
+git commit -m "Update stock quotes to Build v17 with named watchlists"
 ```
 
-Create a GitHub repository separately, then add its remote and push. Choose public or private visibility intentionally, and do not commit secrets. No credentials are required by the current code.
+If the `origin` remote already points to your existing GitHub repository, push the current branch:
+
+```sh
+git push origin main
+```
+
+If you have not yet configured a remote, use the URL shown by your GitHub repository page. Choose public or private visibility intentionally, and do not commit secrets. No credentials are required by the current code.
 
 ## Disclaimer
 

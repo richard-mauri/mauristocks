@@ -447,11 +447,67 @@ const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta n
 :root{color-scheme:light dark;font-family:system-ui,-apple-system,sans-serif}body{max-width:1200px;margin:2rem auto;padding:0 1rem}h1{margin-bottom:.25rem}.muted{opacity:.68;font-size:.88rem}.controls{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.4rem 0}input{flex:1;min-width:260px;padding:.7rem;border:1px solid #888;border-radius:6px;font:inherit}button{padding:.7rem 1.1rem;border:0;border-radius:6px;background:#2868bd;color:white;font:inherit;cursor:pointer}button:disabled{cursor:wait}#refresh{min-width:148px;white-space:nowrap}#refresh.fetching{color:#ffe08a}#refresh.fetching:disabled{opacity:1}table{width:1130px;min-width:1130px;table-layout:fixed;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{padding:.65rem .45rem;text-align:left;border-bottom:1px solid #8885}th{font-size:.85rem}th[data-sort]{cursor:pointer;user-select:none} .sort-button{border:0;background:transparent;color:inherit;padding:.25rem .1rem;font:inherit;font-weight:700;cursor:pointer;width:100%;text-align:left}th.num .sort-button{text-align:right}.sort-button:hover{text-decoration:underline}.sort-button:focus-visible{outline:2px solid #2868bd;outline-offset:2px}th[data-sort]:hover{text-decoration:underline}th[data-sort]:focus-visible{outline:2px solid #2868bd;outline-offset:-2px}th[data-sort][aria-sort="ascending"],th[data-sort][aria-sort="descending"]{text-decoration:underline}td.num,th.num{text-align:right}.up{color:#168243}.down{color:#d54848}.tablewrap{overflow-x:auto}.small{font-size:.8rem;opacity:.75}#message{margin:1rem 0}footer{margin:1.5rem 0;line-height:1.5}tr.error td{opacity:.7}a{color:inherit} @media(max-width:650px){body{margin:1rem auto}th,td{font-size:.8rem;padding:.55rem .25rem}}
  .controls{align-items:center}.refresh-label{align-self:center;font-size:.88rem;white-space:nowrap}.controls select{font:inherit;padding:.65rem .5rem;border-radius:6px;border:1px solid #888;background:Canvas;color:CanvasText;cursor:pointer}
 .fetch-status{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.range-cell{padding:.35rem .5rem!important}.range-labels{display:flex;justify-content:space-between;gap:.3rem;font-size:.68rem;line-height:1.25;font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.85}.range-track{position:relative;height:5px;background:color-mix(in srgb,CanvasText 17%,transparent);border-radius:5px;margin:9px 6px 5px}.range-fill{position:absolute;inset:0;border-radius:inherit;background:color-mix(in srgb,CanvasText 35%,transparent)}.price-momentum{border-radius:4px;background-clip:padding-box}.range-marker{position:absolute;top:50%;width:10px;height:10px;background:#2f89d9;border:1px solid #eef5fc;transform:translate(-50%,-50%) rotate(45deg);box-shadow:0 0 0 1px #2868bd;z-index:1}
-</style></head><body><h1>Mauri's Stock Quotes <span class="small">Build ranges-v12</span></h1><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><p id="message" class="muted">Click Refresh to load quotes. Edit the symbols to customize your watchlist; the list is saved in this browser.</p><div class="tablewrap"><table><colgroup><col style="width:90px"><col style="width:285px"><col style="width:115px"><col style="width:115px"><col style="width:120px"><col style="width:205px"><col style="width:200px"></colgroup><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none">Change</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted">Price cell background subtly reflects the rate of change between successive timestamped quotes (green = rising; red = falling; no shading until a second distinct quote). Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Regular hours show regular-session prices; extended hours show the latest available extended-session bar close, <strong>not guaranteed live trade quotes</strong>. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</footer>
+
+/* v15: high-contrast light palette, compact rows, clear range labels. */
+:root{color-scheme:light;background:#f4f5f7;color:#111}
+html{min-height:100%;background:#f4f5f7}
+body{background:#f4f5f7;color:#111}
+h1{color:#111}
+.muted,.small,#message,footer{color:#111;opacity:1}
+table{background:#fff;border-radius:5px}
+th{background:#dde3e9;color:#111}
+th,td{border-bottom:0}
+th,td{padding:4px 7px;color:#111}
+tbody tr{background:#fff}
+tbody tr:nth-child(even){background:#edf1f5}
+tbody tr:hover{background:#e0e8ef}
+tbody td{height:34px;box-sizing:border-box}
+input,.controls select{background:#fff;color:#111;border:1px solid #8995a2}
+input:focus,.controls select:focus{outline:2px solid #2868bd;outline-offset:1px}
+button{background:#2868bd;color:#fff}
+#restore-defaults{background:#e4e9ef;color:#17212b;border:1px solid #a1adba;white-space:nowrap}
+#restore-defaults:hover{background:#d4dde6}
+.sort-button{background:transparent;color:#111}
+.sort-button:hover{background:transparent}
+.up{color:#087b38;font-weight:600}.down{color:#d21d35;font-weight:600}
+a{color:#145ea8}
+.range-cell{padding:3px 7px!important;vertical-align:middle}
+.range-labels{display:flex;justify-content:space-between;gap:5px;line-height:13px;font-size:11px;font-weight:500;color:#111;opacity:1;white-space:nowrap}
+.range-labels span{color:#111}
+.range-track{height:4px;background:#aab5c1;border-radius:4px;margin:8px 6px 3px}
+.range-fill{background:#aab5c1}
+.range-marker{background:#2563a6;border-color:#fff;box-shadow:0 0 0 1px #2563a6;width:9px;height:9px}
+@media(max-width:650px){th,td{padding:4px 5px}.range-cell{padding:3px 5px!important}}
+/* v17 named watchlists */
+.watchlist-controls{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;margin:-.55rem 0 1.1rem}
+.watchlist-controls select{min-width:190px;padding:.55rem;border-radius:6px;border:1px solid #a1adba;background:white;color:#111}
+.watchlist-controls button{padding:.55rem .8rem;background:#e4e9ef;color:#17212b;border:1px solid #a1adba}
+.watchlist-controls button:disabled{opacity:.46;cursor:default}
+#watchlist-status{font-size:.84rem;color:#303946}
+</style></head><body><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · Build v17</span></h1><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><button id="restore-defaults" type="button" title="Restore original 20-symbol watchlist">Restore Defaults</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="tablewrap"><table><colgroup><col style="width:90px"><col style="width:285px"><col style="width:115px"><col style="width:115px"><col style="width:120px"><col style="width:205px"><col style="width:200px"></colgroup><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none">Change</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted">Price cell background reflects the rate of change between successive timestamped quotes (green = rising; red = falling; no shading until a second distinct quote). Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Regular hours show regular-session prices; extended hours show the latest available extended-session bar close, <strong>not guaranteed live trade quotes</strong>. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</footer>
 <script>
 const defaults='MU,AMAT,LRCX,SPCX,AVGO,TSM,TSLA,NVDA,JOBY,PLTR,LMT,AMGN,SNA,FTEC,JEPQ,VOO,IAU,FSTA,IBIT,O';
 const input=document.getElementById('symbols'),button=document.getElementById('refresh'),intervalSelect=document.getElementById('refresh-interval'),rows=document.getElementById('rows'),message=document.getElementById('message'),fetchStatus=document.getElementById('fetch-status');
-input.value=localStorage.getItem('mauri_stock_symbols')||defaults;
+const wlSelect=document.getElementById('watchlist-select');
+const wlNew=document.getElementById('watchlist-new'),wlSave=document.getElementById('watchlist-save'),wlDelete=document.getElementById('watchlist-delete');
+const wlStatus=document.getElementById('watchlist-status');
+const wlKey='mauri_stock_watchlists_v1', activeKey='mauri_stock_active_watchlist';
+function normalizeSymbols(value){return [...new Set(String(value).toUpperCase().split(',').map(x=>x.trim()).filter(Boolean))].join(',')}
+function loadLists(){try{const value=JSON.parse(localStorage.getItem(wlKey));if(value&&typeof value==='object'&&!Array.isArray(value))return Object.fromEntries(Object.entries(value).filter(([k,v])=>k&&k!=='Default'&&typeof v==='string'));}catch(e){}return {}}
+let watchlists=loadLists();
+// Migrate the v16 custom watchlist, preserving its symbols on first launch.
+if(localStorage.getItem(wlKey)===null){const legacy=localStorage.getItem('mauri_stock_symbols');if(legacy&&normalizeSymbols(legacy)!==defaults){watchlists['My Watchlist']=normalizeSymbols(legacy)}localStorage.setItem(wlKey,JSON.stringify(watchlists))}
+let activeWatchlist=localStorage.getItem(activeKey)|| (watchlists['My Watchlist']?'My Watchlist':'Default');
+if(activeWatchlist!=='Default'&&!Object.hasOwn(watchlists,activeWatchlist))activeWatchlist='Default';
+function persistLists(){localStorage.setItem(wlKey,JSON.stringify(watchlists))}
+function updateWatchlistButtons(){const isDefault=activeWatchlist==='Default';wlSave.disabled=isDefault;wlDelete.disabled=isDefault}
+function updateWatchlistMenu(){wlSelect.replaceChildren();for(const n of ['Default',...Object.keys(watchlists).sort((a,b)=>a.localeCompare(b))]){const op=document.createElement('option');op.value=n;op.textContent=n==='Default'?'Default (20 symbols)':n;wlSelect.appendChild(op)}wlSelect.value=activeWatchlist;updateWatchlistButtons()}
+function selectWatchlist(name,fetchNow=true){if(name!=='Default'&&!Object.hasOwn(watchlists,name))return;activeWatchlist=name;input.value=name==='Default'?defaults:watchlists[name];localStorage.setItem(activeKey,name);localStorage.setItem('mauri_stock_symbols',input.value);updateWatchlistMenu();wlStatus.textContent='';if(fetchNow)refreshQuotes()}
+updateWatchlistMenu();selectWatchlist(activeWatchlist,false);
+wlSelect.addEventListener('change',()=>{if(button.disabled){wlSelect.value=activeWatchlist;return}if(input.value!== (activeWatchlist==='Default'?defaults:watchlists[activeWatchlist])&&!window.confirm('Discard unsaved symbol edits and open another watchlist?')){wlSelect.value=activeWatchlist;return}selectWatchlist(wlSelect.value)});
+wlNew.addEventListener('click',()=>{const name=window.prompt('Name the new watchlist:');if(name===null)return;const n=name.trim();if(!n||n.length>60||n.toLowerCase()==='default'){wlStatus.textContent='Choose a valid name (up to 60 characters).';return}if(Object.keys(watchlists).some(k=>k.toLowerCase()===n.toLowerCase())){wlStatus.textContent='That watchlist already exists.';return}const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[n]=symbols;persistLists();selectWatchlist(n,false);wlStatus.textContent='Saved '+n+'.'});
+wlSave.addEventListener('click',()=>{if(activeWatchlist==='Default')return;const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[activeWatchlist]=symbols;input.value=symbols;persistLists();localStorage.setItem('mauri_stock_symbols',symbols);wlStatus.textContent='Saved '+activeWatchlist+'.'});
+wlDelete.addEventListener('click',()=>{if(activeWatchlist==='Default'||button.disabled)return;if(!window.confirm('Delete watchlist "'+activeWatchlist+'"?'))return;delete watchlists[activeWatchlist];persistLists();selectWatchlist('Default');wlStatus.textContent='Deleted watchlist.'});
 function money(n,currency){return n==null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:currency||'USD',maximumFractionDigits:2}).format(n)}
 function cell(tr,value,cls){let td=document.createElement('td');td.textContent=value; if(cls)td.className=cls;tr.appendChild(td);return td}
 function rangeCell(tr,low,high,price,currency){
@@ -490,9 +546,9 @@ function updateMomentum(nextQuotes){
    const pct=100*(q.display_price-previous.price)/previous.price;
    const minutes=(ts-previous.ts)/60000;
    const rate=pct/minutes;
-   // 0.05%/minute produces the full (still restrained) shade.
+   // 0.05%/minute produces the strongest shade for the charcoal theme.
    const strength=Math.min(1,Math.abs(rate)/0.05);
-   priceMomentum.set(q.symbol,{rate,alpha:0.035+0.105*strength});
+   priceMomentum.set(q.symbol,{rate,alpha:0.12+0.23*strength});
   }else if(!previous || previous.session!==q.session || ts<previous.ts){
    priceMomentum.delete(q.symbol);
   }
@@ -593,6 +649,14 @@ async function refreshQuotes(){
  }catch(e){message.textContent='Refresh failed: '+e.message+' • Existing quotes retained.'}finally{button.disabled=false;button.classList.remove('fetching');button.removeAttribute('aria-busy');fetchStatus.textContent=''}
 }
 button.addEventListener('click',refreshQuotes);
+// Restore only the stock symbols; leave sorting and refresh preferences intact.
+const restoreDefaultsButton=document.getElementById('restore-defaults');
+restoreDefaultsButton.addEventListener('click',()=>{
+ if(button.disabled)return; // Avoid racing an in-progress quote request.
+ if(!window.confirm('Restore the original 20-symbol watchlist? Your current symbols will be replaced.'))return;
+ selectWatchlist('Default');
+});
+
 let refreshTimer=null;
 function setRefreshInterval(){
  if(refreshTimer!==null){clearInterval(refreshTimer);refreshTimer=null}
@@ -607,7 +671,7 @@ setRefreshInterval();
 </script></body></html>`
 
 const appVersion = "1.0.0"
-const buildVersion = "ranges-v12"
+const buildVersion = "v17"
 
 func main() {
 	defaultPort := os.Getenv("PORT")
