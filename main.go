@@ -19,6 +19,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+ "sort"
 	"strings"
 	"sync"
 	"time"
@@ -88,6 +89,68 @@ type yahooChart struct {
 		} `json:"result"`
 		Error json.RawMessage `json:"error"`
 	} `json:"chart"`
+}
+
+// Yahoo's unofficial predefined screener may be blocked or changed without notice.
+// Only daily share volume is used for the ranking, never dollar volume.
+type mostActiveResponse struct {
+ Finance struct {
+  Result []struct { Quotes []struct {
+   Symbol string `json:"symbol"`
+   Volume *float64 `json:"regularMarketVolume"`
+  } `json:"quotes"` } `json:"result"`
+  Error json.RawMessage `json:"error"`
+ } `json:"finance"`
+}
+var activeCache = struct {
+ sync.Mutex
+ symbols []string
+ at time.Time
+}{}
+
+func topActiveSymbols(ctx context.Context) ([]string, time.Time, error) {
+ activeCache.Lock()
+ defer activeCache.Unlock()
+ if len(activeCache.symbols)==20 && time.Since(activeCache.at)<15*time.Minute {
+  return append([]string(nil), activeCache.symbols...),activeCache.at,nil
+ }
+ endpoint := "https://query1.finance.yahoo.com/v1/finance/screener/predefined/saved?count=100&scrIds=most_actives"
+ req,err:=http.NewRequestWithContext(ctx,http.MethodGet,endpoint,nil)
+ if err!=nil{return nil,time.Time{},err}
+ req.Header.Set("User-Agent","Mozilla/5.0 (compatible; MauriStockQuotes/1.0)")
+ req.Header.Set("Accept","application/json")
+ resp,err:=client.Do(req)
+ if err!=nil{return nil,time.Time{},fmt.Errorf("Yahoo Most Active unavailable: %w",err)}
+ defer resp.Body.Close()
+ if resp.StatusCode!=http.StatusOK {return nil,time.Time{},fmt.Errorf("Yahoo Most Active HTTP %d",resp.StatusCode)}
+ var data mostActiveResponse
+ if err:=json.NewDecoder(io.LimitReader(resp.Body,2<<20)).Decode(&data);err!=nil{return nil,time.Time{},fmt.Errorf("invalid screener response: %w",err)}
+ if len(data.Finance.Result)==0 || len(data.Finance.Result[0].Quotes)==0 {return nil,time.Time{},errors.New("Yahoo returned no Most Active rankings")}
+ type candidate struct{symbol string;volume float64}
+ var candidates []candidate
+ seen:=map[string]bool{}
+ for _,q:=range data.Finance.Result[0].Quotes {
+  sym:=strings.ToUpper(strings.TrimSpace(q.Symbol))
+  if !symbolRE.MatchString(sym)||q.Volume==nil||*q.Volume<=0||seen[sym]{continue}
+  seen[sym]=true
+  candidates=append(candidates,candidate{sym,*q.Volume})
+ }
+ sort.SliceStable(candidates,func(i,j int)bool{return candidates[i].volume>candidates[j].volume})
+ if len(candidates)<20{return nil,time.Time{},fmt.Errorf("screener returned only %d valid volume-ranked stocks; need 20",len(candidates))}
+ symbols:=make([]string,20)
+ for i:=range symbols{symbols[i]=candidates[i].symbol}
+ activeCache.symbols=append([]string(nil),symbols...)
+ activeCache.at=time.Now().UTC()
+ return symbols,activeCache.at,nil
+}
+func mostActiveHandler(w http.ResponseWriter,r *http.Request){
+ if r.Method!=http.MethodGet {http.Error(w,"method not allowed",http.StatusMethodNotAllowed);return}
+ ctx,cancel:=context.WithTimeout(r.Context(),15*time.Second);defer cancel()
+ symbols,updated,err:=topActiveSymbols(ctx)
+ if err!=nil{http.Error(w,err.Error(),http.StatusBadGateway);return}
+ w.Header().Set("Content-Type","application/json")
+ w.Header().Set("Cache-Control","no-store")
+ _=json.NewEncoder(w).Encode(map[string]any{"symbols":symbols,"ranked_at":updated,"ranking":"regular-session share volume","source":"Yahoo Finance unofficial screener"})
 }
 
 var client = &http.Client{Timeout: 12 * time.Second, CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -331,12 +394,53 @@ func fetchQuote(ctx context.Context, sym string) Quote {
 				q.ChangePercent = &pct
 			}
 			q.Note = "Extended-hours price uses the latest available 1-minute bar close; bar time is not a guaranteed trade time."
+		} else if phase == "after-hours" {
+			// Immediately after 4 PM ET, the provider may not have published
+			// its first postmarket bar. Retain the last regular-session value
+			// and clearly label it rather than blanking the entire watchlist.
+			q.Session = "after-hours"
+			q.DisplayPrice = q.RegularPrice
+			if latestRegular != nil {
+				q.DisplayPrice = latestRegular.price
+				q.DisplayTime = &latestRegular.ts
+			}
+			if q.PreviousClose != nil && q.DisplayPrice != nil && *q.PreviousClose > 0 {
+				d := *q.DisplayPrice - *q.PreviousClose
+				q.Change = &d
+				pct := d / *q.PreviousClose * 100
+				q.ChangePercent = &pct
+			}
+			q.Note = "Regular-session price retained while waiting for the first after-hours price bar; not an after-hours quote."
 		} else {
-			q.Note = "No current-session extended-hours bar available; no extended-hours price inferred."
+			q.Note = "No current-session premarket price bar available; no extended-hours price inferred."
 		}
 	default:
 		q.DisplayPrice = q.RegularPrice
 		q.Note = "Market closed; last regular-session price (may be from a prior trading day)."
+	}
+
+	// The Price column always represents the regular session; the separate
+	// after-hours column uses ExtendedPrice only when an actual postmarket
+	// bar was returned. Never substitute the closing price for extended data.
+	if phase == "after-hours" || phase == "regular" || phase == "closed" {
+		q.Session = phase
+		if latestRegular != nil {
+			q.RegularPrice = latestRegular.price
+			q.DisplayTime = &latestRegular.ts
+		}
+		q.DisplayPrice = q.RegularPrice
+		q.Change, q.ChangePercent = nil, nil
+		if q.PreviousClose != nil && q.DisplayPrice != nil && *q.PreviousClose > 0 {
+			d := *q.DisplayPrice - *q.PreviousClose
+			pct := d / *q.PreviousClose * 100
+			q.Change, q.ChangePercent = &d, &pct
+		}
+	}
+	if phase == "premarket" {
+		// Premarket is represented in the separate extended-hours column,
+		// and the regular price remains the prior close.
+		q.DisplayPrice = q.RegularPrice
+		q.Change, q.ChangePercent = nil, nil
 	}
 
 	if intradayLow != nil && intradayHigh != nil {
@@ -444,7 +548,7 @@ func quotesHandler(w http.ResponseWriter, r *http.Request) {
 
 const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mauri's Stock Quotes</title>
 <style>
-:root{color-scheme:light dark;font-family:system-ui,-apple-system,sans-serif}body{max-width:1200px;margin:2rem auto;padding:0 1rem}h1{margin-bottom:.25rem}.muted{opacity:.68;font-size:.88rem}.controls{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.4rem 0}input{flex:1;min-width:260px;padding:.7rem;border:1px solid #888;border-radius:6px;font:inherit}button{padding:.7rem 1.1rem;border:0;border-radius:6px;background:#2868bd;color:white;font:inherit;cursor:pointer}button:disabled{cursor:wait}#refresh{min-width:148px;white-space:nowrap}#refresh.fetching{color:#ffe08a}#refresh.fetching:disabled{opacity:1}table{width:1130px;min-width:1130px;table-layout:fixed;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{padding:.65rem .45rem;text-align:left;border-bottom:1px solid #8885}th{font-size:.85rem}th[data-sort]{cursor:pointer;user-select:none} .sort-button{border:0;background:transparent;color:inherit;padding:.25rem .1rem;font:inherit;font-weight:700;cursor:pointer;width:100%;text-align:left}th.num .sort-button{text-align:right}.sort-button:hover{text-decoration:underline}.sort-button:focus-visible{outline:2px solid #2868bd;outline-offset:2px}th[data-sort]:hover{text-decoration:underline}th[data-sort]:focus-visible{outline:2px solid #2868bd;outline-offset:-2px}th[data-sort][aria-sort="ascending"],th[data-sort][aria-sort="descending"]{text-decoration:underline}td.num,th.num{text-align:right}.up{color:#168243}.down{color:#d54848}.tablewrap{overflow-x:auto}.small{font-size:.8rem;opacity:.75}#message{margin:1rem 0}footer{margin:1.5rem 0;line-height:1.5}tr.error td{opacity:.7}a{color:inherit} @media(max-width:650px){body{margin:1rem auto}th,td{font-size:.8rem;padding:.55rem .25rem}}
+:root{color-scheme:light dark;font-family:system-ui,-apple-system,sans-serif}body{max-width:1200px;margin:2rem auto;padding:0 1rem}h1{margin-bottom:.25rem}.muted{opacity:.68;font-size:.88rem}.controls{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.4rem 0}input{flex:1;min-width:260px;padding:.7rem;border:1px solid #888;border-radius:6px;font:inherit}button{padding:.7rem 1.1rem;border:0;border-radius:6px;background:#2868bd;color:white;font:inherit;cursor:pointer}button:disabled{cursor:wait}#refresh{min-width:148px;white-space:nowrap}#refresh.fetching{color:#ffe08a}#refresh.fetching:disabled{opacity:1}table{width:1100px;min-width:1100px;table-layout:fixed;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{padding:.65rem .45rem;text-align:left;border-bottom:1px solid #8885}th{font-size:.85rem}th[data-sort]{cursor:pointer;user-select:none} .sort-button{border:0;background:transparent;color:inherit;padding:.25rem .1rem;font:inherit;font-weight:700;cursor:pointer;width:100%;text-align:left}th.num .sort-button{text-align:right}.sort-button:hover{text-decoration:underline}.sort-button:focus-visible{outline:2px solid #2868bd;outline-offset:2px}th[data-sort]:hover{text-decoration:underline}th[data-sort]:focus-visible{outline:2px solid #2868bd;outline-offset:-2px}th[data-sort][aria-sort="ascending"],th[data-sort][aria-sort="descending"]{text-decoration:underline}td.num,th.num{text-align:right}.up{color:#168243}.down{color:#d54848}.tablewrap{overflow-x:auto}.small{font-size:.8rem;opacity:.75}#message{margin:1rem 0}footer{margin:1.5rem 0;line-height:1.5}tr.error td{opacity:.7}a{color:inherit} @media(max-width:650px){body{margin:1rem auto}th,td{font-size:.8rem;padding:.55rem .25rem}}
  .controls{align-items:center}.refresh-label{align-self:center;font-size:.88rem;white-space:nowrap}.controls select{font:inherit;padding:.65rem .5rem;border-radius:6px;border:1px solid #888;background:Canvas;color:CanvasText;cursor:pointer}
 .fetch-status{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.range-cell{padding:.35rem .5rem!important}.range-labels{display:flex;justify-content:space-between;gap:.3rem;font-size:.68rem;line-height:1.25;font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.85}.range-track{position:relative;height:5px;background:color-mix(in srgb,CanvasText 17%,transparent);border-radius:5px;margin:9px 6px 5px}.range-fill{position:absolute;inset:0;border-radius:inherit;background:color-mix(in srgb,CanvasText 35%,transparent)}.price-momentum{border-radius:4px;background-clip:padding-box}.range-marker{position:absolute;top:50%;width:10px;height:10px;background:#2f89d9;border:1px solid #eef5fc;transform:translate(-50%,-50%) rotate(45deg);box-shadow:0 0 0 1px #2868bd;z-index:1}
 
@@ -465,8 +569,6 @@ tbody td{height:34px;box-sizing:border-box}
 input,.controls select{background:#fff;color:#111;border:1px solid #8995a2}
 input:focus,.controls select:focus{outline:2px solid #2868bd;outline-offset:1px}
 button{background:#2868bd;color:#fff}
-#restore-defaults{background:#e4e9ef;color:#17212b;border:1px solid #a1adba;white-space:nowrap}
-#restore-defaults:hover{background:#d4dde6}
 .sort-button{background:transparent;color:#111}
 .sort-button:hover{background:transparent}
 .up{color:#087b38;font-weight:600}.down{color:#d21d35;font-weight:600}
@@ -484,13 +586,14 @@ a{color:#145ea8}
 .watchlist-controls button{padding:.55rem .8rem;background:#e4e9ef;color:#17212b;border:1px solid #a1adba}
 .watchlist-controls button:disabled{opacity:.46;cursor:default}
 #watchlist-status{font-size:.84rem;color:#303946}
-</style></head><body><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · Build v17</span></h1><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><button id="restore-defaults" type="button" title="Restore original 20-symbol watchlist">Restore Defaults</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="tablewrap"><table><colgroup><col style="width:90px"><col style="width:285px"><col style="width:115px"><col style="width:115px"><col style="width:120px"><col style="width:205px"><col style="width:200px"></colgroup><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none">Change</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted">Price cell background reflects the rate of change between successive timestamped quotes (green = rising; red = falling; no shading until a second distinct quote). Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Regular hours show regular-session prices; extended hours show the latest available extended-session bar close, <strong>not guaranteed live trade quotes</strong>. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</footer>
+</style></head><body><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · Build v24</span></h1><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="tablewrap"><table><colgroup><col style="width:75px"><col style="width:255px"><col style="width:100px"><col style="width:110px"><col style="width:100px"><col style="width:100px"><col style="width:180px"><col style="width:180px"></colgroup><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none">Change</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted">Price background reflects short-term momentum between distinct quotes. After-hours background reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. No shading when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours (or Premarket) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change and Change % compare regular-session price with the prior close. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</footer>
 <script>
 const defaults='MU,AMAT,LRCX,SPCX,AVGO,TSM,TSLA,NVDA,JOBY,PLTR,LMT,AMGN,SNA,FTEC,JEPQ,VOO,IAU,FSTA,IBIT,O';
 const input=document.getElementById('symbols'),button=document.getElementById('refresh'),intervalSelect=document.getElementById('refresh-interval'),rows=document.getElementById('rows'),message=document.getElementById('message'),fetchStatus=document.getElementById('fetch-status');
 const wlSelect=document.getElementById('watchlist-select');
 const wlNew=document.getElementById('watchlist-new'),wlSave=document.getElementById('watchlist-save'),wlDelete=document.getElementById('watchlist-delete');
 const wlStatus=document.getElementById('watchlist-status');
+const dynamicName="Most Active — Top 20 (Dynamic)";
 const wlKey='mauri_stock_watchlists_v1', activeKey='mauri_stock_active_watchlist';
 function normalizeSymbols(value){return [...new Set(String(value).toUpperCase().split(',').map(x=>x.trim()).filter(Boolean))].join(',')}
 function loadLists(){try{const value=JSON.parse(localStorage.getItem(wlKey));if(value&&typeof value==='object'&&!Array.isArray(value))return Object.fromEntries(Object.entries(value).filter(([k,v])=>k&&k!=='Default'&&typeof v==='string'));}catch(e){}return {}}
@@ -498,16 +601,16 @@ let watchlists=loadLists();
 // Migrate the v16 custom watchlist, preserving its symbols on first launch.
 if(localStorage.getItem(wlKey)===null){const legacy=localStorage.getItem('mauri_stock_symbols');if(legacy&&normalizeSymbols(legacy)!==defaults){watchlists['My Watchlist']=normalizeSymbols(legacy)}localStorage.setItem(wlKey,JSON.stringify(watchlists))}
 let activeWatchlist=localStorage.getItem(activeKey)|| (watchlists['My Watchlist']?'My Watchlist':'Default');
-if(activeWatchlist!=='Default'&&!Object.hasOwn(watchlists,activeWatchlist))activeWatchlist='Default';
+if(activeWatchlist!=='Default'&&activeWatchlist!==dynamicName&&!Object.hasOwn(watchlists,activeWatchlist))activeWatchlist='Default';
 function persistLists(){localStorage.setItem(wlKey,JSON.stringify(watchlists))}
-function updateWatchlistButtons(){const isDefault=activeWatchlist==='Default';wlSave.disabled=isDefault;wlDelete.disabled=isDefault}
-function updateWatchlistMenu(){wlSelect.replaceChildren();for(const n of ['Default',...Object.keys(watchlists).sort((a,b)=>a.localeCompare(b))]){const op=document.createElement('option');op.value=n;op.textContent=n==='Default'?'Default (20 symbols)':n;wlSelect.appendChild(op)}wlSelect.value=activeWatchlist;updateWatchlistButtons()}
-function selectWatchlist(name,fetchNow=true){if(name!=='Default'&&!Object.hasOwn(watchlists,name))return;activeWatchlist=name;input.value=name==='Default'?defaults:watchlists[name];localStorage.setItem(activeKey,name);localStorage.setItem('mauri_stock_symbols',input.value);updateWatchlistMenu();wlStatus.textContent='';if(fetchNow)refreshQuotes()}
+function updateWatchlistButtons(){const readOnly=activeWatchlist==='Default'||activeWatchlist===dynamicName;wlSave.disabled=readOnly;wlDelete.disabled=readOnly;input.readOnly=activeWatchlist===dynamicName}
+function updateWatchlistMenu(){wlSelect.replaceChildren();for(const n of ['Default',dynamicName,...Object.keys(watchlists).sort((a,b)=>a.localeCompare(b))]){const op=document.createElement('option');op.value=n;op.textContent=n==='Default'?'Default (20 symbols)':n;wlSelect.appendChild(op)}wlSelect.value=activeWatchlist;updateWatchlistButtons()}
+function selectWatchlist(name,fetchNow=true){if(name!=='Default'&&name!==dynamicName&&!Object.hasOwn(watchlists,name))return;activeWatchlist=name;input.value=name==='Default'?defaults:name===dynamicName?'':watchlists[name];localStorage.setItem(activeKey,name);localStorage.setItem('mauri_stock_symbols',input.value);updateWatchlistMenu();wlStatus.textContent='';if(fetchNow)refreshQuotes()}
 updateWatchlistMenu();selectWatchlist(activeWatchlist,false);
-wlSelect.addEventListener('change',()=>{if(button.disabled){wlSelect.value=activeWatchlist;return}if(input.value!== (activeWatchlist==='Default'?defaults:watchlists[activeWatchlist])&&!window.confirm('Discard unsaved symbol edits and open another watchlist?')){wlSelect.value=activeWatchlist;return}selectWatchlist(wlSelect.value)});
-wlNew.addEventListener('click',()=>{const name=window.prompt('Name the new watchlist:');if(name===null)return;const n=name.trim();if(!n||n.length>60||n.toLowerCase()==='default'){wlStatus.textContent='Choose a valid name (up to 60 characters).';return}if(Object.keys(watchlists).some(k=>k.toLowerCase()===n.toLowerCase())){wlStatus.textContent='That watchlist already exists.';return}const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[n]=symbols;persistLists();selectWatchlist(n,false);wlStatus.textContent='Saved '+n+'.'});
-wlSave.addEventListener('click',()=>{if(activeWatchlist==='Default')return;const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[activeWatchlist]=symbols;input.value=symbols;persistLists();localStorage.setItem('mauri_stock_symbols',symbols);wlStatus.textContent='Saved '+activeWatchlist+'.'});
-wlDelete.addEventListener('click',()=>{if(activeWatchlist==='Default'||button.disabled)return;if(!window.confirm('Delete watchlist "'+activeWatchlist+'"?'))return;delete watchlists[activeWatchlist];persistLists();selectWatchlist('Default');wlStatus.textContent='Deleted watchlist.'});
+wlSelect.addEventListener('change',()=>{if(button.disabled){wlSelect.value=activeWatchlist;return}if(activeWatchlist!==dynamicName&&input.value!== (activeWatchlist==='Default'?defaults:watchlists[activeWatchlist])&&!window.confirm('Discard unsaved symbol edits and open another watchlist?')){wlSelect.value=activeWatchlist;return}selectWatchlist(wlSelect.value)});
+wlNew.addEventListener('click',()=>{const name=window.prompt('Name the new watchlist:');if(name===null)return;const n=name.trim();if(!n||n.length>60||(n.toLowerCase()==='default'||n.toLowerCase()===dynamicName.toLowerCase())){wlStatus.textContent='Choose a valid name (up to 60 characters).';return}if(Object.keys(watchlists).some(k=>k.toLowerCase()===n.toLowerCase())){wlStatus.textContent='That watchlist already exists.';return}const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[n]=symbols;persistLists();selectWatchlist(n,false);wlStatus.textContent='Saved '+n+'.'});
+wlSave.addEventListener('click',()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName)return;const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[activeWatchlist]=symbols;input.value=symbols;persistLists();localStorage.setItem('mauri_stock_symbols',symbols);wlStatus.textContent='Saved '+activeWatchlist+'.'});
+wlDelete.addEventListener('click',()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName||button.disabled)return;if(!window.confirm('Delete watchlist "'+activeWatchlist+'"?'))return;delete watchlists[activeWatchlist];persistLists();selectWatchlist('Default');wlStatus.textContent='Deleted watchlist.'});
 function money(n,currency){return n==null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:currency||'USD',maximumFractionDigits:2}).format(n)}
 function cell(tr,value,cls){let td=document.createElement('td');td.textContent=value; if(cls)td.className=cls;tr.appendChild(td);return td}
 function rangeCell(tr,low,high,price,currency){
@@ -536,26 +639,57 @@ let quotes=[];
 // Sorting and repeated responses with the same quote timestamp never alter momentum.
 const lastObserved=new Map();
 const priceMomentum=new Map();
-function updateMomentum(nextQuotes){
+function updateChannelMomentum(nextQuotes,priceField,timeField,sessionField,observed,momentum){
  for(const q of nextQuotes){
-  if(!Number.isFinite(q.display_price)||!q.display_time)continue;
-  const ts=Date.parse(q.display_time);
-  if(!Number.isFinite(ts))continue;
-  const previous=lastObserved.get(q.symbol);
-  if(previous && ts>previous.ts && previous.session===q.session && previous.price>0){
-   const pct=100*(q.display_price-previous.price)/previous.price;
-   const minutes=(ts-previous.ts)/60000;
-   const rate=pct/minutes;
-   // 0.05%/minute produces the strongest shade for the charcoal theme.
-   const strength=Math.min(1,Math.abs(rate)/0.05);
-   priceMomentum.set(q.symbol,{rate,alpha:0.12+0.23*strength});
-  }else if(!previous || previous.session!==q.session || ts<previous.ts){
-   priceMomentum.delete(q.symbol);
+  const price=q[priceField], time=q[timeField], session=q[sessionField];
+  if(!Number.isFinite(price)||!time){
+   // No new usable observation. For the extended column, don't show a
+   // trend left over from a previous session or missing price.
+   if(priceField==='extended_price')momentum.delete(q.symbol);
+   continue;
   }
-  if(!previous || ts>previous.ts || previous.session!==q.session || ts<previous.ts){
-   lastObserved.set(q.symbol,{price:q.display_price,ts,session:q.session});
+  const ts=Date.parse(time);
+  if(!Number.isFinite(ts))continue;
+  const previous=observed.get(q.symbol);
+  if(previous && ts>previous.ts && previous.session===session && previous.price>0){
+   const rate=(100*(price-previous.price)/previous.price)/((ts-previous.ts)/60000);
+   const strength=Math.min(1,Math.abs(rate)/0.05);
+   momentum.set(q.symbol,{rate,alpha:0.12+0.23*strength});
+  }else if(!previous || previous.session!==session || ts<previous.ts){
+   momentum.delete(q.symbol);
+  }
+  if(!previous || ts>previous.ts || previous.session!==session || ts<previous.ts){
+   observed.set(q.symbol,{price,ts,session});
   }
  }
+}
+function updateMomentum(nextQuotes){
+ updateChannelMomentum(nextQuotes,'display_price','display_time','session',lastObserved,priceMomentum);
+}
+function shadeMomentum(cell,momentum,price){
+ if(!momentum || !Number.isFinite(price) || Math.abs(momentum.rate)<=1e-10)return;
+ const rising=momentum.rate>0;
+ cell.classList.add('price-momentum');
+ cell.style.backgroundColor=(rising?'rgba(29, 142, 79, ':'rgba(194, 61, 64, ')+momentum.alpha.toFixed(3)+')';
+ cell.title+=(cell.title?' • ':'')+(rising?'Rising ':'Falling ')+Math.abs(momentum.rate).toFixed(3)+'%/min since preceding distinct quote';
+}
+// The extended column color measures performance relative to the regular-session
+// closing price, not the change between refreshes. Premarket uses the prior close.
+function shadeExtendedVsClose(cell,q){
+ const price=q.extended_price;
+ const base=q.extended_session==='premarket'?q.previous_close:q.regular_price;
+ if(!Number.isFinite(price)||!Number.isFinite(base)||base<=0)return;
+ // Compare at displayed cent precision: identical visible prices are neutral.
+ const priceCents=Math.round((price+Number.EPSILON)*100);
+ const baseCents=Math.round((base+Number.EPSILON)*100);
+ if(priceCents===baseCents)return;
+ const pct=100*(priceCents-baseCents)/baseCents;
+ // Saturation increases gradually and is capped for legible black text.
+ const strength=Math.min(1,Math.abs(pct)/2);
+ const alpha=0.12+0.23*strength;
+ cell.classList.add('price-momentum');
+ cell.style.backgroundColor=(pct>0?'rgba(29, 142, 79, ':'rgba(194, 61, 64, ')+alpha.toFixed(3)+')';
+ cell.title+=(cell.title?' • ':'')+(pct>0?'+':'')+pct.toFixed(2)+'% versus '+(q.extended_session==='premarket'?'prior close':'regular close');
 }
 const sortHeaders=[...document.querySelectorAll('th[data-sort]')];
 for(const h of sortHeaders){
@@ -568,7 +702,7 @@ for(const h of sortHeaders){
 const savedSort=(()=>{try{return JSON.parse(localStorage.getItem('mauri_stock_sort'))}catch{return null}})();
 let sortKey=sortHeaders.some(h=>h.dataset.sort===savedSort?.key)?savedSort.key:'symbol';
 let sortDirection=savedSort?.direction==='desc'?'desc':'asc';
-const numericKeys=new Set(['display_price','change','change_percent','day_position','week_52_position']);
+const numericKeys=new Set(['display_price','extended_price','change','change_percent','day_position','week_52_position']);
 // A normalized price position: 0 = range low; 100 = range high.
 // Values outside the range are clamped to the nearest endpoint, matching the marker.
 function rangePosition(q,lowKey,highKey){
@@ -596,13 +730,12 @@ function renderQuotes(){
   let tr=document.createElement('tr');if(q.error)tr.className='error';
   cell(tr,q.symbol);cell(tr,q.name||'','optional');
   const priceCell=cell(tr,money(q.display_price,q.currency),'num');
-  const momentum=priceMomentum.get(q.symbol);
-  if(momentum && Number.isFinite(q.display_price) && Math.abs(momentum.rate)>1e-10){
-   const rising=momentum.rate>0;
-   priceCell.classList.add('price-momentum');
-   priceCell.style.backgroundColor=(rising?'rgba(29, 142, 79, ':'rgba(194, 61, 64, ')+momentum.alpha.toFixed(3)+')';
-   priceCell.title=(rising?'Rising ':'Falling ')+Math.abs(momentum.rate).toFixed(3)+'%/min since preceding distinct quote';
-  }
+  const extendedCell=cell(tr,money(q.extended_price,q.currency),'num');
+  if(q.extended_price!=null){
+   extendedCell.title=(q.extended_session||'extended')+' quote: '+barTime(q.extended_time);
+  }else{extendedCell.title='No extended-hours price reported';}
+  shadeMomentum(priceCell,priceMomentum.get(q.symbol),q.display_price);
+  shadeExtendedVsClose(extendedCell,q);
   let delta=q.change==null?'—':(q.change>=0?'+':'')+q.change.toFixed(2);
   cell(tr,delta,'num '+(q.change>0?'up':q.change<0?'down':''));
   let change=q.change_percent==null?'—':(q.change_percent>=0?'+':'')+q.change_percent.toFixed(2)+'%';
@@ -633,30 +766,31 @@ renderQuotes();
 async function refreshQuotes(){
  if(button.disabled)return;
  let symbols=[...new Set(input.value.toUpperCase().split(',').map(x=>x.trim()).filter(Boolean))];
- if(!symbols.length){message.textContent='Enter one or more symbols.';return}
- input.value=symbols.join(',');localStorage.setItem('mauri_stock_symbols',input.value);
+ if(activeWatchlist!==dynamicName&&!symbols.length){message.textContent='Enter one or more symbols.';return}
+ if(activeWatchlist!==dynamicName){input.value=symbols.join(',');localStorage.setItem('mauri_stock_symbols',input.value)}
  button.disabled=true;button.classList.add('fetching');button.setAttribute('aria-busy','true');fetchStatus.textContent='Fetching quotes';
  try{
-  let response=await fetch('/api/quotes?symbols='+encodeURIComponent(input.value),{cache:'no-store'});
+  if(activeWatchlist===dynamicName){
+   const ranked=await fetch('/api/most-active',{cache:'no-store'});
+   if(!ranked.ok)throw new Error('Most Active ranking unavailable: '+(await ranked.text()).trim());
+   const listing=await ranked.json();
+   if(!Array.isArray(listing.symbols)||listing.symbols.length!==20)throw new Error('Invalid Most Active ranking');
+   symbols=listing.symbols;input.value=symbols.join(',');
+  }
+  let response=await fetch('/api/quotes?symbols='+encodeURIComponent(symbols.join(',')),{cache:'no-store'});
   if(!response.ok)throw new Error(await response.text());
   let data=await response.json();quotes=data.quotes||[];updateMomentum(quotes);renderQuotes();
   const valid=quotes.filter(q=>q.display_price!=null);
+  const extendedCount=quotes.filter(q=>q.extended_price!=null).length;
+  const extHead=document.getElementById('extended-heading');extHead.dataset.label=quotes.some(q=>q.session==='premarket')?'Premarket':'After-hours';
   const sessions=[...new Set(valid.map(q=>q.session).filter(Boolean))];
   const session=sessions.length===1?sessions[0]:sessions.length?'Mixed ('+sessions.join(', ')+')':'Unavailable';
   const times=valid.map(q=>q.display_time).filter(Boolean).map(t=>new Date(t).getTime()).filter(Number.isFinite);
   const latest=times.length?new Date(Math.max(...times)).toISOString():null;
-  message.textContent='Session: '+session+' • Latest quote time: '+barTime(latest)+' • Retrieved: '+new Date(data.fetched_at).toLocaleString('en-US',{timeZone:'America/Los_Angeles',month:'numeric',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'})+' • '+valid.length+'/'+quotes.length+' prices. Refresh: '+(intervalSelect.value==='0'?'Never':intervalSelect.options[intervalSelect.selectedIndex].text)+'.';
+  message.textContent='Session: '+session+' • Latest quote time: '+barTime(latest)+' • Retrieved: '+new Date(data.fetched_at).toLocaleString('en-US',{timeZone:'America/Los_Angeles',month:'numeric',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',second:'2-digit',timeZoneName:'short'})+' • '+valid.length+'/'+quotes.length+' regular prices • '+extendedCount+' extended prices. Refresh: '+(intervalSelect.value==='0'?'Never':intervalSelect.options[intervalSelect.selectedIndex].text)+'.';
  }catch(e){message.textContent='Refresh failed: '+e.message+' • Existing quotes retained.'}finally{button.disabled=false;button.classList.remove('fetching');button.removeAttribute('aria-busy');fetchStatus.textContent=''}
 }
 button.addEventListener('click',refreshQuotes);
-// Restore only the stock symbols; leave sorting and refresh preferences intact.
-const restoreDefaultsButton=document.getElementById('restore-defaults');
-restoreDefaultsButton.addEventListener('click',()=>{
- if(button.disabled)return; // Avoid racing an in-progress quote request.
- if(!window.confirm('Restore the original 20-symbol watchlist? Your current symbols will be replaced.'))return;
- selectWatchlist('Default');
-});
-
 let refreshTimer=null;
 function setRefreshInterval(){
  if(refreshTimer!==null){clearInterval(refreshTimer);refreshTimer=null}
@@ -668,10 +802,12 @@ const savedInterval=localStorage.getItem('mauri_stock_refresh_interval');
 if(['0','5','30','60','300'].includes(savedInterval))intervalSelect.value=savedInterval;
 intervalSelect.addEventListener('change',setRefreshInterval);
 setRefreshInterval();
+// Populate the restored watchlist immediately, even when auto refresh is Never.
+refreshQuotes();
 </script></body></html>`
 
 const appVersion = "1.0.0"
-const buildVersion = "v17"
+const buildVersion = "v24"
 
 func main() {
 	defaultPort := os.Getenv("PORT")
@@ -702,6 +838,7 @@ func main() {
 	tmpl := template.Must(template.New("index").Parse(page))
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/quotes", quotesHandler)
+ mux.HandleFunc("/api/most-active", mostActiveHandler)
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("ok")) })
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
