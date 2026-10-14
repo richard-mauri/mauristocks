@@ -2,21 +2,21 @@
 
 A lightweight, self-hosted stock watchlist written in Go. It displays regular-session, premarket, and after-hours prices in a compact browser table, without advertisements or a heavyweight charting interface.
 
-**Current application version:** `1.0.0` · **Build:** `v29` (October 2026).
+**Current application version:** `1.0.0` · **Build:** `v32` (October 2026).
 
 ## Features
 
 - **Nine-column quote table:** Symbol, Exchange, Name, Price, After-hours/Premarket, Change, Change %, Day Range, and 52-Week Range. The **Price** column displays the regular-session price; a separate column displays an available extended-session price. The extended column switches its heading between **Premarket** and **After-hours** as appropriate.
-- **Distinct price comparisons:** Change and Change % reflect the regular price against the preceding regular close. The extended price can differ from the regular price; its background shows whether it is above or below the relevant close.
+- **Session-aware price changes:** During regular trading, Change and Change % measure the regular price versus the previous close. During premarket and after-hours sessions, they measure the extended-session price versus the regular price shown in the adjacent Price column. If extended data is missing, session change values are blank. Go computes extended changes (including `extended_change` and `extended_change_percent` in JSON).
 - **Multiple named watchlists:** Create, select, modify, and delete locally saved lists using **Save As New**, **Save Changes**, and **Delete List**. The permanent, read-only **Default (20 symbols)** list contains `MU, AMAT, LRCX, SPCX, AVGO, TSM, TSLA, NVDA, JOBY, PLTR, LMT, AMGN, SNA, FTEC, JEPQ, VOO, IAU, FSTA, IBIT, O`.
 - **Most Active — Top 20 (Dynamic):** A read-only watchlist ranked by reported daily **share volume** using Yahoo's unofficial market screener. The ranking is cached server-side for approximately 15 minutes. It depends on provider availability; a failed ranking request reports an error rather than inventing symbols.
 - **Immediate initial loading:** The active watchlist is restored and quotes are requested automatically when the page opens, including when Auto Refresh is **Never**.
 - **Manual or timed refresh:** Never, 5 seconds, 30 seconds, 1 minute, or 5 minutes. Automatic polling is skipped while the page is hidden; overlapping requests are prevented. Prices remain visible while fetching, and the **Refresh quotes** button keeps its label and dimensions.
 - **Sortable table:** Click a column heading to toggle direction. Price, After-hours, and change columns use numeric comparisons; range columns sort by the displayed price's normalized position between their lows and highs. Sorting is retained on refresh.
 - **Graphical ranges:** Compact day and 52-week low-to-high bars with diamond indicators. Both price labels are placed above their bars.
-- **Independent price shading:** The regular **Price** background indicates short-term momentum between distinct timestamped observations. The **After-hours** background instead indicates the extended price's difference from the regular close (or previous close in premarket). It is neutral when values match **to the displayed cent**; this avoids false shading from sub-cent discrepancies.
+- **Independent price shading:** The regular **Price** background indicates short-term momentum between distinct timestamped observations. The **After-hours/Premarket** background instead indicates the extended price's difference from the regular price displayed in the table. It is neutral when values match **to the displayed cent**; this avoids false shading from sub-cent discrepancies.
 - **Exchange and company names:** Exchange is separately sortable. Long exchange labels are shortened for display, and long company names stay on one line with an ellipsis; hover over a name to see it in full.
-- **Configurable symbol links:** Click a symbol to open Google Finance, Stock Analysis, Yahoo Finance, Finviz, the Corporate Website, or Investor Relations in a new tab. The preferred destination persists in browser storage. Financial research links are built using symbol/exchange metadata; official websites and IR pages are opened only when a URL is available.
+- **Configurable symbol links:** Click a symbol to open Google Finance, Stock Analysis, Corporate Website, or Investor Relations in a new tab. The preferred destination persists in browser storage. Financial research links are built using symbol/exchange metadata; official websites and IR pages are opened only when a URL is available.
 - **Dynamic corporate website discovery:** With a `FINNHUB_API_KEY`, Go can resolve corporate URLs on demand through Finnhub company profiles and cache successful results for seven days. Verified built-in mappings remain a fallback. Corporate lookups do not run every quote refresh.
 - **Compact mobile notes:** The formerly lengthy footer is now a native **About / Data Notes** disclosure, collapsed by default on both desktop and mobile, so the note text does not fill the iPhone screen. Tap to expand it.
 - **Pacific-time header:** Quote and retrieval timestamps use PST/PDT as appropriate.
@@ -126,7 +126,9 @@ The dynamic Most Active list ranks by reported share count traded, **not** dolla
 
 ### Symbol links and company details
 
-Use the **Symbol links** selector to choose Google Finance, Stock Analysis, Yahoo Finance, Finviz, Corporate Website, or Investor Relations. A click on a symbol opens a new browser tab; the dashboard stays open. The selection is stored per browser and origin. The Exchange column displays the provider's exchange information, with shortened labels where needed; it is also sortable.
+As of Build v32, the link menu intentionally excludes **Yahoo Finance** and **Finviz** because of their ad-heavy public websites. This does not change the Yahoo-based quote data feed.
+
+Use the **Symbol links** selector to choose Google Finance, Stock Analysis, Corporate Website, or Investor Relations. A click on a symbol opens a new browser tab; the dashboard stays open. The selection is stored per browser and origin. Previously saved Yahoo Finance or Finviz destinations automatically fall back to Google Finance. Yahoo is still used for **background quote retrieval**, not as a symbol-link destination. The Exchange column displays the provider's exchange information, with shortened labels where needed; it is also sortable.
 
 When Corporate Website is selected, the app can send the click to its `/company` resolver, which requests the company profile from Finnhub if the server is configured with `FINNHUB_API_KEY`. Successful URLs are cached, and known corporate website mappings are used as fallback. If a URL cannot be established, the link is unavailable rather than guessed. Investor Relations links use the verified mappings built into this release.
 
@@ -138,19 +140,19 @@ The app uses a compact light theme with black regular text, alternating pale row
 | --- | --- |
 | Price | Latest available regular-session price or regular close, independently of the extended-hours column |
 | After-hours / Premarket | Available extended-session price derived from the provider's intraday bars; `—` when unavailable |
-| Change / Change % | Difference of regular-session price from the preceding regular-session close |
+| Change / Change % | Session-aware difference: extended-session price versus the regular price during premarket/after-hours; regular price versus previous close during normal trading |
 | Day Range | Regular-session low and high (previous available session before the open) |
 | 52-Week Range | Approximate year-long low and high based on available daily bars |
 
 The **Price** background shows short-term direction and rate of movement between successive observations with distinct quote timestamps. No false movement is inferred when a refreshed response has the same timestamp.
 
-The **After-hours** (or **Premarket**) background measures its price against the applicable regular close, **not** the difference from the previous refresh. Red indicates below, green indicates above, with bounded shading intensity. If the two displayed prices are equal after rounding to cents, the extended price cell remains unshaded. An unavailable extended price is shown as `—`, not silently replaced by a regular price.
+The **After-hours** (or **Premarket**) background measures its price against the regular price displayed in the Price column, **not** the difference from the previous refresh. Red indicates below, green indicates above, with bounded shading intensity. If the two displayed prices are equal after rounding to cents, the extended price cell remains unshaded. An unavailable extended price is shown as `—`, not silently replaced by a regular price.
 
 The range markers show the displayed price's relative position in the recorded range; markers are clamped to the scale ends when necessary. Day and year ranges are not guaranteed to incorporate extended-session activity.
 
 ### Collapsed About / Data Notes
 
-The long explanatory footer has been replaced in Build v29 by the **About / Data Notes** disclosure. It is **collapsed by default**, especially useful when opening the dashboard on an iPhone. Click or tap the heading to show details about momentum shading, price ranges, extended-hours behavior, data availability, and the JSON API. Tap again to close. This native HTML disclosure does not require extra JavaScript.
+The long explanatory footer was replaced beginning with Build v29 by the **About / Data Notes** disclosure. It is **collapsed by default**, especially useful when opening the dashboard on an iPhone. Click or tap the heading to show details about momentum shading, price ranges, extended-hours behavior, data availability, and the JSON API. Tap again to close. This native HTML disclosure does not require extra JavaScript.
 
 The fixed-width quote table can scroll horizontally on a narrow phone screen; a fully responsive mobile table is not yet implemented.
 
@@ -214,7 +216,7 @@ If `git init` was already run locally:
 
 ```sh
 git add main.go go.mod README.md .gitignore
-git commit -m "Build v29: corporate links and compact mobile data notes"
+git commit -m "Build v32: simplify research links and update documentation"
 ```
 
 If the `origin` remote already points to your existing GitHub repository, push the current branch:

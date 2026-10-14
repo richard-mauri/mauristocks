@@ -45,6 +45,8 @@ type Quote struct {
 	ExtendedPrice   *float64   `json:"extended_price,omitempty"`
 	ExtendedTime    *time.Time `json:"extended_time,omitempty"`
 	ExtendedSession string     `json:"extended_session,omitempty"`
+	ExtendedChange *float64 `json:"extended_change,omitempty"`
+	ExtendedChangePercent *float64 `json:"extended_change_percent,omitempty"`
 	DisplayPrice    *float64   `json:"display_price,omitempty"`
 	DisplayTime     *time.Time `json:"display_time,omitempty"`
 	Session         string     `json:"session"`
@@ -465,6 +467,28 @@ func fetchQuote(ctx context.Context, sym string) Quote {
 		q.DayHigh = intradayHigh
 		q.DayRangeDate = today
 	}
+	// Extended-session comparison is based on the same regular price that
+	// appears in the Price column. Compare rounded cents to match the UI.
+	// Keep a true zero change in JSON (pointers avoid omitempty dropping it).
+	if q.ExtendedPrice != nil && q.DisplayPrice != nil && *q.DisplayPrice > 0 {
+		baseCents := math.Round(*q.DisplayPrice * 100)
+		extCents := math.Round(*q.ExtendedPrice * 100)
+		if baseCents > 0 {
+			delta := (extCents - baseCents) / 100
+			pct := 100 * (extCents - baseCents) / baseCents
+			q.ExtendedChange = &delta
+			q.ExtendedChangePercent = &pct
+		}
+	}
+	// Change and ChangePercent track the active session. During premarket
+	// or after-hours they describe the extended quote versus the same regular
+	// closing price displayed in Price. Missing extended data remains unknown.
+	// At all other times they retain the regular-session change versus the
+	// previous closing price. ExtendedChange fields remain independently
+	// available to API clients for explicit comparisons.
+	if phase == "premarket" || phase == "after-hours" {
+		q.Change, q.ChangePercent = q.ExtendedChange, q.ExtendedChangePercent
+	}
 	fetchRanges(ctx, sym, &q, today)
 	return q
 }
@@ -616,7 +640,7 @@ tbody td.exchange-cell,tbody td.company-name{
 tbody td.exchange-cell{font-size:.88rem}
 tbody td.company-name{max-width:0}
 
-</style></head><body><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · Build v29</span></h1><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="yahoo">Yahoo Finance</option><option value="finviz">Finviz</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="tablewrap"><table><colgroup><col style="width:75px"><col style="width:80px"><col style="width:255px"><col style="width:100px"><col style="width:110px"><col style="width:100px"><col style="width:100px"><col style="width:180px"><col style="width:180px"></colgroup><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none">Change</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Price background reflects short-term momentum between distinct quotes. After-hours background reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. No shading when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours (or Premarket) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change and Change % compare regular-session price with the prior close. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
+</style></head><body><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · Build v32</span></h1><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="tablewrap"><table><colgroup><col style="width:75px"><col style="width:80px"><col style="width:255px"><col style="width:100px"><col style="width:110px"><col style="width:100px"><col style="width:100px"><col style="width:180px"><col style="width:180px"></colgroup><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Price background reflects short-term momentum between distinct quotes. After-hours background reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. No shading when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours (or Premarket) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
 <script>
 const defaults='MU,AMAT,LRCX,SPCX,AVGO,TSM,TSLA,NVDA,JOBY,PLTR,LMT,AMGN,SNA,FTEC,JEPQ,VOO,IAU,FSTA,IBIT,O';
 const input=document.getElementById('symbols'),button=document.getElementById('refresh'),intervalSelect=document.getElementById('refresh-interval'),rows=document.getElementById('rows'),message=document.getElementById('message'),fetchStatus=document.getElementById('fetch-status');
@@ -704,23 +728,19 @@ function shadeMomentum(cell,momentum,price){
  cell.title+=(cell.title?' • ':'')+(rising?'Rising ':'Falling ')+Math.abs(momentum.rate).toFixed(3)+'%/min since preceding distinct quote';
 }
 // The extended column color measures performance relative to the regular-session
-// closing price, not the change between refreshes. Premarket uses the prior close.
+// price displayed in the Price column, not the change between refreshes.
 function shadeExtendedVsClose(cell,q){
- const price=q.extended_price;
- const base=q.extended_session==='premarket'?q.previous_close:q.regular_price;
- if(!Number.isFinite(price)||!Number.isFinite(base)||base<=0)return;
- // Compare at displayed cent precision: identical visible prices are neutral.
- const priceCents=Math.round((price+Number.EPSILON)*100);
- const baseCents=Math.round((base+Number.EPSILON)*100);
- if(priceCents===baseCents)return;
- const pct=100*(priceCents-baseCents)/baseCents;
- // Saturation increases gradually and is capped for legible black text.
+ const pct=q.extended_change_percent;
+ if(!Number.isFinite(pct)||Math.abs(pct)<1e-10)return;
+ // Go computes percentage change from the displayed regular price,
+ // rounded to cents. The browser only chooses how to paint the cell.
  const strength=Math.min(1,Math.abs(pct)/2);
  const alpha=0.12+0.23*strength;
  cell.classList.add('price-momentum');
  cell.style.backgroundColor=(pct>0?'rgba(29, 142, 79, ':'rgba(194, 61, 64, ')+alpha.toFixed(3)+')';
- cell.title+=(cell.title?' • ':'')+(pct>0?'+':'')+pct.toFixed(2)+'% versus '+(q.extended_session==='premarket'?'prior close':'regular close');
+ cell.title+=(cell.title?' • ':'')+(pct>0?'+':'')+pct.toFixed(2)+'% versus displayed regular price';
 }
+
 const sortHeaders=[...document.querySelectorAll('th[data-sort]')];
 for(const h of sortHeaders){
  const label=h.textContent;
@@ -755,7 +775,7 @@ function compareQuotes(a,b){
  return (sortDirection==='asc'?result:-result)||a.symbol.localeCompare(b.symbol);
 }
 const researchSelect=document.getElementById('research-site');
-const researchSites=new Set(['google','stockanalysis','yahoo','finviz','corporate','ir']);
+const researchSites=new Set(['google','stockanalysis','corporate','ir']);
 const savedResearchSite=localStorage.getItem('mauri_research_site');
 if(researchSites.has(savedResearchSite))researchSelect.value=savedResearchSite;
 researchSelect.addEventListener('change',()=>{localStorage.setItem('mauri_research_site',researchSelect.value);renderQuotes()});
@@ -774,8 +794,6 @@ function researchURL(q){
  switch(researchSelect.value){
  case 'google':return q.exchange?'https://www.google.com/finance/quote/'+encodeURIComponent(sym)+':'+encodeURIComponent(q.exchange):'';
  case 'stockanalysis':return 'https://stockanalysis.com/'+(['FTEC','JEPQ','VOO','IAU','FSTA','IBIT'].includes(sym)?'etf/':'stocks/')+encodeURIComponent(sym.toLowerCase())+'/';
- case 'yahoo':return 'https://finance.yahoo.com/quote/'+encodeURIComponent(sym)+'/';
- case 'finviz':return 'https://finviz.com/quote.ashx?t='+encodeURIComponent(sym);
  case 'corporate':return '/company?symbol='+encodeURIComponent(sym);
  case 'ir':return irURLs[sym]||'';
  default:return '';
@@ -850,7 +868,15 @@ async function refreshQuotes(){
   }
   let response=await fetch('/api/quotes?symbols='+encodeURIComponent(symbols.join(',')),{cache:'no-store'});
   if(!response.ok)throw new Error(await response.text());
-  let data=await response.json();quotes=data.quotes||[];updateMomentum(quotes);renderQuotes();
+  let data=await response.json();quotes=data.quotes||[];updateMomentum(quotes);
+  const activeSession=quotes.find(q=>q.session==='premarket'||q.session==='after-hours')?.session;
+  const changeLabel=activeSession==='premarket'?'Premarket':activeSession==='after-hours'?'After-hours':'';
+  for(const [id,label] of [['change-heading',changeLabel?changeLabel+' $':'Change'],['change-percent-heading',changeLabel?changeLabel+' %':'Change %']]){
+   const header=document.getElementById(id);
+   header.dataset.label=label;
+   header.querySelector('button').setAttribute('aria-label','Sort by '+label);
+  }
+  renderQuotes();
   const valid=quotes.filter(q=>q.display_price!=null);
   const extendedCount=quotes.filter(q=>q.extended_price!=null).length;
   const extHead=document.getElementById('extended-heading');extHead.dataset.label=quotes.some(q=>q.session==='premarket')?'Premarket':'After-hours';
@@ -963,7 +989,7 @@ func companyRedirectHandler(w http.ResponseWriter,r *http.Request){
 }
 
 const appVersion = "1.0.0"
-const buildVersion = "v29"
+const buildVersion = "v32"
 
 func main() {
 	defaultPort := os.Getenv("PORT")
