@@ -1,3 +1,5 @@
+.env
+.cloudflared
 mauristocks.log
 nohup.out
 stocksgo.sh

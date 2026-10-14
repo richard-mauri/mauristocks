@@ -2,19 +2,19 @@
 
 A lightweight, self-hosted stock watchlist written in Go. It displays regular-session, premarket, and after-hours prices in a compact browser table, without advertisements or a heavyweight charting interface.
 
-**Current application version:** `1.0.0` · **Build:** `v32` (October 2026).
+**Current application version:** `1.0.0` · **Build:** `v34` (October 2026).
 
 ## Features
 
-- **Nine-column quote table:** Symbol, Exchange, Name, Price, After-hours/Premarket, Change, Change %, Day Range, and 52-Week Range. The **Price** column displays the regular-session price; a separate column displays an available extended-session price. The extended column switches its heading between **Premarket** and **After-hours** as appropriate.
+- **Session-dependent quote table:** The table has nine columns in extended-hours sessions (Symbol, Exchange, Name, Price, Premarket/After-hours, Change, Change %, Day Range, and 52-Week Range) and eight during regular trading, when the entire extended-hours column—including its heading—is hidden. **Price** remains the regular-session price. The extended column reappears for premarket and after-hours observations, with the corresponding heading. Existing columns keep their fixed widths when the extended column is hidden.
 - **Session-aware price changes:** During regular trading, Change and Change % measure the regular price versus the previous close. During premarket and after-hours sessions, they measure the extended-session price versus the regular price shown in the adjacent Price column. If extended data is missing, session change values are blank. Go computes extended changes (including `extended_change` and `extended_change_percent` in JSON).
 - **Multiple named watchlists:** Create, select, modify, and delete locally saved lists using **Save As New**, **Save Changes**, and **Delete List**. The permanent, read-only **Default (20 symbols)** list contains `MU, AMAT, LRCX, SPCX, AVGO, TSM, TSLA, NVDA, JOBY, PLTR, LMT, AMGN, SNA, FTEC, JEPQ, VOO, IAU, FSTA, IBIT, O`.
 - **Most Active — Top 20 (Dynamic):** A read-only watchlist ranked by reported daily **share volume** using Yahoo's unofficial market screener. The ranking is cached server-side for approximately 15 minutes. It depends on provider availability; a failed ranking request reports an error rather than inventing symbols.
 - **Immediate initial loading:** The active watchlist is restored and quotes are requested automatically when the page opens, including when Auto Refresh is **Never**.
 - **Manual or timed refresh:** Never, 5 seconds, 30 seconds, 1 minute, or 5 minutes. Automatic polling is skipped while the page is hidden; overlapping requests are prevented. Prices remain visible while fetching, and the **Refresh quotes** button keeps its label and dimensions.
-- **Sortable table:** Click a column heading to toggle direction. Price, After-hours, and change columns use numeric comparisons; range columns sort by the displayed price's normalized position between their lows and highs. Sorting is retained on refresh.
+- **Sortable table:** Click a column heading to toggle direction. Price, extended-hours, and change columns use numeric comparisons; range columns sort by the displayed price's normalized position between their lows and highs. Sorting is retained on refresh, except that sorting by extended price switches to descending Price sorting when the extended column becomes hidden.
 - **Graphical ranges:** Compact day and 52-week low-to-high bars with diamond indicators. Both price labels are placed above their bars.
-- **Independent price shading:** The regular **Price** background indicates short-term momentum between distinct timestamped observations. The **After-hours/Premarket** background instead indicates the extended price's difference from the regular price displayed in the table. It is neutral when values match **to the displayed cent**; this avoids false shading from sub-cent discrepancies.
+- **Independent price shading:** The regular **Price** background indicates short-term momentum between distinct timestamped observations. When displayed, the **After-hours/Premarket** background instead indicates the extended price's difference from the regular price displayed in the table. It is neutral when values match **to the displayed cent**; this avoids false shading from sub-cent discrepancies.
 - **Exchange and company names:** Exchange is separately sortable. Long exchange labels are shortened for display, and long company names stay on one line with an ellipsis; hover over a name to see it in full.
 - **Configurable symbol links:** Click a symbol to open Google Finance, Stock Analysis, Corporate Website, or Investor Relations in a new tab. The preferred destination persists in browser storage. Financial research links are built using symbol/exchange metadata; official websites and IR pages are opened only when a URL is available.
 - **Dynamic corporate website discovery:** With a `FINNHUB_API_KEY`, Go can resolve corporate URLs on demand through Finnhub company profiles and cache successful results for seven days. Verified built-in mappings remain a fallback. Corporate lookups do not run every quote refresh.
@@ -102,10 +102,14 @@ When set, the server logs that Finnhub company profiles are enabled. When absent
 
 ### Git housekeeping
 
+Keep local `.env` and `.cloudflared/` token files out of version control, as well as the compiled binary.
+
 Commit `go.mod` along with `main.go` and `README.md`. To avoid committing the compiled local executable, add the following to `.gitignore`:
 
 ```gitignore
 /mauristocks
+.env
+.cloudflared/
 .DS_Store
 *.log
 ```
@@ -150,11 +154,19 @@ The **After-hours** (or **Premarket**) background measures its price against the
 
 The range markers show the displayed price's relative position in the recorded range; markers are clamped to the scale ends when necessary. Day and year ranges are not guaranteed to incorporate extended-session activity.
 
+### Session-dependent extended-hours column (Build v34)
+
+During normal **regular trading**, the application hides the extended-hours header, every extended-hours price cell, and the corresponding table column. During **premarket** it displays **Premarket**; during **after-hours** it displays **After-hours**. Table width shrinks by 110 pixels during a regular session, while the other columns retain their widths. The column's visibility is driven by the *session values returned by the Go server*, not by the browser clock, and updates on the next successful quotes retrieval (manual or scheduled). There is no need to reload the page. The source still includes extended-hours fields in JSON even when the browser hides the column.
+
+If the active sort was extended price when the column becomes hidden, the dashboard switches to **Price**, descending; other sorts are preserved. When no data has been fetched or session results are mixed/unavailable, the hide condition may not apply. On weekends, holidays, or overnight, the column's presence and label follow available provider session classifications; the application does **not** implement an independent exchange-calendar-based visibility scheduler.
+
+Build v33 introduced this behavior. **Build v34 fixes the extended-hours header not hiding along with the data cells** (an HTML `class` attribute issue in v33).
+
 ### Collapsed About / Data Notes
 
 The long explanatory footer was replaced beginning with Build v29 by the **About / Data Notes** disclosure. It is **collapsed by default**, especially useful when opening the dashboard on an iPhone. Click or tap the heading to show details about momentum shading, price ranges, extended-hours behavior, data availability, and the JSON API. Tap again to close. This native HTML disclosure does not require extra JavaScript.
 
-The fixed-width quote table can scroll horizontally on a narrow phone screen; a fully responsive mobile table is not yet implemented.
+The fixed-width quote table can scroll horizontally on a narrow phone screen; during regular trading the table is 110 pixels narrower. A fully responsive mobile table is not yet implemented.
 
 ### Data freshness
 
@@ -216,7 +228,7 @@ If `git init` was already run locally:
 
 ```sh
 git add main.go go.mod README.md .gitignore
-git commit -m "Build v32: simplify research links and update documentation"
+git commit -m "Build v34: session-dependent extended-hours column"
 ```
 
 If the `origin` remote already points to your existing GitHub repository, push the current branch:
