@@ -2,9 +2,12 @@
 
 A lightweight, self-hosted stock watchlist written in Go. It displays regular-session, premarket, and after-hours prices in a compact browser table, without advertisements or a heavyweight charting interface.
 
-**Current application version:** `1.0.0` · **Build:** `v34` (October 2026).
+**Current application version:** `1.0.0` · **Build:** `v37` (October 2026).
 
 ## Features
+
+- **Persistent symbol highlighting (Build v35):** Click the ☆ next to a ticker to flag it. The star becomes ★ and the entire row turns soft butter-yellow (`#FFF5D6`). Clicking it again removes the flag. Flags persist in browser `localStorage` under `mauri_stock_flagged_symbols_v1`, follow the ticker through sorting, refreshes, and watchlist changes, and apply to matching symbols in every watchlist. The ticker hyperlink is unchanged, and the Price cell retains independent momentum text coloring. Flags are specific to the browser/device, not stored on the server.
+
 
 - **Session-dependent quote table:** The table has nine columns in extended-hours sessions (Symbol, Exchange, Name, Price, Premarket/After-hours, Change, Change %, Day Range, and 52-Week Range) and eight during regular trading, when the entire extended-hours column—including its heading—is hidden. **Price** remains the regular-session price. The extended column reappears for premarket and after-hours observations, with the corresponding heading. Existing columns keep their fixed widths when the extended column is hidden.
 - **Session-aware price changes:** During regular trading, Change and Change % measure the regular price versus the previous close. During premarket and after-hours sessions, they measure the extended-session price versus the regular price shown in the adjacent Price column. If extended data is missing, session change values are blank. Go computes extended changes (including `extended_change` and `extended_change_percent` in JSON).
@@ -14,12 +17,12 @@ A lightweight, self-hosted stock watchlist written in Go. It displays regular-se
 - **Manual or timed refresh:** Never, 5 seconds, 30 seconds, 1 minute, or 5 minutes. Automatic polling is skipped while the page is hidden; overlapping requests are prevented. Prices remain visible while fetching, and the **Refresh quotes** button keeps its label and dimensions.
 - **Sortable table:** Click a column heading to toggle direction. Price, extended-hours, and change columns use numeric comparisons; range columns sort by the displayed price's normalized position between their lows and highs. Sorting is retained on refresh, except that sorting by extended price switches to descending Price sorting when the extended column becomes hidden.
 - **Graphical ranges:** Compact day and 52-week low-to-high bars with diamond indicators. Both price labels are placed above their bars.
-- **Independent price shading:** The regular **Price** background indicates short-term momentum between distinct timestamped observations. When displayed, the **After-hours/Premarket** background instead indicates the extended price's difference from the regular price displayed in the table. It is neutral when values match **to the displayed cent**; this avoids false shading from sub-cent discrepancies.
+- **Independent price text coloring (Build v36):** The regular **Price** foreground indicates short-term momentum between distinct timestamped observations. When displayed, the **After-hours/Premarket** foreground instead indicates the extended price's difference from the regular price displayed in the table. It uses the normal text color when values match **to the displayed cent**; this avoids false shading from sub-cent discrepancies.
 - **Exchange and company names:** Exchange is separately sortable. Long exchange labels are shortened for display, and long company names stay on one line with an ellipsis; hover over a name to see it in full.
 - **Configurable symbol links:** Click a symbol to open Google Finance, Stock Analysis, Corporate Website, or Investor Relations in a new tab. The preferred destination persists in browser storage. Financial research links are built using symbol/exchange metadata; official websites and IR pages are opened only when a URL is available.
 - **Dynamic corporate website discovery:** With a `FINNHUB_API_KEY`, Go can resolve corporate URLs on demand through Finnhub company profiles and cache successful results for seven days. Verified built-in mappings remain a fallback. Corporate lookups do not run every quote refresh.
 - **Compact mobile notes:** The formerly lengthy footer is now a native **About / Data Notes** disclosure, collapsed by default on both desktop and mobile, so the note text does not fill the iPhone screen. Tap to expand it.
-- **Pacific-time header:** Quote and retrieval timestamps use PST/PDT as appropriate.
+- **Pacific-time header (Build v37):** Quote and retrieval timestamps use consistent month-name formatting and PST/PDT as appropriate. When both timestamps share the same Pacific calendar date, the retrieved timestamp omits the redundant date. The status line no longer repeats the selected Auto Refresh interval.
 - **REST API:** Retrieve JSON quotes and the dynamic Most Active ranking.
 
 The service uses Go's standard library, and the UI uses lightweight JavaScript without live charts or advertisements.
@@ -148,11 +151,15 @@ The app uses a compact light theme with black regular text, alternating pale row
 | Day Range | Regular-session low and high (previous available session before the open) |
 | 52-Week Range | Approximate year-long low and high based on available daily bars |
 
-The **Price** background shows short-term direction and rate of movement between successive observations with distinct quote timestamps. No false movement is inferred when a refreshed response has the same timestamp.
+The **Price** text color shows short-term direction and rate of movement between successive observations with distinct quote timestamps. No false movement is inferred when a refreshed response has the same timestamp.
 
-The **After-hours** (or **Premarket**) background measures its price against the regular price displayed in the Price column, **not** the difference from the previous refresh. Red indicates below, green indicates above, with bounded shading intensity. If the two displayed prices are equal after rounding to cents, the extended price cell remains unshaded. An unavailable extended price is shown as `—`, not silently replaced by a regular price.
+The **After-hours** (or **Premarket**) text color measures its price against the regular price displayed in the Price column, **not** the difference from the previous refresh. Red indicates below, green indicates above, using green/red foreground text. If the two displayed prices are equal after rounding to cents, the extended price cell retains neutral text color. An unavailable extended price is shown as `—`, not silently replaced by a regular price.
 
 The range markers show the displayed price's relative position in the recorded range; markers are clamped to the scale ends when necessary. Day and year ranges are not guaranteed to incorporate extended-session activity.
+
+### Symbol flags (Build v35)
+
+A ☆/★ button immediately before every ticker toggles a soft butter-yellow (`#FFF5D6`) whole-row highlight. Flags are associated with ticker strings, not row positions, and persist in the current browser across refreshes and watchlist changes. They do not modify the watchlist definition or quote API.
 
 ### Session-dependent extended-hours column (Build v34)
 
@@ -164,13 +171,13 @@ Build v33 introduced this behavior. **Build v34 fixes the extended-hours header 
 
 ### Collapsed About / Data Notes
 
-The long explanatory footer was replaced beginning with Build v29 by the **About / Data Notes** disclosure. It is **collapsed by default**, especially useful when opening the dashboard on an iPhone. Click or tap the heading to show details about momentum shading, price ranges, extended-hours behavior, data availability, and the JSON API. Tap again to close. This native HTML disclosure does not require extra JavaScript.
+The long explanatory footer was replaced beginning with Build v29 by the **About / Data Notes** disclosure. It is **collapsed by default**, especially useful when opening the dashboard on an iPhone. Click or tap the heading to show details about momentum text coloring, price ranges, extended-hours behavior, data availability, and the JSON API. Tap again to close. This native HTML disclosure does not require extra JavaScript.
 
 The fixed-width quote table can scroll horizontally on a narrow phone screen; during regular trading the table is 110 pixels narrower. A fully responsive mobile table is not yet implemented.
 
 ### Data freshness
 
-Quote data is requested on page open, on manual Refresh, and optionally at a selected interval. **Retrieved** indicates when the service fetched data, not when the exchange traded. **Latest quote time** is based on the provider's reported price timestamps. Both display in Pacific time.
+Quote data is requested on page open, on manual Refresh, and optionally at a selected interval. **Retrieved** indicates when the service fetched data, not when the exchange traded. **Latest quote time** is based on the provider's reported price timestamps. Both display in Pacific time. If they fall on the same date, Retrieved shows only the time, including seconds; otherwise it includes its own date. The status line does not repeat the Auto Refresh selector.
 
 Provider data may be delayed, incomplete, or unavailable. A returned one-minute extended-hours bar close is **not** a guarantee of a live trade quote. A 5-second refresh setting with 20 symbols can generate substantial upstream traffic and may trigger rate limiting; use longer intervals where possible.
 
@@ -228,7 +235,7 @@ If `git init` was already run locally:
 
 ```sh
 git add main.go go.mod README.md .gitignore
-git commit -m "Build v34: session-dependent extended-hours column"
+git commit -m "Build v37: refine flagged-row color and quote status"
 ```
 
 If the `origin` remote already points to your existing GitHub repository, push the current branch:
