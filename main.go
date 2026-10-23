@@ -662,22 +662,22 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 #quotes-table.regular-session{width:100%;min-width:1190px}
 #quotes-table th:nth-child(1){width:7%}
 #quotes-table th:nth-child(2){width:8%}
-#quotes-table th:nth-child(3){width:27%}
+#quotes-table th:nth-child(3){width:var(--company-name-width, 300px)}
 #quotes-table th:nth-child(4){width:9%}
 #quotes-table th:nth-child(5){width:10%}
 #quotes-table th:nth-child(6){width:10%}
 #quotes-table th:nth-child(7){width:10%}
 #quotes-table th:nth-child(8){width:9%}
-#quotes-table th:nth-child(9){width:10%}
+#quotes-table th:nth-child(9){width:auto}
 /* Eight visible columns, adding to 100% without the extended-price slot. */
 #quotes-table.regular-session th:nth-child(1){width:7%}
 #quotes-table.regular-session th:nth-child(2){width:8%}
-#quotes-table.regular-session th:nth-child(3){width:29%}
+#quotes-table.regular-session th:nth-child(3){width:var(--company-name-width, 300px)}
 #quotes-table.regular-session th:nth-child(4){width:10%}
 #quotes-table.regular-session th:nth-child(6){width:11%}
 #quotes-table.regular-session th:nth-child(7){width:11%}
 #quotes-table.regular-session th:nth-child(8){width:12%}
-#quotes-table.regular-session th:nth-child(9){width:12%}
+#quotes-table.regular-session th:nth-child(9){width:auto}
 #quotes-table th,#quotes-table td{overflow:hidden}
 #quotes-table th{white-space:normal;overflow-wrap:normal}
 
@@ -914,6 +914,24 @@ function symbolCell(tr,q){
  else {const span=document.createElement('span');span.className='symbol-unavailable';span.textContent=q.symbol;span.title='No verified link for this stock and research destination';td.appendChild(span)}
  tr.appendChild(td);
 }
+// Compute the company column from the actual visible names. Tune the two
+// bounds without altering the other table columns; long names ellipsize.
+const COMPANY_NAME_MIN_PX=210;
+const COMPANY_NAME_MAX_PX=340;
+function sizeCompanyNameColumn(){
+ const table=document.getElementById('quotes-table');
+ const cells=[...rows.querySelectorAll('td.company-name')];
+ const probe=cells[0];
+ if(!probe){table.style.setProperty('--company-name-width',COMPANY_NAME_MIN_PX+'px');return}
+ const measure=document.createElement('canvas').getContext('2d');
+ measure.font=getComputedStyle(probe).font;
+ let widest=0;
+ for(const td of cells)widest=Math.max(widest,measure.measureText(td.textContent||'').width);
+ const pad=parseFloat(getComputedStyle(probe).paddingLeft)||0;
+ const rightPad=parseFloat(getComputedStyle(probe).paddingRight)||0;
+ const pixels=Math.ceil(Math.min(COMPANY_NAME_MAX_PX,Math.max(COMPANY_NAME_MIN_PX,widest+pad+rightPad+12)));
+ table.style.setProperty('--company-name-width',pixels+'px');
+}
 function renderQuotes(){
  rows.replaceChildren();
  for(const q of [...quotes].sort(compareQuotes)){
@@ -943,6 +961,7 @@ function renderQuotes(){
   if(q.error)tr.title=q.error;
   rows.appendChild(tr);
  }
+ sizeCompanyNameColumn();
  for(const h of sortHeaders){
   const active=h.dataset.sort===sortKey;
   h.setAttribute('aria-sort',active?(sortDirection==='asc'?'ascending':'descending'):'none');
