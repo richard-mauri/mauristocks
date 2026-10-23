@@ -653,6 +653,50 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .symbol-flag:hover,.symbol-flag:focus-visible{background:#ffe38b;outline:1px solid #aa8a35}
 
 
+
+/* Shared semantic palette: ScraperGo / NewsGo. Preserves financial status colors. */
+:root{
+ color-scheme:light dark;
+ --bg:light-dark(#f5f5f0,#0e141a);
+ --panel:light-dark(#ffffff,#19232b);
+ --ink:light-dark(#182631,#eef2f4);
+ --muted:light-dark(#60707b,#a5b3bb);
+ --border:light-dark(#dce2e1,#34434a);
+ --accent:light-dark(#126877,#69c6d3);
+ --soft:light-dark(#e6f3f3,#203c43);
+ --row-alt:light-dark(#f2f7f6,#202d35);
+ --row-hover:light-dark(#e5f0ef,#29414a);
+ --starred:light-dark(#fff5d6,#4b3a20);
+ --gain:light-dark(#087b38,#72d89b);
+ --loss:light-dark(#b42334,#ff9696);
+}
+html,body{background:var(--bg);color:var(--ink)}
+h1{color:var(--ink)}
+.muted,.small,#message,footer,#watchlist-status{color:var(--muted);opacity:1}
+table{background:var(--panel);border:1px solid var(--border);border-radius:8px}
+th{background:var(--soft);color:var(--ink);border-bottom:1px solid var(--border)}
+th,td{color:var(--ink)}
+tbody tr{background:var(--panel)}
+tbody tr:nth-child(even){background:var(--row-alt)}
+tbody tr:hover{background:var(--row-hover)}
+input,.controls select,.watchlist-controls select,.research-control select{
+ background:var(--panel);color:var(--ink);border:1px solid var(--border)
+}
+button{background:light-dark(#126877,#24454e);color:light-dark(#fff,#eef2f4);border:1px solid var(--border);border-radius:6px}
+button:not(:disabled):hover{background:light-dark(#0d5360,#305c66)}
+.watchlist-controls button{background:var(--soft);color:var(--ink);border:1px solid var(--border)}
+.sort-button,.sort-button:hover,.symbol-flag{background:transparent;color:var(--ink);border:0}
+.sort-indicator.active,th[data-sort][aria-sort="ascending"] .sort-indicator,th[data-sort][aria-sort="descending"] .sort-indicator{color:var(--accent)}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible,th[data-sort]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a,.symbol-link{color:var(--accent)}
+.up{color:var(--gain)}.down{color:var(--loss)}
+.range-labels,.range-labels span{color:var(--ink)}
+.range-track,.range-fill{background:var(--border)}
+.range-marker{background:var(--accent);border-color:var(--panel);box-shadow:0 0 0 1px var(--accent)}
+tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:hover{background:var(--starred)}
+.symbol-flag[aria-pressed="true"]{color:light-dark(#946900,#ffd27d)}
+.symbol-flag:hover,.symbol-flag:focus-visible{background:var(--soft);outline:1px solid var(--accent)}
+
 </style></head><body><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · Build v39</span></h1><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="tablewrap"><table id="quotes-table"><colgroup><col style="width:75px"><col style="width:80px"><col style="width:255px"><col style="width:100px"><col class="extended-column" style="width:110px"><col style="width:100px"><col style="width:100px"><col style="width:180px"><col style="width:180px"></colgroup><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
 <script>
 const defaults='MU,AMAT,LRCX,SPCX,AVGO,TSM,TSLA,NVDA,JOBY,PLTR,LMT,AMGN,SNA,FTEC,JEPQ,VOO,IAU,FSTA,IBIT,O';
