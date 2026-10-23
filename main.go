@@ -660,8 +660,23 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 #quotes-table{table-layout:fixed;width:100%}
 #quotes-table [data-col-hidden="1"]{display:none!important}
 #quotes-table th{position:relative}
-.col-resize{position:absolute;right:0;top:0;bottom:0;width:9px;cursor:col-resize;touch-action:none;z-index:2}
-.col-resize:hover,.col-resize:focus-visible{background:var(--accent);opacity:.65}
+/* Persistent resize grip, anchored to each header cell (not a floating popup). */
+#quotes-table thead th{position:relative}
+#quotes-table .col-resize{
+ position:absolute;top:50%;right:2px;bottom:auto;transform:translateY(-50%);
+ width:13px;height:28px;z-index:4;cursor:col-resize;touch-action:none;
+ display:flex;align-items:center;justify-content:center;
+ border-radius:4px;background:var(--soft);border:1px solid var(--border);
+ opacity:1;
+}
+#quotes-table .col-resize::after{
+ content:"";width:3px;height:16px;
+ border-left:2px solid var(--accent);border-right:2px solid var(--accent);
+}
+#quotes-table .col-resize:hover,#quotes-table .col-resize:focus-visible{
+ background:var(--panel);outline:2px solid var(--accent);outline-offset:1px;
+}
+#quotes-table th .sort-button{padding-right:17px}
 .column-settings{display:inline-block;position:relative;margin-bottom:10px}
 .column-settings summary{cursor:pointer;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--panel)}
 .column-settings[open] .column-menu{position:absolute;top:100%;left:0;z-index:12;padding:10px;min-width:220px;background:var(--panel);border:1px solid var(--border);border-radius:7px}
