@@ -1,3 +1,27 @@
+# ACTIVE COLUMN-CONTROLS REVIEW — 2026-10-23
+
+The existing draft PR #1 includes the working candidate on branch `ui/scrapergo-newsgo-theme-and-workflow`. Its implementation in `main.go` provides a Columns disclosure menu with per-column visibility, draggable and keyboard-accessible header separators, reset, and browser-persisted widths/visibility in `mauristocks_columns_v1`. Symbol cannot be hidden. Extended price remains suppressed in regular-session mode independently of user selection. Day and 52-week ranges both begin at 210px and divide spare table width equally. Name width uses measured visible content until manually resized. **Do not call this ready until the Go CI run on the latest source revision is green, and do not claim browser acceptance until the owner confirms it in Safari.** Earlier rollback notes are historical and superseded by this section.
+
+**Required GitHub Actions gate:** On every source/doc change, inspect PR #1 latest head SHA and the PR-triggered `Go CI` workflow for that exact commit; confirm job `test-build` has passed both `Go tests` and `Build`. If no run appears, wait for dispatch/trigger and investigate rather than declaring success. Correct failures on this development branch; do not merge, tag, or release without owner approval. GitHub Actions is the supported compilation environment if local repository clone is unavailable to the agent. Keep this file's current-state paragraph accurate and historical sections explicitly historical.
+
+**Complete Mac acceptance commands** (only after CI success; stop the running MauriStocks instance first and inspect any local modifications before changing branches):
+
+```sh
+cd ~/projects/mauristocks
+git status -sb
+git fetch origin
+git checkout ui/scrapergo-newsgo-theme-and-workflow
+git pull --ff-only origin ui/scrapergo-newsgo-theme-and-workflow
+git log -1 --oneline
+gofmt -d main.go
+go test -count=1 ./...
+go build -o mauristocks .
+./mauristocks -version
+./stocksgo.sh
+```
+
+The Mac's `stocksgo.sh` is the established launcher reported by the owner; the script is **not stored in this GitHub repository** and must be inspected locally to verify which binary it starts. The commands assume it launches `./mauristocks` built above. Never silently replace the launcher or its runtime setup. Check `http://127.0.0.1:8082` in Safari: new Columns menu; each visibility toggle, resize pointer drag/keyboard arrows, reset, browser reload persistence; narrow-window scroll; both range widths; regular versus extended columns; sorting, flags, quotes and watchlists. Report actual acceptance and latest SHA, not expectations.
+
 # CURRENT BLOCKER AND CI RECOVERY — 2026-10-23
 
 A prior agent committed a malformed `main.go` while adding resizable columns and a Columns visibility dropdown, without running a build. The owner reproduced syntax errors starting at main.go:1189. The unverified controls were withdrawn by restoring `main.go` to commit `6b334f0` on the draft branch, and a GitHub Actions PR test/build workflow was added. **Resizable columns and the visibility dropdown are NOT implemented in the restored source.** Earlier sections describing them as present are historical and superseded. Check that the latest PR workflow is green before recommending any Mac build or claiming repaired code. If workflow runs cannot be retrieved, say verification remains pending. The preceding sizing limitations also remain unverified. Do not merge the draft PR without owner acceptance.
