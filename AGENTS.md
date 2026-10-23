@@ -27,6 +27,10 @@ The Name column is now measured from the rendered watchlist names using canvas t
 
 Avoid layering unexamined CSS patches indefinitely: consolidate superseded declarations when refactoring is in scope, and validate the browser's computed geometry rather than inferring behavior from source alone.
 
+## Column controls candidate (2026-10-23)
+
+The table now offers a Columns dropdown with per-column visibility, a reset control, pointer-draggable header separators and keyboard Left/Right resizing. Browser preferences are stored in `mauristocks_columns_v1` localStorage. Symbol stays visible; the existing regular-session suppression of extended price takes precedence. Day and 52-week range columns start with the **same** 205px base width; free remaining table width is divided equally between visible range columns, with horizontal scroll when needed. Verify browser behavior including drag, keyboard resize, hidden-column sorting, manual refresh, reset, reload persistence, mobile overflow, Safari and both session states before approval. This is a candidate, not verified by CI or Mac acceptance.
+
 ## Status and acceptance as of 2026-10-23
 
 GitHub main was inspected, including `AGENTS.md`, `README.md`, and `main.go`: source reports appVersion 1.0.0 and buildVersion v39. The theme change is a development candidate, not an accepted release. GitHub connector edits alone cannot establish a passing Go build, browser layout validation, or local checkout status. Before merge, run Go checks and validate light/dark appearance, gain/loss text, flagged rows, sorting, refresh and watchlist persistence in Safari on the owner's Mac. Update this section after verified acceptance, removing superseded state rather than appending contradictory handoffs.
