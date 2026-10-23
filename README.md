@@ -1,5 +1,7 @@
 # Mauri's Stock Quotes (MauriStocks)
 
+**Version 1.0.0 · Build v40 release candidate (PR #1; not yet merged)**
+
 A small, self-hosted stock-watchlist dashboard written in Go. It emphasizes a clear, compact table of regular-session and available extended-hours prices without heavyweight charts or advertising.
 
 **Source:** https://github.com/richard-mauri/mauristocks  
@@ -19,6 +21,8 @@ You can refresh quotes manually or choose Never, 5 seconds, 30 seconds, 1 minute
 
 Click a ticker to open the selected research destination: Google Finance, Stock Analysis, a known company website or an investor-relations page when a verified destination is available. Company website discovery can optionally be enabled using Finnhub.
 
+A **Columns** menu above the quote table lets you show or hide individual columns, reset column settings, and resize columns using the permanently visible grips on each column heading. Width and visibility preferences are saved in this browser. The Symbol column stays visible, and extended-session pricing still disappears automatically during regular market sessions. The Symbol links destination selector is next to Columns.
+
 An **About / Data Notes** section expands for more explanation and is collapsed by default on phones and computers. The table may scroll horizontally on a narrow screen.
 
 ## Requirements and local use
@@ -26,12 +30,14 @@ An **About / Data Notes** section expands for more explanation and is collapsed 
 You need Go, a current browser and upstream network access. The program uses the Go standard library and does not require a database or third-party Go module. From the documented local repository folder:
 
 ```sh
-cd ~/mauristocks
+cd ~/projects/mauristocks
+go test -count=1 ./...
 go build -o mauristocks .
-./mauristocks
+./mauristocks -version
+./stocksgo.sh
 ```
 
-Then open http://localhost:8082/. Stop the process with Control-C. For command-line help, use `./mauristocks -h`; `-port`, `-host`, `-version` and `-debug` are available. By default the service binds to `127.0.0.1`; exposing it on a network interface should only be done with appropriate access controls.
+Then open http://localhost:8082/. Use your existing launcher stop procedure when applicable. The local `stocksgo.sh` script is maintained outside this repository and must be inspected before changing its behavior. For command-line help, use `./mauristocks -h`; `-port`, `-host`, `-version` and `-debug` are available. By default the service binds to `127.0.0.1`; exposing it on a network interface should only be done with appropriate access controls.
 
 To optionally look up company websites, configure `FINNHUB_API_KEY` as a **server environment variable**. Do not put the key in source code or browser storage. The service also uses curated website mappings when available.
 
