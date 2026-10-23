@@ -654,32 +654,32 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 
 
 
-/* Shared dashboard layout: NewsGo fills its content grid; ScraperGo keeps
-   page background continuous. Allocate *all* table width to visible columns.
-   Percentage col tracks override the legacy pixel-width HTML attributes. */
+/* Single source of table sizing. The legacy colgroup interfered with
+   Safari's collapsed extended-session column and left unused table space.
+   Fixed layout derives tracks from the visible header cells instead. */
 .tablewrap{width:100%;max-width:100%;overflow-x:auto}
-#quotes-table{width:100%;min-width:1180px;table-layout:fixed}
-#quotes-table col:nth-child(1){width:6%!important}
-#quotes-table col:nth-child(2){width:7%!important}
-#quotes-table col:nth-child(3){width:25%!important}
-#quotes-table col:nth-child(4){width:9%!important}
-#quotes-table col:nth-child(5){width:9%!important}
-#quotes-table col:nth-child(6){width:9%!important}
-#quotes-table col:nth-child(7){width:9%!important}
-#quotes-table col:nth-child(8){width:13%!important}
-#quotes-table col:nth-child(9){width:13%!important}
-/* In regular session the fifth column is removed: redistribute its space
-   among the eight displayed columns, retaining a 1070px scroll threshold. */
-#quotes-table.regular-session{width:100%;min-width:1070px}
-#quotes-table.regular-session col:nth-child(1){width:7%!important}
-#quotes-table.regular-session col:nth-child(2){width:8%!important}
-#quotes-table.regular-session col:nth-child(3){width:29%!important}
-#quotes-table.regular-session col:nth-child(4){width:10%!important}
-#quotes-table.regular-session col:nth-child(5){width:0!important}
-#quotes-table.regular-session col:nth-child(6){width:10%!important}
-#quotes-table.regular-session col:nth-child(7){width:10%!important}
-#quotes-table.regular-session col:nth-child(8){width:13%!important}
-#quotes-table.regular-session col:nth-child(9){width:13%!important}
+#quotes-table{width:100%;min-width:1320px;table-layout:fixed}
+#quotes-table.regular-session{width:100%;min-width:1190px}
+#quotes-table th:nth-child(1){width:7%}
+#quotes-table th:nth-child(2){width:8%}
+#quotes-table th:nth-child(3){width:27%}
+#quotes-table th:nth-child(4){width:9%}
+#quotes-table th:nth-child(5){width:10%}
+#quotes-table th:nth-child(6){width:10%}
+#quotes-table th:nth-child(7){width:10%}
+#quotes-table th:nth-child(8){width:9%}
+#quotes-table th:nth-child(9){width:10%}
+/* Eight visible columns, adding to 100% without the extended-price slot. */
+#quotes-table.regular-session th:nth-child(1){width:7%}
+#quotes-table.regular-session th:nth-child(2){width:8%}
+#quotes-table.regular-session th:nth-child(3){width:29%}
+#quotes-table.regular-session th:nth-child(4){width:10%}
+#quotes-table.regular-session th:nth-child(6){width:11%}
+#quotes-table.regular-session th:nth-child(7){width:11%}
+#quotes-table.regular-session th:nth-child(8){width:12%}
+#quotes-table.regular-session th:nth-child(9){width:12%}
+#quotes-table th,#quotes-table td{overflow:hidden}
+#quotes-table th{white-space:normal;overflow-wrap:normal}
 
 /* Shared semantic palette: ScraperGo / NewsGo. Preserves financial status colors. */
 :root{
@@ -727,7 +727,7 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .symbol-flag[aria-pressed="true"]{color:light-dark(#946900,#ffd27d)}
 .symbol-flag:hover,.symbol-flag:focus-visible{background:var(--soft);outline:1px solid var(--accent)}
 
-</style></head><body><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · Build v39</span></h1><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="tablewrap"><table id="quotes-table"><colgroup><col style="width:75px"><col style="width:80px"><col style="width:255px"><col style="width:100px"><col class="extended-column" style="width:110px"><col style="width:100px"><col style="width:100px"><col style="width:180px"><col style="width:180px"></colgroup><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
+</style></head><body><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · Build v39</span></h1><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
 <script>
 const defaults='MU,AMAT,LRCX,SPCX,AVGO,TSM,TSLA,NVDA,JOBY,PLTR,LMT,AMGN,SNA,FTEC,JEPQ,VOO,IAU,FSTA,IBIT,O';
 const input=document.getElementById('symbols'),button=document.getElementById('refresh'),intervalSelect=document.getElementById('refresh-interval'),rows=document.getElementById('rows'),message=document.getElementById('message'),fetchStatus=document.getElementById('fetch-status');
