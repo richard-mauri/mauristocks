@@ -1,3 +1,7 @@
+# CURRENT BLOCKER AND CI RECOVERY — 2026-10-23
+
+A prior agent committed a malformed `main.go` while adding resizable columns and a Columns visibility dropdown, without running a build. The owner reproduced syntax errors starting at main.go:1189. The unverified controls were withdrawn by restoring `main.go` to commit `6b334f0` on the draft branch, and a GitHub Actions PR test/build workflow was added. **Resizable columns and the visibility dropdown are NOT implemented in the restored source.** Earlier sections describing them as present are historical and superseded. Check that the latest PR workflow is green before recommending any Mac build or claiming repaired code. If workflow runs cannot be retrieved, say verification remains pending. The preceding sizing limitations also remain unverified. Do not merge the draft PR without owner acceptance.
+
 # CURRENT WORK — shared UI palette and development workflow (2026-10-23)
 
 This section is authoritative over historical handoff statements below. GitHub `main` is the repository's authoritative accepted baseline. Develop each scoped change on a short-lived branch created from the latest `main`, with a **draft pull request to main**. Do not commit development experiments straight to main. The owner alone authorizes merge, tag, release, deployment, or service restart. The current local checkout is `~/projects/mauristocks` as reported by the owner; inspect `git status -sb`, `git log -3 --oneline`, current branch, upstream and diff before modifying local files. Never overwrite uncommitted local work.
