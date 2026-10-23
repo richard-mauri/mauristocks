@@ -1,3 +1,26 @@
+# CURRENT WORK — shared UI palette and development workflow (2026-10-23)
+
+This section is authoritative over historical handoff statements below. GitHub `main` is the repository's authoritative accepted baseline. Develop each scoped change on a short-lived branch created from the latest `main`, with a **draft pull request to main**. Do not commit development experiments straight to main. The owner alone authorizes merge, tag, release, deployment, or service restart. The current local checkout is `~/projects/mauristocks` as reported by the owner; inspect `git status -sb`, `git log -3 --oneline`, current branch, upstream and diff before modifying local files. Never overwrite uncommitted local work.
+
+## Working sequence
+
+1. Read `AGENTS.md` and `README.md` fully, then examine the actual implementation, tests, call sites and affected scripts. Confirm the branch starts from current GitHub main; confirm local checkout state separately.
+2. Make one cohesive, reviewable change on a task branch. Keep quote APIs, pricing calculations, browser localStorage keys, flags, sorting, watchlists, refresh behavior, endpoints, launch configuration and secrets unchanged unless explicitly in scope.
+3. Run `gofmt` on modified Go sources and `go test -count=1 ./...` and `go build ./...` (or the repository's verified build command). Check changes with `git diff --check`, review actual staged inventory and exclude generated executables and user data. Report unavailable CI/test access as *unverified*.
+4. Open or update a **draft PR targeting main**, report exact commit and checked evidence. Do not confuse successful compilation with manual Mac/Safari acceptance.
+5. After successful tests, obtain owner Mac/Safari acceptance of visual behavior, stock data rendering and persistence. The owner must explicitly authorize merge. Do not force-push shared history, tag, release or restart automatically.
+6. Following an owner-approved merge, update local source with `git checkout main` and `git pull --ff-only origin main`, and use the project's confirmed build/launch workflow. Do not assume a GitHub-only change is already installed locally.
+
+## Current UI task and invariants
+
+Match the semantic light/dark design language of ScraperGo (`internal/ui/static/reader.css`) and NewsGo: warm near-white light background, blue-black dark background, white/slate panels, teal accents, muted secondary text, understated borders, and accessible input/button focus. Centralized CSS tokens should be the source of truth. **Keep green/red financial gains and losses semantically distinct from theme accents**, and preserve gold starred-row highlighting, sorted columns, compact table layout, range bars, session-dependent columns, mobile horizontal scrolling, keyboard access and readable contrast in both modes. No backend/API changes for a theme-only patch.
+
+## Status and acceptance as of 2026-10-23
+
+GitHub main was inspected, including `AGENTS.md`, `README.md`, and `main.go`: source reports appVersion 1.0.0 and buildVersion v39. The theme change is a development candidate, not an accepted release. GitHub connector edits alone cannot establish a passing Go build, browser layout validation, or local checkout status. Before merge, run Go checks and validate light/dark appearance, gain/loss text, flagged rows, sorting, refresh and watchlist persistence in Safari on the owner's Mac. Update this section after verified acceptance, removing superseded state rather than appending contradictory handoffs.
+
+---
+
 # MauriStocks — AI Development Process and Chat Handoff
 
 **This file is for coding agents and future development chats.** `README.md` is the end-user guide. Source basis: GitHub `richard-mauri/mauristocks` README and `main.go` consulted October 20, 2026; the user's current local files and deployment have **not** been inspected.
@@ -6,7 +29,7 @@
 
 - Repository: https://github.com/richard-mauri/mauristocks
 - Application: Mauri's Stock Quotes, a compact self-hosted Go dashboard.
-- Local directory documented in source README: `~/mauristocks` (confirm actual path before use); default `http://localhost:8082`.
+- Owner's stated local working directory: `~/projects/mauristocks` (inspect actual checkout before use); default `http://localhost:8082`.
 - Main executable source: `main.go`; `go.mod`; Go **standard library only**.
 - Data provider: **unofficial Yahoo Finance chart/screener** endpoints, subject to outages, throttling and provider terms. Optional server-side `FINNHUB_API_KEY` for company websites.
 - Browser persists user watchlists, flags, sort, link destination and refresh choices in `localStorage` (browser/origin-specific, not server-side).
@@ -47,7 +70,7 @@ If the project path or existing launch procedure differs, confirm it. `go run ma
 ## Non-negotiable agent conduct
 
 - Read this file and `README.md` in full before changing code, advising Git operations, or claiming completion.
-- The user's verified **local source tree** is authoritative whenever it differs from GitHub. Obtain current affected files and reconcile local changes; never overwrite them from older remote sources.
+- GitHub accepted `main` is the authoritative baseline; reconcile the user's **local source tree** and any uncommitted changes before editing and never discard them. Obtain current affected files and reconcile local changes; never overwrite them from older remote sources.
 - Trace **both definitions and actual call sites**, handlers, UI uses, tests, and configuration dependencies. A new function that is not called is **not** a finished fix.
 - Protect unrelated working behavior. Keep changes minimal and test existing regression areas.
 - Distinguish **drafted/generated**, **verified file exists**, **formatted**, **tested in full project**, **tested in isolated harness**, **installed**, **user-verified live**, **committed**, **pushed**, **tagged**, and **released**. Never imply one means another.
