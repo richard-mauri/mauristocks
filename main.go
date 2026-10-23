@@ -670,7 +670,10 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
  --gain:light-dark(#087b38,#72d89b);
  --loss:light-dark(#b42334,#ff9696);
 }
+/* Override the old :root light canvas as well as the centered body's paint. */
+:root{background:var(--bg);color:var(--ink)}
 html,body{background:var(--bg);color:var(--ink)}
+body{min-height:100vh}
 h1{color:var(--ink)}
 .muted,.small,#message,footer,#watchlist-status{color:var(--muted);opacity:1}
 table{background:var(--panel);border:1px solid var(--border);border-radius:8px}
