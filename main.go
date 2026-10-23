@@ -654,11 +654,13 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 
 
 
-/* Fill the available table container without sacrificing minimum column widths.
-   The colgroup keeps its established proportions; smaller viewports scroll. */
+/* Fixed colgroup pixel widths previously left unused space at the right.
+   Keep minimum table widths for compact screens, but distribute surplus
+   space to the company-name and final 52-week range columns. */
 .tablewrap{width:100%;max-width:100%;overflow-x:auto}
 #quotes-table{width:100%;min-width:1180px}
 #quotes-table.regular-session{width:100%;min-width:1070px}
+#quotes-table col:nth-child(3),#quotes-table col:last-child{width:auto!important}
 
 /* Shared semantic palette: ScraperGo / NewsGo. Preserves financial status colors. */
 :root{
