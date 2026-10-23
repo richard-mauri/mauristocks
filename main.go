@@ -1184,7 +1184,7 @@ func companyRedirectHandler(w http.ResponseWriter,r *http.Request){
 }
 
 const appVersion = "1.0.0"
-const buildVersion = "v39"
+const buildVersion = "PR #1"
 
 func main() {
 	defaultPort := os.Getenv("PORT")
