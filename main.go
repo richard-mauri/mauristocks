@@ -654,13 +654,32 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 
 
 
-/* Fixed colgroup pixel widths previously left unused space at the right.
-   Keep minimum table widths for compact screens, but distribute surplus
-   space to the company-name and final 52-week range columns. */
+/* Shared dashboard layout: NewsGo fills its content grid; ScraperGo keeps
+   page background continuous. Allocate *all* table width to visible columns.
+   Percentage col tracks override the legacy pixel-width HTML attributes. */
 .tablewrap{width:100%;max-width:100%;overflow-x:auto}
-#quotes-table{width:100%;min-width:1180px}
+#quotes-table{width:100%;min-width:1180px;table-layout:fixed}
+#quotes-table col:nth-child(1){width:6%!important}
+#quotes-table col:nth-child(2){width:7%!important}
+#quotes-table col:nth-child(3){width:25%!important}
+#quotes-table col:nth-child(4){width:9%!important}
+#quotes-table col:nth-child(5){width:9%!important}
+#quotes-table col:nth-child(6){width:9%!important}
+#quotes-table col:nth-child(7){width:9%!important}
+#quotes-table col:nth-child(8){width:13%!important}
+#quotes-table col:nth-child(9){width:13%!important}
+/* In regular session the fifth column is removed: redistribute its space
+   among the eight displayed columns, retaining a 1070px scroll threshold. */
 #quotes-table.regular-session{width:100%;min-width:1070px}
-#quotes-table col:nth-child(3),#quotes-table col:last-child{width:auto!important}
+#quotes-table.regular-session col:nth-child(1){width:7%!important}
+#quotes-table.regular-session col:nth-child(2){width:8%!important}
+#quotes-table.regular-session col:nth-child(3){width:29%!important}
+#quotes-table.regular-session col:nth-child(4){width:10%!important}
+#quotes-table.regular-session col:nth-child(5){width:0!important}
+#quotes-table.regular-session col:nth-child(6){width:10%!important}
+#quotes-table.regular-session col:nth-child(7){width:10%!important}
+#quotes-table.regular-session col:nth-child(8){width:13%!important}
+#quotes-table.regular-session col:nth-child(9){width:13%!important}
 
 /* Shared semantic palette: ScraperGo / NewsGo. Preserves financial status colors. */
 :root{
