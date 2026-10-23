@@ -929,7 +929,7 @@ let colPrefs={widths:{},hidden:[]};
 try{const p=JSON.parse(localStorage.getItem('mauristocks_columns_v1')||'{}');if(p&&typeof p==='object'){if(p.widths&&typeof p.widths==='object')colPrefs.widths=p.widths;if(Array.isArray(p.hidden))colPrefs.hidden=p.hidden.filter(x=>typeof x==='string')}}catch(e){}
 function saveColPrefs(){localStorage.setItem('mauristocks_columns_v1',JSON.stringify(colPrefs))}
 function isColShown(i){return !colPrefs.hidden.includes(colSpecs[i][0])&&!(i===4&&colTable.classList.contains('regular-session'))}
-function colWidth(i){const n=Number(colPrefs.widths[colSpecs[i][0]]);return Number.isFinite(n)&&n>=65&&n<=700?Math.round(n):colSpecs[i][2]}
+function colWidth(i){const n=Number(colPrefs.widths[colSpecs[i][0]]);if(Number.isFinite(n)&&n>=65&&n<=700)return Math.round(n);if(i===2){const m=parseFloat(colTable.style.getPropertyValue('--company-name-width'));if(Number.isFinite(m)&&m>0)return Math.max(210,Math.min(340,Math.round(m)))}return colSpecs[i][2]}
 function applyColumns(){
  let used=0;const shown=[];
  colSpecs.forEach((spec,i)=>{
@@ -993,6 +993,7 @@ function renderQuotes(){
   if(q.error)tr.title=q.error;
   rows.appendChild(tr);
  }
+ sizeCompanyNameColumn();
  applyColumns();
  for(const h of sortHeaders){
   const active=h.dataset.sort===sortKey;
