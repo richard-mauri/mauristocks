@@ -1,0 +1,22 @@
+name: Go CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Go tests
+        run: go test -count=1 ./...
+      - name: Build
+        run: go build -o /tmp/mauristocks .
