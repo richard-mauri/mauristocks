@@ -15,6 +15,16 @@ This section is authoritative over historical handoff statements below. GitHub `
 
 Match the semantic light/dark design language of ScraperGo (`internal/ui/static/reader.css`) and NewsGo: warm near-white light background, blue-black dark background, white/slate panels, teal accents, muted secondary text, understated borders, and accessible input/button focus. Centralized CSS tokens should be the source of truth. **Keep green/red financial gains and losses semantically distinct from theme accents**, and preserve gold starred-row highlighting, sorted columns, compact table layout, range bars, session-dependent columns, mobile horizontal scrolling, keyboard access and readable contrast in both modes. No backend/API changes for a theme-only patch.
 
+## Shared UI specification — source references and implementation rules
+
+Before UI work, inspect **current** `richard-mauri/scrapergo/internal/ui/static/reader.css` and `richard-mauri/newsgo/internal/dashboard/dashboard.go` (embedded stylesheet). Both currently use `color-scheme: light dark` with `light-dark()`, and shared palette tokens: background `#f5f5f0/#0e141a`, panel `#fff/#19232b`, primary text `#182631/#eef2f4`, muted `#60707b/#a5b3bb`, border `#dce2e1/#34434a`, accent `#126877/#69c6d3`, soft `#e6f3f3/#203c43` (light/dark respectively).
+
+Match their zero-margin, fully painted page background; bounded, padded containers; theme-driven surface, focus and hover colors; accessible keyboard controls; and responsive scrolling rather than page-level overflow. NewsGo's `main` content container and ScraperGo's `.shell` are references, not a reason to copy their article/card structure into a compact stock dashboard.
+
+For MauriStocks tables, remember the HTML `<colgroup>` supplies fixed inline pixel widths and the regular session suppresses the extended column. A table `width:100%` **alone does not guarantee that the visible columns fill the table**; inspect column constraints as well. In regular mode, displayed columns' allocated percentages must total 100%, excluding the hidden extended column. In extended mode, all nine column percentages must total 100%. Keep stable numeric alignment, range-marker labels, minimum table widths, and narrow-screen horizontal scrolling. Verify in Safari at normal and narrow widths, during both regular and extended market-session states, using deterministic data if necessary.
+
+Avoid layering unexamined CSS patches indefinitely: consolidate superseded declarations when refactoring is in scope, and validate the browser's computed geometry rather than inferring behavior from source alone.
+
 ## Status and acceptance as of 2026-10-23
 
 GitHub main was inspected, including `AGENTS.md`, `README.md`, and `main.go`: source reports appVersion 1.0.0 and buildVersion v39. The theme change is a development candidate, not an accepted release. GitHub connector edits alone cannot establish a passing Go build, browser layout validation, or local checkout status. Before merge, run Go checks and validate light/dark appearance, gain/loss text, flagged rows, sorting, refresh and watchlist persistence in Safari on the owner's Mac. Update this section after verified acceptance, removing superseded state rather than appending contradictory handoffs.
