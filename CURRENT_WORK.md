@@ -1,0 +1,19 @@
+# MauriStocks — current work
+
+**As of 2026-10-26.** Authoritative accepted baseline: GitHub `main`, before the present UI/docs PR. Active development branch: `ui/content-fit-columns-and-docs` ([draft PR #2](https://github.com/richard-mauri/mauristocks/pull/2)). No merge, tag, release or deployment authorized.
+
+## Goal and decisions
+
+Remove painful per-header drag/keyboard resizing. Visible table columns should fit their content with modest padding; longer company names can truncate at 340 px, and range cells retain a usable graphical minimum. Keep Columns show/hide, browser-persisted hidden column selections and the nonhideable Symbol column. Discard legacy saved widths without deleting user hidden selections; retain session-based extended-price suppression. Align GitHub Actions triggers/Go steps with ScraperGo and separate root documents by responsibility.
+
+## Follow-up styling
+
+Added a rounded quote-table shell with cyan left accent and cyan active-sort underline, plus a top-right Tanner portrait and caption matching ScraperGo. The image currently uses ScraperGo's public raw GitHub asset URL; it needs network access and is not a vendored image. No quote logic changed.
+
+## Local build number alignment
+
+ScraperGo-style `devbuild.sh` reserves monotonically increasing numbers privately under Git, starting from historical v40 when no counter exists. It injects one `appBuild` variable used for CLI output and the HTML heading; direct Go builds show `Build dev`. Semantic appVersion remains 1.0.0. Owner should build via `bash ./devbuild.sh` rather than plain `go build` for numbered local builds.
+
+## Acceptance / open work
+
+GitHub Actions CI needs verification at the newest PR head after edits. Owner-side Mac/Safari verification is pending. No evidence of local installation, browser acceptance or release. Cross-check dark/light styling, sort and regular/extended sessions. The embedded page remains monolithic; structural Go-package refactoring is out of scope. Update this snapshot when PR state, evidence or next actions change.

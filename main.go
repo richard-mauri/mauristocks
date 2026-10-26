@@ -587,7 +587,7 @@ func quotesHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(Response{FetchedAt: time.Now().UTC(), Quotes: result})
 }
 
-const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mauri's Stock Quotes</title>
+const pageTemplate = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mauri's Stock Quotes</title>
 <style>
 :root{color-scheme:light dark;font-family:system-ui,-apple-system,sans-serif}body{max-width:1200px;margin:2rem auto;padding:0 1rem}h1{margin-bottom:.25rem}.muted{opacity:.68;font-size:.88rem}.controls{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.4rem 0}input{flex:1;min-width:260px;padding:.7rem;border:1px solid #888;border-radius:6px;font:inherit}button{padding:.7rem 1.1rem;border:0;border-radius:6px;background:#2868bd;color:white;font:inherit;cursor:pointer}button:disabled{cursor:wait}#refresh{min-width:148px;white-space:nowrap}#refresh.fetching{color:#ffe08a}#refresh.fetching:disabled{opacity:1}table{width:1180px;min-width:1180px;table-layout:fixed;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{padding:.65rem .45rem;text-align:left;border-bottom:1px solid #8885}th{font-size:.85rem}th[data-sort]{cursor:pointer;user-select:none} .sort-button{border:0;background:transparent;color:inherit;padding:.25rem .1rem;font:inherit;font-weight:700;cursor:pointer;width:100%;text-align:left}th.num .sort-button{text-align:right}.sort-button:hover{text-decoration:underline}.sort-button:focus-visible{outline:2px solid #2868bd;outline-offset:2px}.sort-indicator{display:inline-block;margin-left:.2em;color:#8795a4;font-weight:500}.sort-indicator.active{color:#1763b1;font-size:1.15em;font-weight:900}th[data-sort][aria-sort="ascending"] .sort-indicator,th[data-sort][aria-sort="descending"] .sort-indicator{color:#1763b1}th[data-sort]:hover{text-decoration:underline}th[data-sort]:focus-visible{outline:2px solid #2868bd;outline-offset:-2px}th[data-sort][aria-sort="ascending"],th[data-sort][aria-sort="descending"]{text-decoration:underline}td.num,th.num{text-align:right}.up{color:#168243}.down{color:#d54848}.tablewrap{overflow-x:auto}.small{font-size:.8rem;opacity:.75}#message{margin:1rem 0}footer{margin:1.5rem 0;line-height:1.5}footer details summary{cursor:pointer;display:list-item;font-weight:600;width:max-content;max-width:100%;padding:.35rem 0}footer details .notes-content{padding:.45rem 0;max-width:1100px}tr.error td{opacity:.7}a{color:inherit} @media(max-width:650px){body{margin:1rem auto}th,td{font-size:.8rem;padding:.55rem .25rem}}
  .controls{align-items:center}.refresh-label{align-self:center;font-size:.88rem;white-space:nowrap}.controls select{font:inherit;padding:.65rem .5rem;border-radius:6px;border:1px solid #888;background:Canvas;color:CanvasText;cursor:pointer}
@@ -655,28 +655,17 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 
 
 
-/* Single authoritative column sizing model: JS-managed pixel tracks. */
+/* Content-sized columns: no user dragging or persisted widths. */
 .tablewrap{width:100%;overflow-x:auto}
-#quotes-table{table-layout:fixed;width:100%}
-#quotes-table [data-col-hidden="1"]{display:none!important}
+#quotes-table{table-layout:auto;width:max-content;min-width:0;max-width:none}
+#quotes-table th,#quotes-table td{padding:4px 8px;white-space:nowrap}
 #quotes-table th{position:relative}
-/* Persistent resize grip, anchored to each header cell (not a floating popup). */
-#quotes-table thead th{position:relative}
-#quotes-table .col-resize{
- position:absolute;top:50%;right:2px;bottom:auto;transform:translateY(-50%);
- width:13px;height:28px;z-index:4;cursor:col-resize;touch-action:none;
- display:flex;align-items:center;justify-content:center;
- border-radius:4px;background:var(--soft);border:1px solid var(--border);
- opacity:1;
-}
-#quotes-table .col-resize::after{
- content:"";width:3px;height:16px;
- border-left:2px solid var(--accent);border-right:2px solid var(--accent);
-}
-#quotes-table .col-resize:hover,#quotes-table .col-resize:focus-visible{
- background:var(--panel);outline:2px solid var(--accent);outline-offset:1px;
-}
-#quotes-table th .sort-button{padding-right:17px}
+#quotes-table [data-col-hidden="1"]{display:none!important}
+#quotes-table tbody td.company-name{max-width:340px;overflow:hidden;text-overflow:ellipsis}
+#quotes-table .range-cell{min-width:185px;padding:3px 8px!important}
+#quotes-table .range-labels{gap:12px}
+#quotes-table.regular-session{width:max-content;min-width:0}
+#quotes-table.regular-session .extended-column{display:none}
 .column-settings{display:inline-block;position:relative;margin-bottom:10px}
 .column-settings summary{cursor:pointer;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--panel)}
 .column-settings[open] .column-menu{position:absolute;top:100%;left:0;z-index:12;padding:10px;min-width:220px;background:var(--panel);border:1px solid var(--border);border-radius:7px}
@@ -729,7 +718,33 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .symbol-flag[aria-pressed="true"]{color:light-dark(#946900,#ffd27d)}
 .symbol-flag:hover,.symbol-flag:focus-visible{background:var(--soft);outline:1px solid var(--accent)}
 
-</style></head><body><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · Build v40</span></h1><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="table-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label></div><div class="tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
+/* Sailing-inspired table surround: cyan edge, rounded outer frame. */
+.tablewrap{
+ border:1px solid var(--border);
+ border-left:4px solid var(--accent);
+ border-radius:22px;
+ background:var(--panel);
+ padding:10px 12px;
+ box-sizing:border-box;
+ overflow-x:auto;
+}
+#quotes-table{border:0;border-radius:12px;overflow:hidden;border-collapse:separate;border-spacing:0}
+#quotes-table thead th:first-child{border-top-left-radius:12px}
+#quotes-table thead th:last-child{border-top-right-radius:12px}
+#quotes-table tbody tr:last-child td:first-child{border-bottom-left-radius:12px}
+#quotes-table tbody tr:last-child td:last-child{border-bottom-right-radius:12px}
+#quotes-table th{border-bottom:1px solid var(--border)}
+#quotes-table th[data-sort][aria-sort="ascending"],
+#quotes-table th[data-sort][aria-sort="descending"]{
+ box-shadow:inset 0 -3px 0 var(--accent);
+}
+#quotes-table tbody tr:hover{box-shadow:inset 3px 0 0 var(--accent)}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:8px}
+.page-heading h1{margin-top:0}
+.tanner-brand{display:flex;flex-direction:column;align-items:center;gap:5px;flex:none;color:var(--accent);font-size:.85rem;font-weight:700;text-align:center}
+.tanner-brand img{width:82px;height:82px;object-fit:cover;border-radius:14px;border:1px solid var(--border)}
+@media(max-width:650px){.page-header{gap:12px}.tanner-brand img{width:64px;height:64px}.tablewrap{padding:7px;border-radius:16px}}
+</style></head><body><header class="page-header"><div class="page-heading"><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · __BUILD_LABEL__</span></h1><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p></div><div class="tanner-brand"><img src="https://raw.githubusercontent.com/richard-mauri/scrapergo/main/tanner.jpg" alt="Tanner, a golden retriever puppy" width="82" height="82"><span>Tanner</span></div></header><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="table-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label></div><div class="tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
 <script>
 const defaults='MU,AMAT,LRCX,SPCX,AVGO,TSM,TSLA,NVDA,JOBY,PLTR,LMT,AMGN,SNA,FTEC,JEPQ,VOO,IAU,FSTA,IBIT,O';
 const input=document.getElementById('symbols'),button=document.getElementById('refresh'),intervalSelect=document.getElementById('refresh-interval'),rows=document.getElementById('rows'),message=document.getElementById('message'),fetchStatus=document.getElementById('fetch-status');
@@ -916,70 +931,35 @@ function symbolCell(tr,q){
  else {const span=document.createElement('span');span.className='symbol-unavailable';span.textContent=q.symbol;span.title='No verified link for this stock and research destination';td.appendChild(span)}
  tr.appendChild(td);
 }
-// Compute the company column from the actual visible names. Tune the two
-// bounds without altering the other table columns; long names ellipsize.
-const COMPANY_NAME_MIN_PX=210;
-const COMPANY_NAME_MAX_PX=340;
-function sizeCompanyNameColumn(){
- const table=document.getElementById('quotes-table');
- const cells=[...rows.querySelectorAll('td.company-name')];
- const probe=cells[0];
- if(!probe){table.style.setProperty('--company-name-width',COMPANY_NAME_MIN_PX+'px');return}
- const measure=document.createElement('canvas').getContext('2d');
- measure.font=getComputedStyle(probe).font;
- let widest=0;
- for(const td of cells)widest=Math.max(widest,measure.measureText(td.textContent||'').width);
- const pad=parseFloat(getComputedStyle(probe).paddingLeft)||0;
- const rightPad=parseFloat(getComputedStyle(probe).paddingRight)||0;
- const pixels=Math.ceil(Math.min(COMPANY_NAME_MAX_PX,Math.max(COMPANY_NAME_MIN_PX,widest+pad+rightPad+12)));
- table.style.setProperty('--company-name-width',pixels+'px');
-}
-
-const colSpecs=[['symbol','Symbol',105],['exchange','Exchange',105],['name','Name',285],['display_price','Price',115],['extended_price','Extended price',130],['change','Change $',115],['change_percent','Change %',120],['day_position','Day Range',210],['week_52_position','52-Week Range',210]];
+// Column preferences store visibility only. Obsolete saved widths are ignored.
+const colSpecs=[['symbol','Symbol'],['exchange','Exchange'],['name','Name'],['display_price','Price'],['extended_price','Extended price'],['change','Change $'],['change_percent','Change %'],['day_position','Day Range'],['week_52_position','52-Week Range']];
 const colTable=document.getElementById('quotes-table');
 const colHeads=Array.from(colTable.querySelectorAll('thead th'));
-const colGroup=document.createElement('colgroup');
-const colTracks=colSpecs.map(()=>{const c=document.createElement('col');colGroup.appendChild(c);return c});
-colTable.insertBefore(colGroup,colTable.tHead);
-let colPrefs={widths:{},hidden:[]};
-try{const p=JSON.parse(localStorage.getItem('mauristocks_columns_v1')||'{}');if(p&&typeof p==='object'){if(p.widths&&typeof p.widths==='object')colPrefs.widths=p.widths;if(Array.isArray(p.hidden))colPrefs.hidden=p.hidden.filter(x=>typeof x==='string')}}catch(e){}
-function saveColPrefs(){localStorage.setItem('mauristocks_columns_v1',JSON.stringify(colPrefs))}
+let colPrefs={hidden:[]};
+try{
+ const p=JSON.parse(localStorage.getItem('mauristocks_columns_v1')||'{}');
+ if(p&&Array.isArray(p.hidden))colPrefs.hidden=p.hidden.filter(x=>typeof x==='string'&&x!=='symbol');
+}catch(e){}
+function saveColPrefs(){
+ try{localStorage.setItem('mauristocks_columns_v1',JSON.stringify(colPrefs))}catch(e){}
+}
 function isColShown(i){return !colPrefs.hidden.includes(colSpecs[i][0])&&!(i===4&&colTable.classList.contains('regular-session'))}
-function colWidth(i){const n=Number(colPrefs.widths[colSpecs[i][0]]);if(Number.isFinite(n)&&n>=65&&n<=700)return Math.round(n);if(i===2){const m=parseFloat(colTable.style.getPropertyValue('--company-name-width'));if(Number.isFinite(m)&&m>0)return Math.max(210,Math.min(340,Math.round(m)))}return colSpecs[i][2]}
 function applyColumns(){
- let used=0;const shown=[];
  colSpecs.forEach((spec,i)=>{
-  const vis=isColShown(i),w=colWidth(i);
-  colTracks[i].style.width=vis?w+'px':'0px';colTracks[i].style.display=vis?'':'none';
-  colHeads[i].dataset.colHidden=vis?'0':'1';
-  for(const td of rows.querySelectorAll('tr > :nth-child('+(i+1)+')'))td.dataset.colHidden=vis?'0':'1';
-  if(vis){used+=w;shown.push(i)}
+  const visible=isColShown(i);
+  colHeads[i].dataset.colHidden=visible?'0':'1';
+  for(const td of rows.querySelectorAll('tr > :nth-child('+(i+1)+')'))td.dataset.colHidden=visible?'0':'1';
  });
- const available=colTable.parentElement.clientWidth;
- if(available>used){
-  const range=[7,8].filter(i=>shown.includes(i));const receivers=range.length?range:shown;
-  if(receivers.length){const extra=(available-used)/receivers.length;for(const i of receivers)colTracks[i].style.width=(colWidth(i)+extra)+'px'}
- }
- colTable.style.width=Math.max(used,available)+'px';
 }
 const colMenu=document.getElementById('column-menu');const colChecks=[];
 colSpecs.forEach((spec,i)=>{
  const label=document.createElement('label'),cb=document.createElement('input');cb.type='checkbox';cb.checked=!colPrefs.hidden.includes(spec[0]);cb.disabled=i===0;colChecks.push(cb);
  cb.addEventListener('change',()=>{colPrefs.hidden=colSpecs.filter((x,j)=>j>0&&!colChecks[j].checked).map(x=>x[0]);saveColPrefs();applyColumns()});
  label.append(cb,document.createTextNode(spec[1]));colMenu.appendChild(label);
- const handle=document.createElement('span');handle.className='col-resize';handle.tabIndex=0;handle.setAttribute('role','separator');handle.setAttribute('aria-label','Resize '+spec[1]);handle.addEventListener('click',e=>e.stopPropagation());
- handle.addEventListener('pointerdown',e=>{
-  if(!isColShown(i))return;e.preventDefault();e.stopPropagation();const start=e.clientX,base=colHeads[i].getBoundingClientRect().width;handle.setPointerCapture(e.pointerId);
-  const move=p=>{colPrefs.widths[spec[0]]=Math.max(65,Math.min(700,Math.round(base+p.clientX-start)));applyColumns()};
-  const finish=()=>{handle.removeEventListener('pointermove',move);saveColPrefs()};
-  handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',finish,{once:true});handle.addEventListener('pointercancel',finish,{once:true});
- });
- handle.addEventListener('keydown',e=>{if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;e.preventDefault();e.stopPropagation();const delta=e.key==='ArrowRight'?10:-10;colPrefs.widths[spec[0]]=Math.max(65,Math.min(700,Math.round(colHeads[i].getBoundingClientRect().width+delta)));saveColPrefs();applyColumns()});
- colHeads[i].appendChild(handle);
+
 });
 const resetCols=document.createElement('button');resetCols.type='button';resetCols.textContent='Reset columns';
-resetCols.addEventListener('click',()=>{colPrefs={widths:{},hidden:[]};colChecks.forEach(c=>c.checked=true);saveColPrefs();applyColumns()});colMenu.appendChild(resetCols);
-window.addEventListener('resize',applyColumns);
+resetCols.addEventListener('click',()=>{colPrefs={hidden:[]};colChecks.forEach(c=>c.checked=true);saveColPrefs();applyColumns()});colMenu.appendChild(resetCols);
 function renderQuotes(){
  rows.replaceChildren();
  for(const q of [...quotes].sort(compareQuotes)){
@@ -1009,7 +989,6 @@ function renderQuotes(){
   if(q.error)tr.title=q.error;
   rows.appendChild(tr);
  }
- sizeCompanyNameColumn();
  applyColumns();
  for(const h of sortHeaders){
   const active=h.dataset.sort===sortKey;
@@ -1098,6 +1077,7 @@ setRefreshInterval();
 refreshQuotes();
 </script></body></html>`
 
+var page = strings.ReplaceAll(pageTemplate, "__BUILD_LABEL__", appBuild)
 
 // Corporate website lookup is deliberately separate from the quote refresh path.
 // Finnhub's API key never leaves the server. Results (including misses) are cached.
@@ -1184,7 +1164,8 @@ func companyRedirectHandler(w http.ResponseWriter,r *http.Request){
 }
 
 const appVersion = "1.0.0"
-const buildVersion = "v40"
+// appBuild is overridden by devbuild.sh using -ldflags -X; no release build is assigned by source.
+var appBuild = "Build dev"
 
 func main() {
 	defaultPort := os.Getenv("PORT")
@@ -1200,12 +1181,12 @@ func main() {
 	version := flag.Bool("version", false, "Print application version and exit")
 	debug := flag.Bool("debug", false, "Log HTTP request method, path, and duration")
 	flag.Usage = func() {
-		fmt.Fprintf(flag.CommandLine.Output(), "Mauri's Stock Quotes %s (Build %s)\n\nUsage: %s [options]\n\nOptions:\n", appVersion, buildVersion, os.Args[0])
+		fmt.Fprintf(flag.CommandLine.Output(), "Mauri's Stock Quotes %s (%s)\n\nUsage: %s [options]\n\nOptions:\n", appVersion, appBuild, os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
 	if *version {
-		fmt.Printf("Mauri's Stock Quotes %s (Build %s)\n", appVersion, buildVersion)
+		fmt.Printf("Mauri's Stock Quotes %s (%s)\n", appVersion, appBuild)
 		return
 	}
 	if _, err := net.LookupPort("tcp", *port); err != nil {
@@ -1237,6 +1218,6 @@ func main() {
 			log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(started))
 		})
 	}
-	log.Printf("Mauri's Stock Quotes %s (Build %s) listening on http://%s", appVersion, buildVersion, addr)
+	log.Printf("Mauri's Stock Quotes %s (%s) listening on http://%s", appVersion, appBuild, addr)
 	log.Fatal(http.ListenAndServe(addr, handler))
 }

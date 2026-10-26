@@ -1,22 +1,27 @@
 name: Go CI
-
 on:
+  push:
+    branches: [dev]
   pull_request:
     branches: [main]
-  push:
-    branches: [main]
   workflow_dispatch:
-
+permissions:
+  contents: read
 jobs:
-  test-build:
+  test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
-          cache: false
-      - name: Go tests
+          cache: true
+      - name: Report formatting debt (non-blocking)
+        run: git ls-files '*.go' | xargs gofmt -l
+      - name: Run tests
         run: go test -count=1 ./...
-      - name: Build
-        run: go build -o /tmp/mauristocks .
+      - name: Build with injected identifier
+        run: |
+          go build -ldflags="-X 'main.appBuild=Build CI'" -o /tmp/mauristocks .
+          /tmp/mauristocks -version | grep -F 'Build CI'
