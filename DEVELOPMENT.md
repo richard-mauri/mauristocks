@@ -18,12 +18,11 @@ git status -sb
 git fetch origin
 git checkout ui/content-fit-columns-and-docs
 git pull --ff-only origin ui/content-fit-columns-and-docs
-go test -count=1 ./...
-go build -o mauristocks .
+bash ./devbuild.sh
 ./mauristocks -version
 ./stocksgo.sh
 ```
 
-`stocksgo.sh` is a machine-local launcher **not** included in GitHub; inspect its behavior and stop the previous instance using the owner's usual procedure. Do not overwrite local modifications or assume the launcher uses the newly built binary. In Safari at http://127.0.0.1:8082 verify compact automatic content widths, long names, range labels, hidden/shown columns, table overflow, regular/extended session transitions, sorting, stars, watchlists, refresh and light/dark presentation. GitHub's Linux CI cannot establish Mac/Safari acceptance. Report pass/fail/not-run accurately.
+`devbuild.sh` runs tests, increments a Git-private local build counter and creates the native binary with one identifier shared by the CLI and dashboard. It starts at 000041 for a fresh clone after historical v40, but independently existing checkout counters are retained. CI checks the injected build label without modifying this private counter. `stocksgo.sh` is a machine-local launcher **not** included in GitHub; inspect its behavior and stop the previous instance using the owner's usual procedure. Do not overwrite local modifications or assume the launcher uses the newly built binary. In Safari at http://127.0.0.1:8082 verify compact automatic content widths, long names, range labels, hidden/shown columns, table overflow, regular/extended session transitions, sorting, stars, watchlists, refresh and light/dark presentation. GitHub's Linux CI cannot establish Mac/Safari acceptance. Report pass/fail/not-run accurately.
 
 Do not force-push shared work or expose tokens, and do not silently modify any other local service.

@@ -5,10 +5,8 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
-
 permissions:
   contents: read
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -20,9 +18,10 @@ jobs:
           go-version-file: go.mod
           cache: true
       - name: Report formatting debt (non-blocking)
-        run: |
-          git ls-files '*.go' | xargs gofmt -l
+        run: git ls-files '*.go' | xargs gofmt -l
       - name: Run tests
         run: go test -count=1 ./...
-      - name: Build
-        run: go build ./...
+      - name: Build with injected identifier
+        run: |
+          go build -ldflags="-X 'main.appBuild=Build CI'" -o /tmp/mauristocks .
+          /tmp/mauristocks -version | grep -F 'Build CI'

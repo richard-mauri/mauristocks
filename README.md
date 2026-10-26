@@ -1,6 +1,6 @@
 # Mauri's Stock Quotes (MauriStocks)
 
-**Version 1.0.0 · Build v40 (reported by executable; see GitHub for release status)**
+**Version 1.0.0** (development build ID is generated locally, not a release number).
 
 A small, self-hosted stock-watchlist dashboard written in Go. It emphasizes a clear, compact table of regular-session and available extended-hours prices without heavyweight charts or advertising.
 
@@ -31,8 +31,7 @@ You need Go, a current browser and upstream network access. The program uses the
 
 ```sh
 cd ~/projects/mauristocks
-go test -count=1 ./...
-go build -o mauristocks .
+bash ./devbuild.sh
 ./mauristocks -version
 ./stocksgo.sh
 ```
@@ -61,3 +60,7 @@ Quotes are retrieved through Yahoo Finance's **unofficial, undocumented** chart 
 The displayed retrieval time indicates when the service fetched information, not when the exchange last traded. Quote timestamps and retrieved times are displayed in Pacific time. Range indicators summarize provider data and may not include extended-session extremes.
 
 This tool is for personal informational use, not trading execution or investment advice. For engineering changes see [DEVELOPMENT.md](DEVELOPMENT.md); for active handoff status see [CURRENT_WORK.md](CURRENT_WORK.md).
+
+## Build identifiers
+
+Run `bash ./devbuild.sh` for local builds. Following ScraperGo, it tests first, reserves the next private sequential number in Git's directory (`git rev-parse --git-path mauristocks-build-counter`), then embeds a zero-padded `Build NNNNNN` label in the executable and page. An absent counter starts after historical v40, at Build 000041. Failed compilation after reservation does not reuse a number. This counter belongs to the local clone and is not a global or release version. Direct `go build` shows `Build dev`; semantic version stays 1.0.0. Do not commit the counter or manually edit labels in HTML.
