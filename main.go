@@ -655,28 +655,17 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 
 
 
-/* Single authoritative column sizing model: JS-managed pixel tracks. */
+/* Content-sized columns: no user dragging or persisted widths. */
 .tablewrap{width:100%;overflow-x:auto}
-#quotes-table{table-layout:fixed;width:100%}
-#quotes-table [data-col-hidden="1"]{display:none!important}
+#quotes-table{table-layout:auto;width:max-content;min-width:0;max-width:none}
+#quotes-table th,#quotes-table td{padding:4px 8px;white-space:nowrap}
 #quotes-table th{position:relative}
-/* Persistent resize grip, anchored to each header cell (not a floating popup). */
-#quotes-table thead th{position:relative}
-#quotes-table .col-resize{
- position:absolute;top:50%;right:2px;bottom:auto;transform:translateY(-50%);
- width:13px;height:28px;z-index:4;cursor:col-resize;touch-action:none;
- display:flex;align-items:center;justify-content:center;
- border-radius:4px;background:var(--soft);border:1px solid var(--border);
- opacity:1;
-}
-#quotes-table .col-resize::after{
- content:"";width:3px;height:16px;
- border-left:2px solid var(--accent);border-right:2px solid var(--accent);
-}
-#quotes-table .col-resize:hover,#quotes-table .col-resize:focus-visible{
- background:var(--panel);outline:2px solid var(--accent);outline-offset:1px;
-}
-#quotes-table th .sort-button{padding-right:17px}
+#quotes-table [data-col-hidden="1"]{display:none!important}
+#quotes-table tbody td.company-name{max-width:340px;overflow:hidden;text-overflow:ellipsis}
+#quotes-table .range-cell{min-width:185px;padding:3px 8px!important}
+#quotes-table .range-labels{gap:12px}
+#quotes-table.regular-session{width:max-content;min-width:0}
+#quotes-table.regular-session .extended-column{display:none}
 .column-settings{display:inline-block;position:relative;margin-bottom:10px}
 .column-settings summary{cursor:pointer;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--panel)}
 .column-settings[open] .column-menu{position:absolute;top:100%;left:0;z-index:12;padding:10px;min-width:220px;background:var(--panel);border:1px solid var(--border);border-radius:7px}
@@ -916,70 +905,35 @@ function symbolCell(tr,q){
  else {const span=document.createElement('span');span.className='symbol-unavailable';span.textContent=q.symbol;span.title='No verified link for this stock and research destination';td.appendChild(span)}
  tr.appendChild(td);
 }
-// Compute the company column from the actual visible names. Tune the two
-// bounds without altering the other table columns; long names ellipsize.
-const COMPANY_NAME_MIN_PX=210;
-const COMPANY_NAME_MAX_PX=340;
-function sizeCompanyNameColumn(){
- const table=document.getElementById('quotes-table');
- const cells=[...rows.querySelectorAll('td.company-name')];
- const probe=cells[0];
- if(!probe){table.style.setProperty('--company-name-width',COMPANY_NAME_MIN_PX+'px');return}
- const measure=document.createElement('canvas').getContext('2d');
- measure.font=getComputedStyle(probe).font;
- let widest=0;
- for(const td of cells)widest=Math.max(widest,measure.measureText(td.textContent||'').width);
- const pad=parseFloat(getComputedStyle(probe).paddingLeft)||0;
- const rightPad=parseFloat(getComputedStyle(probe).paddingRight)||0;
- const pixels=Math.ceil(Math.min(COMPANY_NAME_MAX_PX,Math.max(COMPANY_NAME_MIN_PX,widest+pad+rightPad+12)));
- table.style.setProperty('--company-name-width',pixels+'px');
-}
-
-const colSpecs=[['symbol','Symbol',105],['exchange','Exchange',105],['name','Name',285],['display_price','Price',115],['extended_price','Extended price',130],['change','Change $',115],['change_percent','Change %',120],['day_position','Day Range',210],['week_52_position','52-Week Range',210]];
+// Column preferences store visibility only. Obsolete saved widths are ignored.
+const colSpecs=[['symbol','Symbol'],['exchange','Exchange'],['name','Name'],['display_price','Price'],['extended_price','Extended price'],['change','Change $'],['change_percent','Change %'],['day_position','Day Range'],['week_52_position','52-Week Range']];
 const colTable=document.getElementById('quotes-table');
 const colHeads=Array.from(colTable.querySelectorAll('thead th'));
-const colGroup=document.createElement('colgroup');
-const colTracks=colSpecs.map(()=>{const c=document.createElement('col');colGroup.appendChild(c);return c});
-colTable.insertBefore(colGroup,colTable.tHead);
-let colPrefs={widths:{},hidden:[]};
-try{const p=JSON.parse(localStorage.getItem('mauristocks_columns_v1')||'{}');if(p&&typeof p==='object'){if(p.widths&&typeof p.widths==='object')colPrefs.widths=p.widths;if(Array.isArray(p.hidden))colPrefs.hidden=p.hidden.filter(x=>typeof x==='string')}}catch(e){}
-function saveColPrefs(){localStorage.setItem('mauristocks_columns_v1',JSON.stringify(colPrefs))}
+let colPrefs={hidden:[]};
+try{
+ const p=JSON.parse(localStorage.getItem('mauristocks_columns_v1')||'{}');
+ if(p&&Array.isArray(p.hidden))colPrefs.hidden=p.hidden.filter(x=>typeof x==='string'&&x!=='symbol');
+}catch(e){}
+function saveColPrefs(){
+ try{localStorage.setItem('mauristocks_columns_v1',JSON.stringify(colPrefs))}catch(e){}
+}
 function isColShown(i){return !colPrefs.hidden.includes(colSpecs[i][0])&&!(i===4&&colTable.classList.contains('regular-session'))}
-function colWidth(i){const n=Number(colPrefs.widths[colSpecs[i][0]]);if(Number.isFinite(n)&&n>=65&&n<=700)return Math.round(n);if(i===2){const m=parseFloat(colTable.style.getPropertyValue('--company-name-width'));if(Number.isFinite(m)&&m>0)return Math.max(210,Math.min(340,Math.round(m)))}return colSpecs[i][2]}
 function applyColumns(){
- let used=0;const shown=[];
  colSpecs.forEach((spec,i)=>{
-  const vis=isColShown(i),w=colWidth(i);
-  colTracks[i].style.width=vis?w+'px':'0px';colTracks[i].style.display=vis?'':'none';
-  colHeads[i].dataset.colHidden=vis?'0':'1';
-  for(const td of rows.querySelectorAll('tr > :nth-child('+(i+1)+')'))td.dataset.colHidden=vis?'0':'1';
-  if(vis){used+=w;shown.push(i)}
+  const visible=isColShown(i);
+  colHeads[i].dataset.colHidden=visible?'0':'1';
+  for(const td of rows.querySelectorAll('tr > :nth-child('+(i+1)+')'))td.dataset.colHidden=visible?'0':'1';
  });
- const available=colTable.parentElement.clientWidth;
- if(available>used){
-  const range=[7,8].filter(i=>shown.includes(i));const receivers=range.length?range:shown;
-  if(receivers.length){const extra=(available-used)/receivers.length;for(const i of receivers)colTracks[i].style.width=(colWidth(i)+extra)+'px'}
- }
- colTable.style.width=Math.max(used,available)+'px';
 }
 const colMenu=document.getElementById('column-menu');const colChecks=[];
 colSpecs.forEach((spec,i)=>{
  const label=document.createElement('label'),cb=document.createElement('input');cb.type='checkbox';cb.checked=!colPrefs.hidden.includes(spec[0]);cb.disabled=i===0;colChecks.push(cb);
  cb.addEventListener('change',()=>{colPrefs.hidden=colSpecs.filter((x,j)=>j>0&&!colChecks[j].checked).map(x=>x[0]);saveColPrefs();applyColumns()});
  label.append(cb,document.createTextNode(spec[1]));colMenu.appendChild(label);
- const handle=document.createElement('span');handle.className='col-resize';handle.tabIndex=0;handle.setAttribute('role','separator');handle.setAttribute('aria-label','Resize '+spec[1]);handle.addEventListener('click',e=>e.stopPropagation());
- handle.addEventListener('pointerdown',e=>{
-  if(!isColShown(i))return;e.preventDefault();e.stopPropagation();const start=e.clientX,base=colHeads[i].getBoundingClientRect().width;handle.setPointerCapture(e.pointerId);
-  const move=p=>{colPrefs.widths[spec[0]]=Math.max(65,Math.min(700,Math.round(base+p.clientX-start)));applyColumns()};
-  const finish=()=>{handle.removeEventListener('pointermove',move);saveColPrefs()};
-  handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',finish,{once:true});handle.addEventListener('pointercancel',finish,{once:true});
- });
- handle.addEventListener('keydown',e=>{if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;e.preventDefault();e.stopPropagation();const delta=e.key==='ArrowRight'?10:-10;colPrefs.widths[spec[0]]=Math.max(65,Math.min(700,Math.round(colHeads[i].getBoundingClientRect().width+delta)));saveColPrefs();applyColumns()});
- colHeads[i].appendChild(handle);
+
 });
 const resetCols=document.createElement('button');resetCols.type='button';resetCols.textContent='Reset columns';
-resetCols.addEventListener('click',()=>{colPrefs={widths:{},hidden:[]};colChecks.forEach(c=>c.checked=true);saveColPrefs();applyColumns()});colMenu.appendChild(resetCols);
-window.addEventListener('resize',applyColumns);
+resetCols.addEventListener('click',()=>{colPrefs={hidden:[]};colChecks.forEach(c=>c.checked=true);saveColPrefs();applyColumns()});colMenu.appendChild(resetCols);
 function renderQuotes(){
  rows.replaceChildren();
  for(const q of [...quotes].sort(compareQuotes)){
@@ -1009,7 +963,6 @@ function renderQuotes(){
   if(q.error)tr.title=q.error;
   rows.appendChild(tr);
  }
- sizeCompanyNameColumn();
  applyColumns();
  for(const h of sortHeaders){
   const active=h.dataset.sort===sortKey;

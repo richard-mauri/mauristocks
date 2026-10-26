@@ -1,13 +1,13 @@
 # Mauri's Stock Quotes (MauriStocks)
 
-**Version 1.0.0 · Build v40 release candidate (PR #1; not yet merged)**
+**Version 1.0.0 · Build v40 (reported by executable; see GitHub for release status)**
 
 A small, self-hosted stock-watchlist dashboard written in Go. It emphasizes a clear, compact table of regular-session and available extended-hours prices without heavyweight charts or advertising.
 
 **Source:** https://github.com/richard-mauri/mauristocks  
 **Local URL (default):** http://localhost:8082/
 
-> **Developers and future AI agents:** Read [AGENTS.md](AGENTS.md) for the authoritative development workflow, testing rules, Git pre-commit audit and current chat handoff. This README describes the application and how to use it.
+> **Developers:** See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), [DEVELOPMENT.md](DEVELOPMENT.md) and [CURRENT_WORK.md](CURRENT_WORK.md). The README covers product features and usage.
 
 ## Features
 
@@ -21,7 +21,7 @@ You can refresh quotes manually or choose Never, 5 seconds, 30 seconds, 1 minute
 
 Click a ticker to open the selected research destination: Google Finance, Stock Analysis, a known company website or an investor-relations page when a verified destination is available. Company website discovery can optionally be enabled using Finnhub.
 
-A **Columns** menu above the quote table lets you show or hide individual columns, reset column settings, and resize columns using the permanently visible grips on each column heading. Width and visibility preferences are saved in this browser. The Symbol column stays visible, and extended-session pricing still disappears automatically during regular market sessions. The Symbol links destination selector is next to Columns.
+A **Columns** menu above the quote table lets you show or hide individual columns and reset their visibility. Visible columns automatically fit their content with modest padding; manual resizing is not necessary. Column visibility preferences are saved in this browser (previously saved manual widths are ignored). The Symbol column stays visible, and extended-session pricing still disappears automatically during regular market sessions. The Symbol links destination selector is next to Columns.
 
 An **About / Data Notes** section expands for more explanation and is collapsed by default on phones and computers. The table may scroll horizontally on a narrow screen.
 
@@ -60,4 +60,4 @@ Quotes are retrieved through Yahoo Finance's **unofficial, undocumented** chart 
 
 The displayed retrieval time indicates when the service fetched information, not when the exchange last traded. Quote timestamps and retrieved times are displayed in Pacific time. Range indicators summarize provider data and may not include extended-session extremes.
 
-This tool is for personal informational use, not trading execution or investment advice. For engineering changes, deployments, version history or cross-chat continuation, see [AGENTS.md](AGENTS.md).
+This tool is for personal informational use, not trading execution or investment advice. For engineering changes see [DEVELOPMENT.md](DEVELOPMENT.md); for active handoff status see [CURRENT_WORK.md](CURRENT_WORK.md).
