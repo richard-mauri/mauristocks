@@ -1177,7 +1177,7 @@ function queueSuiteSave(){
 async function flushSuiteSave(){
  if(!suiteSignedIn || suiteSavePending || !suiteSaveQueued)return;
  suiteSaveQueued=false;
- queueSuiteSave();
+ await saveWatchlistToAccount();
  if(suiteSaveQueued)queueSuiteSave();
 }
 async function saveWatchlistToAccount(){
