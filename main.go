@@ -1102,19 +1102,25 @@ async function suiteRecord(){
  return response.json();
 }
 async function refreshSuiteSession(){
+ syncSave.disabled=true;syncLoad.disabled=true;
+ if(location.protocol!=='https:' || location.hostname!=='stocks.themauris.org'){
+  syncStatus.textContent='Account storage is available on https://stocks.themauris.org only.';
+  return;
+ }
  try{
-  // The secure suite cookie is shared across *.themauris.org, not localhost.
-  if(location.protocol!=='https:' || location.hostname!=='stocks.themauris.org'){
-   syncStatus.textContent='Account storage is available on https://stocks.themauris.org only.';
+  // The cross-origin storage endpoint allows credentialed GET from trusted suite hosts.
+  // A 404 means an authenticated user with no saved record; 401 means signed out.
+  const response=await suiteRequest('/api/storage/mauristocks');
+  if(response.status===401){
+   syncStatus.textContent='Browser-only settings. Sign in at '+suiteBase+' to save or load.';
    return;
   }
-  const response=await suiteRequest('/api/session');
-  if(!response.ok){syncStatus.textContent='Browser-only settings. Sign in at '+suiteBase+' to save or load.';syncSave.disabled=true;syncLoad.disabled=true;return}
-  const session=await response.json();
-  if(!session || !session.authenticated){syncStatus.textContent='Browser-only settings. Sign in at '+suiteBase+' to save or load.';syncSave.disabled=true;syncLoad.disabled=true;return}
+  if(response.status!==200 && response.status!==404)throw Error('Storage HTTP '+response.status);
   syncSave.disabled=false;syncLoad.disabled=false;
-  syncStatus.textContent='Account connected ('+(session.username||session.user||'signed in')+'). Browser data stays local until Save or Load.';
- }catch(e){syncStatus.textContent='Browser-only settings. Account connection unavailable.';syncSave.disabled=true;syncLoad.disabled=true}
+  syncStatus.textContent=response.status===404?'Signed in; no account settings saved yet. Browser-only until Save.':'Account storage available. Browser settings remain unchanged until Save or Load.';
+ }catch(e){
+  syncStatus.textContent='Browser-only settings. Account connection unavailable.';
+ }
 }
 syncSave.addEventListener('click',async()=>{
  syncSave.disabled=true;syncLoad.disabled=true;
