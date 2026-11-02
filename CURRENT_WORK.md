@@ -8,10 +8,10 @@ Add explicit optional Homepage-account persistence for MauriStocks watchlists an
 
 ## Implemented in draft PR #3
 
-- Added Save to account / Load from account controls beside watchlist controls in the embedded dashboard.
-- The app continues to use `localStorage` exclusively until an authenticated user explicitly chooses Save or Load.
-- At `https://stocks.themauris.org`, credentialed GET to `https://home.themauris.org/api/storage/mauristocks` detects availability (200 record exists, 404 authenticated but empty, 401 signed out). The cross-origin `/api/session` endpoint is intentionally not used.
-- Save asks for confirmation and uses the server revision; HTTP 409 refuses concurrent overwrites. Load validates a versioned data envelope, asks for confirmation, snapshots old local values and tries to restore them if applying new values throws.
+- Added Load from account control beside watchlist controls. Save As New, Save Changes, and Delete List automatically attempt an account save when signed in; signed-out use is browser-only. Removed redundant Save to account control.
+- The app continues to use `localStorage` exclusively until an authenticated user edits a watchlist using an existing Save As New, Save Changes or Delete List control, or chooses Load from account.
+- At `https://stocks.themauris.org`, a read-only credentialed Homepage profile request supplies the username; credentialed GET to `https://home.themauris.org/api/storage/mauristocks` detects availability (200 record exists, 404 authenticated but empty, 401 signed out). The cross-origin `/api/session` endpoint is intentionally not used.
+- First write to an existing account record asks for confirmation, subsequent watchlist edits use the server revision; HTTP 409 refuses concurrent overwrites. Unsupported stored data is not overwritten. Load validates a versioned data envelope, asks for confirmation, snapshots old local values and tries to restore them if applying new values throws.
 - No raw token is accepted or stored in this app. Signed-out and localhost use existing browser settings, without server sync.
 - App version remains 1.0.0; provider, quote, refresh and watchlist logic otherwise unchanged.
 
