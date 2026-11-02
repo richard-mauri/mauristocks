@@ -1,19 +1,22 @@
 # MauriStocks — current work
 
-**As of 2026-10-26.** Authoritative accepted baseline: GitHub `main`, before the present UI/docs PR. Active development branch: `ui/content-fit-columns-and-docs` ([draft PR #2](https://github.com/richard-mauri/mauristocks/pull/2)). No merge, tag, release or deployment authorized.
+**As of 2026-11-02.** Authoritative merged baseline: GitHub `main`. Active new integration branch: `feat/homepage-storage-sync`, [draft PR #3](https://github.com/richard-mauri/mauristocks/pull/3). Previous independent UI draft [PR #2](https://github.com/richard-mauri/mauristocks/pull/2) must not be overwritten or silently merged.
 
-## Goal and decisions
+## Objective
 
-Remove painful per-header drag/keyboard resizing. Visible table columns should fit their content with modest padding; longer company names can truncate at 340 px, and range cells retain a usable graphical minimum. Keep Columns show/hide, browser-persisted hidden column selections and the nonhideable Symbol column. Discard legacy saved widths without deleting user hidden selections; retain session-based extended-price suppression. Align GitHub Actions triggers/Go steps with ScraperGo and separate root documents by responsibility.
+Add explicit optional Homepage-account persistence for MauriStocks watchlists and user preferences without removing browser-only operation. The Homepage server owns authentication and per-user isolated data; MauriStocks has no token administration.
 
-## Follow-up styling
+## Implemented in draft PR #3
 
-Added a rounded quote-table shell with cyan left accent and cyan active-sort underline, plus a top-right Tanner portrait and caption matching ScraperGo. The image currently uses ScraperGo's public raw GitHub asset URL; it needs network access and is not a vendored image. No quote logic changed.
+- Added Load from account control beside watchlist controls. Save As New, Save Changes, Delete List and changes to refresh interval, visible columns (including Reset columns), sorting, flagged stars, symbol link destination and selected watchlist schedule account saves when signed in; signed-out use is browser-only. Removed redundant Save to account control.
+- The app always writes browser `localStorage` first. After signed-in user preference/watchlist changes, a debounced save pushes the latest snapshot to server using revision checks; signed-out changes remain browser-only. Explicit Load from account remains available.
+- At `https://stocks.themauris.org`, a read-only credentialed Homepage profile request supplies the username; credentialed GET to `https://home.themauris.org/api/storage/mauristocks` detects availability (200 record exists, 404 authenticated but empty, 401 signed out). The cross-origin `/api/session` endpoint is intentionally not used.
+- First write to an existing account record asks for confirmation, subsequent watchlist edits use the server revision; HTTP 409 refuses concurrent overwrites. Unsupported stored data is not overwritten. Load validates a versioned data envelope, asks for confirmation, snapshots old local values and tries to restore them if applying new values throws.
+- No raw token is accepted or stored in this app. Signed-out and localhost use existing browser settings, without server sync.
+- App version remains 1.0.0; provider, quote, refresh and watchlist logic otherwise unchanged.
 
-## Local build number alignment
+## Pending acceptance
 
-ScraperGo-style `devbuild.sh` reserves monotonically increasing numbers privately under Git, starting from historical v40 when no counter exists. It injects one `appBuild` variable used for CLI output and the HTML heading; direct Go builds show `Build dev`. Semantic appVersion remains 1.0.0. Owner should build via `bash ./devbuild.sh` rather than plain `go build` for numbered local builds.
+Check latest CI at exact head (not yet verified); run `go test -count=1 ./...` and `bash ./devbuild.sh` on owner's Mac; inspect Safari UX at `https://stocks.themauris.org` across signed-out/user/admin states, including save, load, conflicting revisions, unsupported records, refresh, stars, columns, and local-only mode. Verify no errors in Web Inspector, and ensure server side persistence is backed up. The first draft is **not production accepted**.
 
-## Acceptance / open work
-
-GitHub Actions CI needs verification at the newest PR head after edits. Owner-side Mac/Safari verification is pending. No evidence of local installation, browser acceptance or release. Cross-check dark/light styling, sort and regular/extended sessions. The embedded page remains monolithic; structural Go-package refactoring is out of scope. Update this snapshot when PR state, evidence or next actions change.
+Do not merge, release, restart either service, modify tunnels or DNS, or migrate data without explicit owner approval.
