@@ -1175,7 +1175,7 @@ async function saveWatchlistToAccount(){
    if(existing && !validSuiteSettings(existing.data))throw Error('Account data has an unsupported format; no server change made.');
    if(existing && !suiteInitialOverwriteApproved){
     if(!(await suiteAsk('Replace saved account settings with this browser’s current watchlists and preferences? This approval enables subsequent watchlist saves.'))){
-     suiteFeedback('Watchlist saved in browser only; account remains unchanged.';return);
+     suiteFeedback('Watchlist saved in browser only; account remains unchanged.');return;
     }
     suiteInitialOverwriteApproved=true;
    }
@@ -1186,13 +1186,13 @@ async function saveWatchlistToAccount(){
   if(!response.ok)throw Error('Account save failed (HTTP '+response.status+'); browser change retained.');
   const saved=await response.json();suiteRevision=saved.revision;
   suiteFeedback('Watchlist changes saved to your account.');
- }catch(e){suiteFeedback(e.message}finally{suiteSavePending=false}
+ }catch(e){suiteFeedback(e.message)}finally{suiteSavePending=false}
 }
 syncLoad.addEventListener('click',async()=>{
  syncLoad.disabled=true;
  try{
   const existing=await suiteRecord();
-  if(!existing){suiteFeedback('Your account has no saved MauriStocks settings.';return}
+  if(!existing){suiteFeedback('Your account has no saved MauriStocks settings.');return}
   if(!validSuiteSettings(existing.data))throw Error('Saved account settings have an unsupported format. No local changes made.');
   if(!(await suiteAsk('Replace watchlists and preferences in this browser with your saved account settings? This will reload MauriStocks.')))return;
   // Preflight every value before touching localStorage; leave old values alone on quota errors.
