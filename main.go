@@ -744,7 +744,7 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .tanner-brand{display:flex;flex-direction:column;align-items:center;gap:5px;flex:none;color:var(--accent);font-size:.85rem;font-weight:700;text-align:center}
 .tanner-brand img{width:82px;height:82px;object-fit:cover;border-radius:14px;border:1px solid var(--border)}
 @media(max-width:650px){.page-header{gap:12px}.tanner-brand img{width:64px;height:64px}.tablewrap{padding:7px;border-radius:16px}}
-</style></head><body><header class="page-header"><div class="page-heading"><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · __BUILD_LABEL__</span></h1><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p></div><div class="tanner-brand"><img src="https://raw.githubusercontent.com/richard-mauri/scrapergo/main/tanner.jpg" alt="Tanner, a golden retriever puppy" width="82" height="82"><span>Tanner</span></div></header><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="table-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label></div><div class="tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
+</style></head><body><header class="page-header"><div class="page-heading"><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · __BUILD_LABEL__</span></h1><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p></div><div class="tanner-brand"><img src="https://raw.githubusercontent.com/richard-mauri/scrapergo/main/tanner.jpg" alt="Tanner, a golden retriever puppy" width="82" height="82"><span>Tanner</span></div></header><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><div class="watchlist-controls" id="suite-sync-controls"><span id="suite-sync-status" role="status" aria-live="polite">Browser-only settings. Sign in on Homepage to enable optional cloud storage.</span><button id="suite-sync-save" type="button" disabled>Save to account</button><button id="suite-sync-load" type="button" disabled>Load from account</button></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="table-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label></div><div class="tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
 <script>
 const defaults='MU,AMAT,LRCX,SPCX,AVGO,TSM,TSLA,NVDA,JOBY,PLTR,LMT,AMGN,SNA,FTEC,JEPQ,VOO,IAU,FSTA,IBIT,O';
 const input=document.getElementById('symbols'),button=document.getElementById('refresh'),intervalSelect=document.getElementById('refresh-interval'),rows=document.getElementById('rows'),message=document.getElementById('message'),fetchStatus=document.getElementById('fetch-status');
@@ -1073,6 +1073,82 @@ const savedInterval=localStorage.getItem('mauri_stock_refresh_interval');
 if(['0','5','30','60','300'].includes(savedInterval))intervalSelect.value=savedInterval;
 intervalSelect.addEventListener('change',setRefreshInterval);
 setRefreshInterval();
+// Optional cross-subdomain persistence. Browser localStorage remains authoritative
+// until the user explicitly saves or loads; no background synchronization occurs.
+const suiteBase='https://home.themauris.org';
+const suiteKeys=[wlKey,activeKey,flagStorageKey,'mauri_stock_symbols','mauri_stock_sort','mauri_stock_refresh_interval','mauri_research_site','mauristocks_columns_v1'];
+const syncStatus=document.getElementById('suite-sync-status');
+const syncSave=document.getElementById('suite-sync-save');
+const syncLoad=document.getElementById('suite-sync-load');
+const syncEndpoint=suiteBase+'/api/storage/mauristocks';
+async function suiteRequest(path,options={}){
+ const response=await fetch(suiteBase+path,{credentials:'include',cache:'no-store',...options});
+ return response;
+}
+function snapshotBrowserSettings(){
+ const settings={};
+ for(const key of suiteKeys){const value=localStorage.getItem(key);if(value!==null)settings[key]=value}
+ return {schema:1,settings};
+}
+function validSuiteSettings(data){
+ return data && data.schema===1 && data.settings && typeof data.settings==='object' &&
+ !Array.isArray(data.settings) && Object.keys(data.settings).every(key=>
+ suiteKeys.includes(key) && typeof data.settings[key]==='string' && data.settings[key].length<=65536);
+}
+async function suiteRecord(){
+ const response=await suiteRequest('/api/storage/mauristocks');
+ if(response.status===404)return null;
+ if(!response.ok)throw Error('Account storage unavailable (HTTP '+response.status+').');
+ return response.json();
+}
+async function refreshSuiteSession(){
+ try{
+  // The secure suite cookie is shared across *.themauris.org, not localhost.
+  if(location.protocol!=='https:' || location.hostname!=='stocks.themauris.org'){
+   syncStatus.textContent='Account storage is available on https://stocks.themauris.org only.';
+   return;
+  }
+  const response=await suiteRequest('/api/session');
+  if(!response.ok){syncStatus.textContent='Browser-only settings. Sign in at '+suiteBase+' to save or load.';syncSave.disabled=true;syncLoad.disabled=true;return}
+  const session=await response.json();
+  if(!session || !session.authenticated){syncStatus.textContent='Browser-only settings. Sign in at '+suiteBase+' to save or load.';syncSave.disabled=true;syncLoad.disabled=true;return}
+  syncSave.disabled=false;syncLoad.disabled=false;
+  syncStatus.textContent='Account connected ('+(session.username||session.user||'signed in')+'). Browser data stays local until Save or Load.';
+ }catch(e){syncStatus.textContent='Browser-only settings. Account connection unavailable.';syncSave.disabled=true;syncLoad.disabled=true}
+}
+syncSave.addEventListener('click',async()=>{
+ syncSave.disabled=true;syncLoad.disabled=true;
+ try{
+  const existing=await suiteRecord();
+  if(existing && !confirm('Replace your saved account settings with the current settings in this browser? Other devices may have different data.'))return;
+  if(!existing && !confirm('Save this browser\'s watchlists and preferences to your account?'))return;
+  const response=await suiteRequest('/api/storage/mauristocks',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:existing?existing.revision:0,data:snapshotBrowserSettings()})});
+  if(response.status===409)throw Error('Another device changed account settings. No data was overwritten; review and retry.');
+  if(!response.ok)throw Error('Account save failed (HTTP '+response.status+').');
+  syncStatus.textContent='Saved browser settings to your account. This browser remains independently editable.';
+ }catch(e){syncStatus.textContent=e.message}finally{syncSave.disabled=false;syncLoad.disabled=false}
+});
+syncLoad.addEventListener('click',async()=>{
+ syncSave.disabled=true;syncLoad.disabled=true;
+ try{
+  const existing=await suiteRecord();
+  if(!existing){syncStatus.textContent='Your account has no saved MauriStocks settings.';return}
+  if(!validSuiteSettings(existing.data))throw Error('Saved account settings have an unsupported format. No local changes made.');
+  if(!confirm('Replace watchlists and preferences in this browser with your saved account settings? This will reload MauriStocks.'))return;
+  // Preflight every value before touching localStorage; leave old values alone on quota errors.
+  const backup={};for(const key of suiteKeys)backup[key]=localStorage.getItem(key);
+  try{
+   for(const key of suiteKeys)localStorage.removeItem(key);
+   for(const [key,value] of Object.entries(existing.data.settings))localStorage.setItem(key,value);
+  }catch(e){
+   for(const key of suiteKeys){if(backup[key]===null)localStorage.removeItem(key);else localStorage.setItem(key,backup[key])}
+   throw Error('Could not apply account settings; browser settings restored.');
+  }
+  location.reload();
+ }catch(e){syncStatus.textContent=e.message}finally{syncSave.disabled=false;syncLoad.disabled=false}
+});
+refreshSuiteSession();
+window.addEventListener('focus',refreshSuiteSession);
 // Populate the restored watchlist immediately, even when auto refresh is Never.
 refreshQuotes();
 </script></body></html>`
