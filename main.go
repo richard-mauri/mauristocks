@@ -796,7 +796,7 @@ const wlKey='mauri_stock_watchlists_v1', activeKey='mauri_stock_active_watchlist
 const flagStorageKey='mauri_stock_flagged_symbols_v1';
 function loadFlags(){try{const x=JSON.parse(localStorage.getItem(flagStorageKey));if(Array.isArray(x))return new Set(x.filter(s=>typeof s==='string'&&/^[A-Z0-9][A-Z0-9.^=-]{0,17}$/.test(s)));}catch(e){}return new Set()}
 const flaggedSymbols=loadFlags();
-function toggleFlag(symbol){if(flaggedSymbols.has(symbol))flaggedSymbols.delete(symbol);else flaggedSymbols.add(symbol);try{localStorage.setItem(flagStorageKey,JSON.stringify([...flaggedSymbols].sort()));}catch(e){}renderQuotes()}
+function toggleFlag(symbol){if(flaggedSymbols.has(symbol))flaggedSymbols.delete(symbol);else flaggedSymbols.add(symbol);try{localStorage.setItem(flagStorageKey,JSON.stringify([...flaggedSymbols].sort()));}catch(e){}renderQuotes();queueSuiteSave()}
 
 function normalizeSymbols(value){return [...new Set(String(value).toUpperCase().split(',').map(x=>x.trim()).filter(Boolean))].join(',')}
 function loadLists(){try{const value=JSON.parse(localStorage.getItem(wlKey));if(value&&typeof value==='object'&&!Array.isArray(value))return Object.fromEntries(Object.entries(value).filter(([k,v])=>k&&k!=='Default'&&typeof v==='string'));}catch(e){}return {}}
@@ -811,9 +811,9 @@ function updateWatchlistMenu(){wlSelect.replaceChildren();for(const n of ['Defau
 function selectWatchlist(name,fetchNow=true){if(name!=='Default'&&name!==dynamicName&&!Object.hasOwn(watchlists,name))return;activeWatchlist=name;input.value=name==='Default'?defaults:name===dynamicName?'':watchlists[name];localStorage.setItem(activeKey,name);localStorage.setItem('mauri_stock_symbols',input.value);updateWatchlistMenu();wlStatus.textContent='';if(fetchNow)refreshQuotes()}
 updateWatchlistMenu();selectWatchlist(activeWatchlist,false);
 wlSelect.addEventListener('change',async()=>{if(button.disabled){wlSelect.value=activeWatchlist;return}if(activeWatchlist!==dynamicName&&input.value!== (activeWatchlist==='Default'?defaults:watchlists[activeWatchlist])&&!(await suiteAsk('Discard unsaved symbol edits and open another watchlist?'))){wlSelect.value=activeWatchlist;return}selectWatchlist(wlSelect.value)});
-wlNew.addEventListener('click',async()=>{const name=await suiteAsk('Name the new watchlist:','text');if(name===null)return;const n=name.trim();if(!n||n.length>60||(n.toLowerCase()==='default'||n.toLowerCase()===dynamicName.toLowerCase())){wlStatus.textContent='Choose a valid name (up to 60 characters).';return}if(Object.keys(watchlists).some(k=>k.toLowerCase()===n.toLowerCase())){wlStatus.textContent='That watchlist already exists.';return}const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[n]=symbols;persistLists();selectWatchlist(n,false);wlStatus.textContent='Saved '+n+'.';await saveWatchlistToAccount()});
-wlSave.addEventListener('click',async()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName)return;const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[activeWatchlist]=symbols;input.value=symbols;persistLists();localStorage.setItem('mauri_stock_symbols',symbols);wlStatus.textContent='Saved '+activeWatchlist+'.';await saveWatchlistToAccount()});
-wlDelete.addEventListener('click',async()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName||button.disabled)return;if(!(await suiteAsk('Delete watchlist "'+activeWatchlist+'"?')))return;delete watchlists[activeWatchlist];persistLists();selectWatchlist('Default');wlStatus.textContent='Deleted watchlist.';await saveWatchlistToAccount()});
+wlNew.addEventListener('click',async()=>{const name=await suiteAsk('Name the new watchlist:','text');if(name===null)return;const n=name.trim();if(!n||n.length>60||(n.toLowerCase()==='default'||n.toLowerCase()===dynamicName.toLowerCase())){wlStatus.textContent='Choose a valid name (up to 60 characters).';return}if(Object.keys(watchlists).some(k=>k.toLowerCase()===n.toLowerCase())){wlStatus.textContent='That watchlist already exists.';return}const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[n]=symbols;persistLists();selectWatchlist(n,false);wlStatus.textContent='Saved '+n+'.';queueSuiteSave()});
+wlSave.addEventListener('click',async()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName)return;const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[activeWatchlist]=symbols;input.value=symbols;persistLists();localStorage.setItem('mauri_stock_symbols',symbols);wlStatus.textContent='Saved '+activeWatchlist+'.';queueSuiteSave()});
+wlDelete.addEventListener('click',async()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName||button.disabled)return;if(!(await suiteAsk('Delete watchlist "'+activeWatchlist+'"?')))return;delete watchlists[activeWatchlist];persistLists();selectWatchlist('Default');wlStatus.textContent='Deleted watchlist.';queueSuiteSave()});
 function money(n,currency){return n==null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:currency||'USD',maximumFractionDigits:2}).format(n)}
 function cell(tr,value,cls){let td=document.createElement('td');td.textContent=value; if(cls)td.className=cls;tr.appendChild(td);return td}
 function rangeCell(tr,low,high,price,currency){
@@ -936,7 +936,7 @@ const researchSelect=document.getElementById('research-site');
 const researchSites=new Set(['google','stockanalysis','corporate','ir']);
 const savedResearchSite=localStorage.getItem('mauri_research_site');
 if(researchSites.has(savedResearchSite))researchSelect.value=savedResearchSite;
-researchSelect.addEventListener('change',()=>{localStorage.setItem('mauri_research_site',researchSelect.value);renderQuotes()});
+researchSelect.addEventListener('change',()=>{localStorage.setItem('mauri_research_site',researchSelect.value);renderQuotes();queueSuiteSave()});
 const irURLs={
  MU:'https://investors.micron.com', AMAT:'https://ir.appliedmaterials.com',
  LRCX:'https://investor.lamresearch.com', SPCX:'https://ir.spacex.com/',
@@ -981,7 +981,7 @@ try{
  if(p&&Array.isArray(p.hidden))colPrefs.hidden=p.hidden.filter(x=>typeof x==='string'&&x!=='symbol');
 }catch(e){}
 function saveColPrefs(){
- try{localStorage.setItem('mauristocks_columns_v1',JSON.stringify(colPrefs))}catch(e){}
+ try{localStorage.setItem('mauristocks_columns_v1',JSON.stringify(colPrefs));queueSuiteSave()}catch(e){}
 }
 function isColShown(i){return !colPrefs.hidden.includes(colSpecs[i][0])&&!(i===4&&colTable.classList.contains('regular-session'))}
 function applyColumns(){
@@ -1049,7 +1049,7 @@ for(const h of sortHeaders){
   if(sortKey===h.dataset.sort)sortDirection=sortDirection==='asc'?'desc':'asc';
   else{sortKey=h.dataset.sort;sortDirection=numericKeys.has(sortKey)?'desc':'asc'}
   localStorage.setItem('mauri_stock_sort',JSON.stringify({key:sortKey,direction:sortDirection}));
-  renderQuotes();
+  renderQuotes();queueSuiteSave();
  };
  h.querySelector('button').addEventListener('click',activate);
 }
@@ -1111,7 +1111,7 @@ function setRefreshInterval(){
 }
 const savedInterval=localStorage.getItem('mauri_stock_refresh_interval');
 if(['0','5','30','60','300'].includes(savedInterval))intervalSelect.value=savedInterval;
-intervalSelect.addEventListener('change',setRefreshInterval);
+intervalSelect.addEventListener('change',()=>{setRefreshInterval();queueSuiteSave()});
 setRefreshInterval();
 // Optional cross-subdomain persistence. Browser localStorage remains authoritative
 // until the user explicitly saves or loads; no background synchronization occurs.
@@ -1125,6 +1125,8 @@ let suiteRevision=null;
 let suiteInitialOverwriteApproved=false;
 let suiteAccountIdentity=null;
 let suiteSavePending=false;
+let suiteSaveQueued=false;
+let suiteSaveTimer=null;
 const syncLoad=document.getElementById('suite-sync-load');
 const syncEndpoint=suiteBase+'/api/storage/mauristocks';
 async function suiteRequest(path,options={}){
@@ -1166,6 +1168,18 @@ async function refreshSuiteSession(){
   suiteFeedback('');
  }catch(e){suiteFeedback('Account connection unavailable; browser settings remain local.')}
 }
+function queueSuiteSave(){
+ if(!suiteSignedIn)return;
+ suiteSaveQueued=true;
+ if(suiteSaveTimer!==null)clearTimeout(suiteSaveTimer);
+ suiteSaveTimer=setTimeout(()=>{suiteSaveTimer=null;void flushSuiteSave()},400);
+}
+async function flushSuiteSave(){
+ if(!suiteSignedIn || suiteSavePending || !suiteSaveQueued)return;
+ suiteSaveQueued=false;
+ queueSuiteSave();
+ if(suiteSaveQueued)queueSuiteSave();
+}
 async function saveWatchlistToAccount(){
  if(!suiteSignedIn || suiteSavePending)return;
  suiteSavePending=true;
@@ -1175,7 +1189,7 @@ async function saveWatchlistToAccount(){
    if(existing && !validSuiteSettings(existing.data))throw Error('Account data has an unsupported format; no server change made.');
    if(existing && !suiteInitialOverwriteApproved){
     if(!(await suiteAsk('Replace saved account settings with this browser’s current watchlists and preferences? This approval enables subsequent watchlist saves.'))){
-     suiteFeedback('Watchlist saved in browser only; account remains unchanged.');return;
+     suiteFeedback('Settings saved in browser only; account remains unchanged.');return;
     }
     suiteInitialOverwriteApproved=true;
    }
@@ -1185,7 +1199,7 @@ async function saveWatchlistToAccount(){
   if(response.status===409){suiteRevision=null;suiteInitialOverwriteApproved=false;throw Error('Account changed on another device. Browser change retained; review account data before retrying.')}
   if(!response.ok)throw Error('Account save failed (HTTP '+response.status+'); browser change retained.');
   const saved=await response.json();suiteRevision=saved.revision;
-  suiteFeedback('Watchlist changes saved to your account.');
+  suiteFeedback('Settings saved to your account.');
  }catch(e){suiteFeedback(e.message)}finally{suiteSavePending=false}
 }
 syncLoad.addEventListener('click',async()=>{
