@@ -1205,7 +1205,7 @@ syncLoad.addEventListener('click',async()=>{
    throw Error('Could not apply account settings; browser settings restored.');
   }
   location.reload();
- }catch(e){suiteFeedback(e.message}finally{syncLoad.disabled=false}
+ }catch(e){suiteFeedback(e.message)}finally{syncLoad.disabled=false}
 });
 refreshSuiteSession();
 window.addEventListener('focus',refreshSuiteSession);
