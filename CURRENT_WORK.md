@@ -8,8 +8,8 @@ Add explicit optional Homepage-account persistence for MauriStocks watchlists an
 
 ## Implemented in draft PR #3
 
-- Added Load from account control beside watchlist controls. Save As New, Save Changes, and Delete List automatically attempt an account save when signed in; signed-out use is browser-only. Removed redundant Save to account control.
-- The app continues to use `localStorage` exclusively until an authenticated user edits a watchlist using an existing Save As New, Save Changes or Delete List control, or chooses Load from account.
+- Added Load from account control beside watchlist controls. Save As New, Save Changes, Delete List and changes to refresh interval, visible columns (including Reset columns), sorting, flagged stars, symbol link destination and selected watchlist schedule account saves when signed in; signed-out use is browser-only. Removed redundant Save to account control.
+- The app always writes browser `localStorage` first. After signed-in user preference/watchlist changes, a debounced save pushes the latest snapshot to server using revision checks; signed-out changes remain browser-only. Explicit Load from account remains available.
 - At `https://stocks.themauris.org`, a read-only credentialed Homepage profile request supplies the username; credentialed GET to `https://home.themauris.org/api/storage/mauristocks` detects availability (200 record exists, 404 authenticated but empty, 401 signed out). The cross-origin `/api/session` endpoint is intentionally not used.
 - First write to an existing account record asks for confirmation, subsequent watchlist edits use the server revision; HTTP 409 refuses concurrent overwrites. Unsupported stored data is not overwritten. Load validates a versioned data envelope, asks for confirmation, snapshots old local values and tries to restore them if applying new values throws.
 - No raw token is accepted or stored in this app. Signed-out and localhost use existing browser settings, without server sync.
