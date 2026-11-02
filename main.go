@@ -744,8 +744,48 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .tanner-brand{display:flex;flex-direction:column;align-items:center;gap:5px;flex:none;color:var(--accent);font-size:.85rem;font-weight:700;text-align:center}
 .tanner-brand img{width:82px;height:82px;object-fit:cover;border-radius:14px;border:1px solid var(--border)}
 @media(max-width:650px){.page-header{gap:12px}.tanner-brand img{width:64px;height:64px}.tablewrap{padding:7px;border-radius:16px}}
+/* Native Safari alerts ignore the dark palette; use an accessible in-page dialog. */
+.suite-dialog{border:1px solid var(--border);border-radius:18px;background:#17252e;color:#eef5f8;box-shadow:0 24px 75px #0009;padding:24px;max-width:min(520px,calc(100vw - 32px));width:100%;font:inherit}
+.suite-dialog::backdrop{background:#000b}
+.suite-dialog h2{font-size:1.2rem;margin:0 0 12px}
+.suite-dialog p{line-height:1.5;margin:0 0 18px}
+.suite-dialog input{box-sizing:border-box;width:100%;padding:12px;background:#101b23;color:#eef5f8;border:1px solid #617681;border-radius:8px;margin-bottom:16px;font:inherit}
+.suite-dialog .suite-dialog-actions{display:flex;gap:10px;justify-content:flex-end}
+.suite-dialog button{color:#eef5f8;background:#244954;border:1px solid #41616b;border-radius:9px;padding:9px 18px;font:inherit;cursor:pointer}
+.suite-dialog button:focus-visible,.suite-dialog input:focus-visible{outline:2px solid #69d7e5;outline-offset:2px}
 </style></head><body><header class="page-header"><div class="page-heading"><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · __BUILD_LABEL__</span></h1><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p></div><div class="tanner-brand"><img src="https://raw.githubusercontent.com/richard-mauri/scrapergo/main/tanner.jpg" alt="Tanner, a golden retriever puppy" width="82" height="82"><span>Tanner</span></div></header><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><div class="watchlist-controls" id="suite-sync-controls"><span id="suite-sync-status" role="status" aria-live="polite">Browser-only settings. Sign in on Homepage to enable optional cloud storage.</span><button id="suite-sync-save" type="button" disabled>Save to account</button><button id="suite-sync-load" type="button" disabled>Load from account</button></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="table-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label></div><div class="tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
-<script>
+<dialog id="suite-dialog" class="suite-dialog" aria-labelledby="suite-dialog-title"><h2 id="suite-dialog-title"></h2><p id="suite-dialog-message"></p><input id="suite-dialog-input" type="text" maxlength="60" hidden aria-label="New watchlist name"><div class="suite-dialog-actions"><button id="suite-dialog-cancel" type="button">Cancel</button><button id="suite-dialog-ok" type="button">OK</button></div></dialog><script>
+// In-page modal uses the same dark palette as the dashboard.
+const suiteDialog=document.getElementById('suite-dialog');
+const suiteDialogTitle=document.getElementById('suite-dialog-title');
+const suiteDialogMessage=document.getElementById('suite-dialog-message');
+const suiteDialogInput=document.getElementById('suite-dialog-input');
+const suiteDialogOK=document.getElementById('suite-dialog-ok');
+const suiteDialogCancel=document.getElementById('suite-dialog-cancel');
+function suiteAsk(message,kind='confirm'){
+ return new Promise(resolve=>{
+  suiteDialogTitle.textContent=kind==='text'?'New watchlist':'Confirm changes';
+  suiteDialogMessage.textContent=message;
+  suiteDialogInput.hidden=kind!=='text';
+  suiteDialogInput.value='';
+  let settled=false;
+  function finish(value){
+   if(settled)return;settled=true;
+   suiteDialogOK.removeEventListener('click',accept);
+   suiteDialogCancel.removeEventListener('click',cancel);
+   suiteDialog.removeEventListener('cancel',escape);
+   suiteDialog.close();resolve(value);
+  }
+  function accept(){finish(kind==='text'?suiteDialogInput.value:true)}
+  function cancel(){finish(kind==='text'?null:false)}
+  function escape(event){event.preventDefault();cancel()}
+  suiteDialogOK.addEventListener('click',accept);
+  suiteDialogCancel.addEventListener('click',cancel);
+  suiteDialog.addEventListener('cancel',escape);
+  suiteDialog.showModal();
+  if(kind==='text')suiteDialogInput.focus();else suiteDialogOK.focus();
+ });
+}
 const defaults='MU,AMAT,LRCX,SPCX,AVGO,TSM,TSLA,NVDA,JOBY,PLTR,LMT,AMGN,SNA,FTEC,JEPQ,VOO,IAU,FSTA,IBIT,O';
 const input=document.getElementById('symbols'),button=document.getElementById('refresh'),intervalSelect=document.getElementById('refresh-interval'),rows=document.getElementById('rows'),message=document.getElementById('message'),fetchStatus=document.getElementById('fetch-status');
 const wlSelect=document.getElementById('watchlist-select');
@@ -770,10 +810,10 @@ function updateWatchlistButtons(){const readOnly=activeWatchlist==='Default'||ac
 function updateWatchlistMenu(){wlSelect.replaceChildren();for(const n of ['Default',dynamicName,...Object.keys(watchlists).sort((a,b)=>a.localeCompare(b))]){const op=document.createElement('option');op.value=n;op.textContent=n==='Default'?'Default (20 symbols)':n;wlSelect.appendChild(op)}wlSelect.value=activeWatchlist;updateWatchlistButtons()}
 function selectWatchlist(name,fetchNow=true){if(name!=='Default'&&name!==dynamicName&&!Object.hasOwn(watchlists,name))return;activeWatchlist=name;input.value=name==='Default'?defaults:name===dynamicName?'':watchlists[name];localStorage.setItem(activeKey,name);localStorage.setItem('mauri_stock_symbols',input.value);updateWatchlistMenu();wlStatus.textContent='';if(fetchNow)refreshQuotes()}
 updateWatchlistMenu();selectWatchlist(activeWatchlist,false);
-wlSelect.addEventListener('change',()=>{if(button.disabled){wlSelect.value=activeWatchlist;return}if(activeWatchlist!==dynamicName&&input.value!== (activeWatchlist==='Default'?defaults:watchlists[activeWatchlist])&&!window.confirm('Discard unsaved symbol edits and open another watchlist?')){wlSelect.value=activeWatchlist;return}selectWatchlist(wlSelect.value)});
-wlNew.addEventListener('click',()=>{const name=window.prompt('Name the new watchlist:');if(name===null)return;const n=name.trim();if(!n||n.length>60||(n.toLowerCase()==='default'||n.toLowerCase()===dynamicName.toLowerCase())){wlStatus.textContent='Choose a valid name (up to 60 characters).';return}if(Object.keys(watchlists).some(k=>k.toLowerCase()===n.toLowerCase())){wlStatus.textContent='That watchlist already exists.';return}const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[n]=symbols;persistLists();selectWatchlist(n,false);wlStatus.textContent='Saved '+n+'.'});
+wlSelect.addEventListener('change',async()=>{if(button.disabled){wlSelect.value=activeWatchlist;return}if(activeWatchlist!==dynamicName&&input.value!== (activeWatchlist==='Default'?defaults:watchlists[activeWatchlist])&&!(await suiteAsk('Discard unsaved symbol edits and open another watchlist?'))){wlSelect.value=activeWatchlist;return}selectWatchlist(wlSelect.value)});
+wlNew.addEventListener('click',async()=>{const name=await suiteAsk('Name the new watchlist:','text');if(name===null)return;const n=name.trim();if(!n||n.length>60||(n.toLowerCase()==='default'||n.toLowerCase()===dynamicName.toLowerCase())){wlStatus.textContent='Choose a valid name (up to 60 characters).';return}if(Object.keys(watchlists).some(k=>k.toLowerCase()===n.toLowerCase())){wlStatus.textContent='That watchlist already exists.';return}const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[n]=symbols;persistLists();selectWatchlist(n,false);wlStatus.textContent='Saved '+n+'.'});
 wlSave.addEventListener('click',()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName)return;const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[activeWatchlist]=symbols;input.value=symbols;persistLists();localStorage.setItem('mauri_stock_symbols',symbols);wlStatus.textContent='Saved '+activeWatchlist+'.'});
-wlDelete.addEventListener('click',()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName||button.disabled)return;if(!window.confirm('Delete watchlist "'+activeWatchlist+'"?'))return;delete watchlists[activeWatchlist];persistLists();selectWatchlist('Default');wlStatus.textContent='Deleted watchlist.'});
+wlDelete.addEventListener('click',async()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName||button.disabled)return;if(!(await suiteAsk('Delete watchlist "'+activeWatchlist+'"?')))return;delete watchlists[activeWatchlist];persistLists();selectWatchlist('Default');wlStatus.textContent='Deleted watchlist.'});
 function money(n,currency){return n==null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:currency||'USD',maximumFractionDigits:2}).format(n)}
 function cell(tr,value,cls){let td=document.createElement('td');td.textContent=value; if(cls)td.className=cls;tr.appendChild(td);return td}
 function rangeCell(tr,low,high,price,currency){
@@ -1117,7 +1157,9 @@ async function refreshSuiteSession(){
   }
   if(response.status!==200 && response.status!==404)throw Error('Storage HTTP '+response.status);
   syncSave.disabled=false;syncLoad.disabled=false;
-  syncStatus.textContent=response.status===404?'Signed in; no account settings saved yet. Browser-only until Save.':'Account storage available. Browser settings remain unchanged until Save or Load.';
+  let identity='your account';
+  try{const profile=await suiteRequest('/api/session/profile');if(profile.ok){const data=await profile.json();if(typeof data.user==='string'&&data.user)identity=data.user}}catch(e){}
+  syncStatus.textContent=response.status===404?'Signed in as '+identity+'; no account settings saved yet. Browser-only until Save.':'Signed in as '+identity+'; account storage available. Browser settings remain unchanged until Save or Load.';
  }catch(e){
   syncStatus.textContent='Browser-only settings. Account connection unavailable.';
  }
@@ -1126,8 +1168,8 @@ syncSave.addEventListener('click',async()=>{
  syncSave.disabled=true;syncLoad.disabled=true;
  try{
   const existing=await suiteRecord();
-  if(existing && !confirm('Replace your saved account settings with the current settings in this browser? Other devices may have different data.'))return;
-  if(!existing && !confirm('Save this browser\'s watchlists and preferences to your account?'))return;
+  if(existing && !(await suiteAsk('Replace your saved account settings with the current settings in this browser? Other devices may have different data.')))return;
+  if(!existing && !(await suiteAsk('Save this browser\'s watchlists and preferences to your account?')))return;
   const response=await suiteRequest('/api/storage/mauristocks',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:existing?existing.revision:0,data:snapshotBrowserSettings()})});
   if(response.status===409)throw Error('Another device changed account settings. No data was overwritten; review and retry.');
   if(!response.ok)throw Error('Account save failed (HTTP '+response.status+').');
@@ -1140,7 +1182,7 @@ syncLoad.addEventListener('click',async()=>{
   const existing=await suiteRecord();
   if(!existing){syncStatus.textContent='Your account has no saved MauriStocks settings.';return}
   if(!validSuiteSettings(existing.data))throw Error('Saved account settings have an unsupported format. No local changes made.');
-  if(!confirm('Replace watchlists and preferences in this browser with your saved account settings? This will reload MauriStocks.'))return;
+  if(!(await suiteAsk('Replace watchlists and preferences in this browser with your saved account settings? This will reload MauriStocks.')))return;
   // Preflight every value before touching localStorage; leave old values alone on quota errors.
   const backup={};for(const key of suiteKeys)backup[key]=localStorage.getItem(key);
   try{
