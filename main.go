@@ -1121,6 +1121,8 @@ const syncStatus=document.getElementById('suite-sync-status');
 let suiteSignedIn=false;
 let suiteRevision=null;
 let suiteInitialOverwriteApproved=false;
+let suiteAccountIdentity=null;
+let suiteSavePending=false;
 const syncLoad=document.getElementById('suite-sync-load');
 const syncEndpoint=suiteBase+'/api/storage/mauristocks';
 async function suiteRequest(path,options={}){
@@ -1152,14 +1154,17 @@ async function refreshSuiteSession(){
   const response=await suiteRequest('/api/storage/mauristocks');
   if(response.status===401){syncStatus.textContent='Browser-only settings. Sign in at '+suiteBase+' to save and load.';return}
   if(response.status!==200 && response.status!==404)throw Error('Storage HTTP '+response.status);
-  suiteSignedIn=true;syncLoad.disabled=false;
-  let identity='your account';
+  let identity=null;
   try{const profile=await suiteRequest('/api/session/profile');if(profile.ok){const data=await profile.json();if(typeof data.user==='string'&&data.user)identity=data.user}}catch(e){}
+  if(!identity){syncStatus.textContent='Account identity unavailable; browser-only settings retained.';return}
+  if(suiteAccountIdentity!==identity){suiteRevision=null;suiteInitialOverwriteApproved=false;suiteAccountIdentity=identity}
+  suiteSignedIn=true;syncLoad.disabled=false;
   syncStatus.textContent=response.status===404?'Signed in as '+identity+'; watchlist changes save to your account.':'Signed in as '+identity+'; watchlist changes save to your account (first overwrite requires confirmation).';
  }catch(e){syncStatus.textContent='Browser-only settings. Account connection unavailable.'}
 }
 async function saveWatchlistToAccount(){
- if(!suiteSignedIn)return;
+ if(!suiteSignedIn || suiteSavePending)return;
+ suiteSavePending=true;
  try{
   if(suiteRevision===null){
    const existing=await suiteRecord();
@@ -1177,7 +1182,7 @@ async function saveWatchlistToAccount(){
   if(!response.ok)throw Error('Account save failed (HTTP '+response.status+'); browser change retained.');
   const saved=await response.json();suiteRevision=saved.revision;
   syncStatus.textContent='Watchlist changes saved to your account.';
- }catch(e){syncStatus.textContent=e.message}
+ }catch(e){syncStatus.textContent=e.message}finally{suiteSavePending=false}
 }
 syncLoad.addEventListener('click',async()=>{
  syncLoad.disabled=true;
