@@ -1144,13 +1144,16 @@ let suiteSaveTimer=null;
 const syncLoad=document.getElementById('suite-sync-load');
 const syncEndpoint=suiteBase+'/api/storage/mauristocks';
 async function suiteRequest(path,options={}){
- const headers={...(options.headers||{}),...(suiteHandoff?{Authorization:'Bearer '+suiteHandoff}:{})};
- const response=await fetch(suiteBase+path,{credentials:suiteHandoff?'omit':'include',cache:'no-store',...options,headers});
- if(suiteHandoff && response.status===401){
+ if(!suiteHandoff)throw Error('Account access unavailable; open MauriStocks from Homepage.');
+ const headers={...(options.headers||{}),Authorization:'Bearer '+suiteHandoff};
+ const response=await fetch(suiteBase+path,{credentials:'omit',cache:'no-store',...options,headers});
+ if(response.status===401){
   suiteHandoff='';
+  suiteSignedIn=false;
+  syncLoad.disabled=true;
+  suiteIdentityEl.hidden=true;
+  suiteIdentityEl.textContent='';
   try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
-  // Fall back to the earlier cross-subdomain session path.
-  return fetch(suiteBase+path,{credentials:'include',cache:'no-store',...options});
  }
  return response;
 }
@@ -1173,15 +1176,15 @@ async function suiteRecord(){
 async function refreshSuiteSession(){
  suiteSignedIn=false;syncLoad.disabled=true;
  suiteIdentityEl.hidden=true;suiteIdentityEl.textContent='';
- if(location.protocol!=='https:' || location.hostname!=='stocks.themauris.org'){
-  suiteFeedback('');return;
+ if(location.protocol!=='https:' || location.hostname!=='stocks.themauris.org' || !suiteHandoff){
+  suiteFeedback('Not signed in · Open MauriStocks from Homepage to access your account.');return;
  }
  try{
-  const response=await suiteRequest('/api/storage/mauristocks');
-  if(response.status===401){suiteFeedback('');return}
-  if(response.status!==200 && response.status!==404)throw Error('Storage HTTP '+response.status);
-  let identity=null;
-  try{const profile=await suiteRequest('/api/session/profile');if(profile.ok){const data=await profile.json();if(typeof data.user==='string'&&data.user)identity=data.user}}catch(e){}
+  const profile=await suiteRequest('/api/session/profile');
+  if(profile.status===401){suiteFeedback('Account access expired · Open MauriStocks from Homepage.');return}
+  if(!profile.ok)throw Error('Account verification HTTP '+profile.status);
+  const data=await profile.json();
+  const identity=typeof data.user==='string'?data.user:'';
   if(!identity){suiteFeedback('Account identity unavailable; browser settings remain local.');return}
   if(suiteAccountIdentity!==identity){suiteRevision=null;suiteInitialOverwriteApproved=false;suiteAccountIdentity=identity}
   suiteSignedIn=true;syncLoad.disabled=false;
