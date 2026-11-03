@@ -1134,6 +1134,7 @@ const suiteKeys=[wlKey,activeKey,flagStorageKey,'mauri_stock_symbols','mauri_sto
 const syncStatus=document.getElementById('suite-sync-status');
 const suiteIdentityEl=document.getElementById('suite-account-identity');
 let suiteExpiresAt=0;
+let suiteRenewPending=false;
 const suiteRenewButton=document.createElement('button');
 suiteRenewButton.type='button';suiteRenewButton.textContent='Renew';
 suiteRenewButton.style.cssText='margin-left:10px;padding:5px 10px;border:1px solid var(--accent);border-radius:8px;background:transparent;color:var(--accent);font:inherit;cursor:pointer';
@@ -1151,12 +1152,13 @@ function updateSuiteAccountClock(){
   suiteIdentityEl.textContent='Not signed in · Open from Homepage';
   suiteIdentityEl.hidden=false;
  }
- suiteRenewButton.disabled=false;
+ suiteRenewButton.disabled=suiteRenewPending;
  suiteRenewButton.textContent=suiteSignedIn&&left>0?'Renew':'Open Homepage';
 }
 async function renewSuiteAccount(){
  if(!suiteHandoff || Date.now()>=suiteExpiresAt){location.assign(suiteBase+'/');return}
- suiteRenewButton.disabled=true;
+ if(suiteRenewPending)return;
+ suiteRenewPending=true;updateSuiteAccountClock();
  try{
   const response=await fetch(suiteBase+'/api/handoff/renew',{method:'POST',credentials:'omit',cache:'no-store',headers:{Authorization:'Bearer '+suiteHandoff}});
   if(!response.ok)throw Error('Renewal failed (HTTP '+response.status+')');
@@ -1164,9 +1166,14 @@ async function renewSuiteAccount(){
   if(!/^[a-f0-9]{64}$/.test(profile.token)||!Date.parse(profile.expiresAt))throw Error('Invalid renewal response');
   suiteHandoff=profile.token;suiteExpiresAt=Date.parse(profile.expiresAt);
   try{sessionStorage.setItem(suiteHandoffKey,suiteHandoff)}catch(_){}
-  await refreshSuiteSession();
+  // Renewal response confirms identity and expiration. Keep the header
+  // visible instead of resetting it during a second profile fetch.
+  if(typeof profile.user==='string' && profile.user && profile.user!==suiteAccountIdentity){
+   suiteAccountIdentity=profile.user;suiteRevision=null;suiteInitialOverwriteApproved=false;
+  }
+  suiteFeedback('');
  }catch(e){suiteFeedback(e.message)}
- finally{updateSuiteAccountClock()}
+ finally{suiteRenewPending=false;updateSuiteAccountClock()}
 }
 suiteRenewButton.addEventListener('click',renewSuiteAccount);
 setInterval(updateSuiteAccountClock,1000);
@@ -1211,14 +1218,14 @@ async function suiteRecord(){
  return response.json();
 }
 async function refreshSuiteSession(){
- suiteSignedIn=false;syncLoad.disabled=true;
- suiteIdentityEl.hidden=true;suiteIdentityEl.textContent='';
+ // Preserve the visible identity and countdown during verification.
  if(location.protocol!=='https:' || location.hostname!=='stocks.themauris.org' || !suiteHandoff){
+  suiteSignedIn=false;syncLoad.disabled=true;updateSuiteAccountClock();
   suiteFeedback('Not signed in · Open MauriStocks from Homepage to access your account.');return;
  }
  try{
   const profile=await suiteRequest('/api/session/profile');
-  if(profile.status===401){suiteFeedback('Account access expired · Open MauriStocks from Homepage.');return}
+  if(profile.status===401){suiteSignedIn=false;syncLoad.disabled=true;updateSuiteAccountClock();suiteFeedback('Account access expired · Open MauriStocks from Homepage.');return}
   if(!profile.ok)throw Error('Account verification HTTP '+profile.status);
   const data=await profile.json();
   suiteExpiresAt=Date.parse(data.expiresAt)||0;
@@ -1226,7 +1233,7 @@ async function refreshSuiteSession(){
   if(!identity){suiteFeedback('Account identity unavailable; browser settings remain local.');return}
   if(suiteAccountIdentity!==identity){suiteRevision=null;suiteInitialOverwriteApproved=false;suiteAccountIdentity=identity}
   suiteSignedIn=true;syncLoad.disabled=false;
-  suiteIdentityEl.textContent='Signed in as '+identity;suiteIdentityEl.hidden=false;updateSuiteAccountClock();
+  updateSuiteAccountClock();
   suiteFeedback('');
  }catch(e){suiteFeedback('Account connection unavailable; browser settings remain local.')}
 }
