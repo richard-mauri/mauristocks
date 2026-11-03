@@ -67,3 +67,6 @@ Run `bash ./devbuild.sh` for local builds. Following ScraperGo, it tests first, 
 
 ### Homepage one-hour account handoff (candidate)
 When MauriStocks is opened from an authenticated Homepage launcher, it consumes `#suite_token=...`, removes the fragment from the URL, retains the short-lived bearer in this tab's `sessionStorage`, and authenticates Homepage profile and account settings calls with `Authorization: Bearer`. There is no cookie fallback. Without a valid one-hour token, MauriStocks remains browser-local and account loading is disabled. Existing browser-local preferences, explicit account load, and revision conflict rules remain unchanged. When the bearer expires, open MauriStocks through Homepage again.
+
+### Session countdown and renewal
+MauriStocks displays the signed-in username, time remaining and Renew button in its top header. Renew calls Homepage `POST /api/handoff/renew` using the current handoff bearer, replaces it with the returned token and resets the countdown. Renewal requires an unexpired token; expired sessions need a new launch from Homepage. No shared-cookie fallback or automatic renewal is used.
