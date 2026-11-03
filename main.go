@@ -1116,9 +1116,67 @@ setRefreshInterval();
 // Optional cross-subdomain persistence. Browser localStorage remains authoritative
 // until the user explicitly saves or loads; no background synchronization occurs.
 const suiteBase='https://home.themauris.org';
+const suiteHandoffKey='mauristocks.homepage.handoff.v1';
+let suiteHandoff='';
+function readSuiteHandoff(){
+ const fragment=new URLSearchParams(location.hash.slice(1));
+ const delivered=fragment.get('suite_token');
+ if(delivered!==null){
+  history.replaceState(null,'',location.pathname+location.search);
+  if(/^[a-f0-9]{64}$/.test(delivered)){try{sessionStorage.setItem(suiteHandoffKey,delivered)}catch(_){}}
+ }
+ try{suiteHandoff=sessionStorage.getItem(suiteHandoffKey)||''}catch(_){suiteHandoff=''}
+ if(!/^[a-f0-9]{64}$/.test(suiteHandoff))suiteHandoff='';
+}
+readSuiteHandoff();
+
 const suiteKeys=[wlKey,activeKey,flagStorageKey,'mauri_stock_symbols','mauri_stock_sort','mauri_stock_refresh_interval','mauri_research_site','mauristocks_columns_v1'];
 const syncStatus=document.getElementById('suite-sync-status');
 const suiteIdentityEl=document.getElementById('suite-account-identity');
+let suiteExpiresAt=0;
+let suiteRenewPending=false;
+const suiteRenewButton=document.createElement('button');
+suiteRenewButton.type='button';suiteRenewButton.textContent='Renew';
+suiteRenewButton.style.cssText='margin-left:10px;padding:5px 10px;border:1px solid var(--accent);border-radius:8px;background:transparent;color:var(--accent);font:inherit;cursor:pointer';
+suiteIdentityEl.after(suiteRenewButton);
+function updateSuiteAccountClock(){
+ const left=Math.max(0,Math.ceil((suiteExpiresAt-Date.now())/1000));
+ if(left===0 && suiteSignedIn){
+  suiteSignedIn=false;syncLoad.disabled=true;suiteHandoff='';
+  try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
+ }
+ if(suiteSignedIn){
+  suiteIdentityEl.textContent='Signed in as '+suiteAccountIdentity+' · '+String(Math.floor(left/60)).padStart(2,'0')+':'+String(left%60).padStart(2,'0')+' remaining';
+  suiteIdentityEl.hidden=false;
+ }else{
+  suiteIdentityEl.textContent='Not signed in · Open from Homepage';
+  suiteIdentityEl.hidden=false;
+ }
+ suiteRenewButton.disabled=suiteRenewPending;
+ suiteRenewButton.textContent=suiteSignedIn&&left>0?'Renew':'Open Homepage';
+}
+async function renewSuiteAccount(){
+ if(!suiteHandoff || Date.now()>=suiteExpiresAt){location.assign(suiteBase+'/');return}
+ if(suiteRenewPending)return;
+ suiteRenewPending=true;updateSuiteAccountClock();
+ try{
+  const response=await fetch(suiteBase+'/api/handoff/renew',{method:'POST',credentials:'omit',cache:'no-store',headers:{Authorization:'Bearer '+suiteHandoff}});
+  if(!response.ok)throw Error('Renewal failed (HTTP '+response.status+')');
+  const profile=await response.json();
+  if(!/^[a-f0-9]{64}$/.test(profile.token)||!Date.parse(profile.expiresAt))throw Error('Invalid renewal response');
+  suiteHandoff=profile.token;suiteExpiresAt=Date.parse(profile.expiresAt);
+  try{sessionStorage.setItem(suiteHandoffKey,suiteHandoff)}catch(_){}
+  // Renewal response confirms identity and expiration. Keep the header
+  // visible instead of resetting it during a second profile fetch.
+  if(typeof profile.user==='string' && profile.user && profile.user!==suiteAccountIdentity){
+   suiteAccountIdentity=profile.user;suiteRevision=null;suiteInitialOverwriteApproved=false;
+  }
+  suiteFeedback('');
+ }catch(e){suiteFeedback(e.message)}
+ finally{suiteRenewPending=false;updateSuiteAccountClock()}
+}
+suiteRenewButton.addEventListener('click',renewSuiteAccount);
+setInterval(updateSuiteAccountClock,1000);
 function suiteFeedback(text){syncStatus.textContent=text;syncStatus.hidden=!text}
 let suiteSignedIn=false;
 let suiteRevision=null;
@@ -1130,7 +1188,17 @@ let suiteSaveTimer=null;
 const syncLoad=document.getElementById('suite-sync-load');
 const syncEndpoint=suiteBase+'/api/storage/mauristocks';
 async function suiteRequest(path,options={}){
- const response=await fetch(suiteBase+path,{credentials:'include',cache:'no-store',...options});
+ if(!suiteHandoff)throw Error('Account access unavailable; open MauriStocks from Homepage.');
+ const headers={...(options.headers||{}),Authorization:'Bearer '+suiteHandoff};
+ const response=await fetch(suiteBase+path,{credentials:'omit',cache:'no-store',...options,headers});
+ if(response.status===401){
+  suiteHandoff='';
+  suiteSignedIn=false;
+  syncLoad.disabled=true;
+  suiteIdentityEl.hidden=true;
+  suiteIdentityEl.textContent='';
+  try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
+ }
  return response;
 }
 function snapshotBrowserSettings(){
@@ -1150,21 +1218,22 @@ async function suiteRecord(){
  return response.json();
 }
 async function refreshSuiteSession(){
- suiteSignedIn=false;syncLoad.disabled=true;
- suiteIdentityEl.hidden=true;suiteIdentityEl.textContent='';
- if(location.protocol!=='https:' || location.hostname!=='stocks.themauris.org'){
-  suiteFeedback('');return;
+ // Preserve the visible identity and countdown during verification.
+ if(location.protocol!=='https:' || location.hostname!=='stocks.themauris.org' || !suiteHandoff){
+  suiteSignedIn=false;syncLoad.disabled=true;updateSuiteAccountClock();
+  suiteFeedback('Not signed in · Open MauriStocks from Homepage to access your account.');return;
  }
  try{
-  const response=await suiteRequest('/api/storage/mauristocks');
-  if(response.status===401){suiteFeedback('');return}
-  if(response.status!==200 && response.status!==404)throw Error('Storage HTTP '+response.status);
-  let identity=null;
-  try{const profile=await suiteRequest('/api/session/profile');if(profile.ok){const data=await profile.json();if(typeof data.user==='string'&&data.user)identity=data.user}}catch(e){}
+  const profile=await suiteRequest('/api/session/profile');
+  if(profile.status===401){suiteSignedIn=false;syncLoad.disabled=true;updateSuiteAccountClock();suiteFeedback('Account access expired · Open MauriStocks from Homepage.');return}
+  if(!profile.ok)throw Error('Account verification HTTP '+profile.status);
+  const data=await profile.json();
+  suiteExpiresAt=Date.parse(data.expiresAt)||0;
+  const identity=typeof data.user==='string'?data.user:'';
   if(!identity){suiteFeedback('Account identity unavailable; browser settings remain local.');return}
   if(suiteAccountIdentity!==identity){suiteRevision=null;suiteInitialOverwriteApproved=false;suiteAccountIdentity=identity}
   suiteSignedIn=true;syncLoad.disabled=false;
-  suiteIdentityEl.textContent='Signed in as '+identity;suiteIdentityEl.hidden=false;
+  updateSuiteAccountClock();
   suiteFeedback('');
  }catch(e){suiteFeedback('Account connection unavailable; browser settings remain local.')}
 }
@@ -1221,6 +1290,7 @@ syncLoad.addEventListener('click',async()=>{
   location.reload();
  }catch(e){suiteFeedback(e.message)}finally{syncLoad.disabled=false}
 });
+updateSuiteAccountClock();
 refreshSuiteSession();
 window.addEventListener('focus',refreshSuiteSession);
 // Populate the restored watchlist immediately, even when auto refresh is Never.

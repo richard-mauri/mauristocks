@@ -64,3 +64,11 @@ This tool is for personal informational use, not trading execution or investment
 ## Build identifiers
 
 Run `bash ./devbuild.sh` for local builds. Following ScraperGo, it tests first, reserves the next private sequential number in Git's directory (`git rev-parse --git-path mauristocks-build-counter`), then embeds a zero-padded `Build NNNNNN` label in the executable and page. An absent counter starts after historical v40, at Build 000041. Failed compilation after reservation does not reuse a number. This counter belongs to the local clone and is not a global or release version. Direct `go build` shows `Build dev`; semantic version stays 1.0.0. Do not commit the counter or manually edit labels in HTML.
+
+### Homepage one-hour account handoff (candidate)
+When MauriStocks is opened from an authenticated Homepage launcher, it consumes `#suite_token=...`, removes the fragment from the URL, retains the short-lived bearer in this tab's `sessionStorage`, and authenticates Homepage profile and account settings calls with `Authorization: Bearer`. There is no cookie fallback. Without a valid one-hour token, MauriStocks remains browser-local and account loading is disabled. Existing browser-local preferences, explicit account load, and revision conflict rules remain unchanged. When the bearer expires, open MauriStocks through Homepage again.
+
+### Session countdown and renewal
+MauriStocks displays the signed-in username, time remaining and Renew button in its top header. Renew calls Homepage `POST /api/handoff/renew` using the current handoff bearer, replaces it with the returned token and resets the countdown. Renewal requires an unexpired token; expired sessions need a new launch from Homepage. No shared-cookie fallback or automatic renewal is used.
+
+Renewal UI: the username and countdown remain visible while a renewal is in progress. The renewed token and expiration are applied directly from Homepage's response without clearing the header or performing a redundant profile fetch. Session validation on tab focus likewise retains the previous header until the verification result arrives.
