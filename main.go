@@ -1151,10 +1151,11 @@ function updateSuiteAccountClock(){
   suiteIdentityEl.textContent='Not signed in · Open from Homepage';
   suiteIdentityEl.hidden=false;
  }
- suiteRenewButton.disabled=!suiteSignedIn || left===0;
+ suiteRenewButton.disabled=false;
+ suiteRenewButton.textContent=suiteSignedIn&&left>0?'Renew':'Open Homepage';
 }
 async function renewSuiteAccount(){
- if(!suiteHandoff || Date.now()>=suiteExpiresAt){updateSuiteAccountClock();return}
+ if(!suiteHandoff || Date.now()>=suiteExpiresAt){location.assign(suiteBase+'/');return}
  suiteRenewButton.disabled=true;
  try{
   const response=await fetch(suiteBase+'/api/handoff/renew',{method:'POST',credentials:'omit',cache:'no-store',headers:{Authorization:'Bearer '+suiteHandoff}});
