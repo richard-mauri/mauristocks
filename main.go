@@ -1116,6 +1116,20 @@ setRefreshInterval();
 // Optional cross-subdomain persistence. Browser localStorage remains authoritative
 // until the user explicitly saves or loads; no background synchronization occurs.
 const suiteBase='https://home.themauris.org';
+const suiteHandoffKey='mauristocks.homepage.handoff.v1';
+let suiteHandoff='';
+function readSuiteHandoff(){
+ const fragment=new URLSearchParams(location.hash.slice(1));
+ const delivered=fragment.get('suite_token');
+ if(delivered!==null){
+  history.replaceState(null,'',location.pathname+location.search);
+  if(/^[a-f0-9]{64}$/.test(delivered)){try{sessionStorage.setItem(suiteHandoffKey,delivered)}catch(_){}}
+ }
+ try{suiteHandoff=sessionStorage.getItem(suiteHandoffKey)||''}catch(_){suiteHandoff=''}
+ if(!/^[a-f0-9]{64}$/.test(suiteHandoff))suiteHandoff='';
+}
+readSuiteHandoff();
+
 const suiteKeys=[wlKey,activeKey,flagStorageKey,'mauri_stock_symbols','mauri_stock_sort','mauri_stock_refresh_interval','mauri_research_site','mauristocks_columns_v1'];
 const syncStatus=document.getElementById('suite-sync-status');
 const suiteIdentityEl=document.getElementById('suite-account-identity');
@@ -1130,7 +1144,14 @@ let suiteSaveTimer=null;
 const syncLoad=document.getElementById('suite-sync-load');
 const syncEndpoint=suiteBase+'/api/storage/mauristocks';
 async function suiteRequest(path,options={}){
- const response=await fetch(suiteBase+path,{credentials:'include',cache:'no-store',...options});
+ const headers={...(options.headers||{}),...(suiteHandoff?{Authorization:'Bearer '+suiteHandoff}:{})};
+ const response=await fetch(suiteBase+path,{credentials:suiteHandoff?'omit':'include',cache:'no-store',...options,headers});
+ if(suiteHandoff && response.status===401){
+  suiteHandoff='';
+  try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
+  // Fall back to the earlier cross-subdomain session path.
+  return fetch(suiteBase+path,{credentials:'include',cache:'no-store',...options});
+ }
  return response;
 }
 function snapshotBrowserSettings(){
