@@ -70,3 +70,5 @@ When MauriStocks is opened from an authenticated Homepage launcher, it consumes 
 
 ### Session countdown and renewal
 MauriStocks displays the signed-in username, time remaining and Renew button in its top header. Renew calls Homepage `POST /api/handoff/renew` using the current handoff bearer, replaces it with the returned token and resets the countdown. Renewal requires an unexpired token; expired sessions need a new launch from Homepage. No shared-cookie fallback or automatic renewal is used.
+
+Renewal UI: the username and countdown remain visible while a renewal is in progress. The renewed token and expiration are applied directly from Homepage's response without clearing the header or performing a redundant profile fetch. Session validation on tab focus likewise retains the previous header until the verification result arrives.
