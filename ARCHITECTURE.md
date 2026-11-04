@@ -16,7 +16,7 @@ MauriStocks's browser UI exposes a visible native anchor `<a href="https://home.
 
 The suite-wide return button uses the same `.suite-home-link` presentation in all four apps: 38px minimum height, 8px/12px padding, 10px radius, muted border at rest, accent border and darker fill on hover, and a visible keyboard focus outline. Place one link at the upper-left above the primary content/heading.
 
-The shared suite navigation style is now intentionally a quiet 12px text link directly below each page's primary heading, with subtle hover background and underline and keyboard focus outline (rather than the former 38px bordered button). NewsGo does not render an additional signed-out Homepage action; only the account Renew control appears during an active token session.
+The shared suite navigation style is a quiet 12px text link below each page's primary heading, with subtle hover background and underline and keyboard focus outline. There is no app-specific Renew button.
 
 ## Twelve-hour Homepage sign-in handoff
 MauriStocks uses a short-lived transfer bearer linked to Homepage's single twelve-hour session. The bearer cannot remain valid after Homepage sign-out/session expiry. No separate app token renewal UI exists. On a Homepage `#suite_mode=local` launch, MauriStocks clears its cached bearer and enters browser-only mode without deleting watchlists or browser preferences. A valid `#suite_token=...` launch replaces it; an ordinary refresh can reuse a previously delivered bearer subject to server validation. Coordinated with Homepage draft PR #12; do not deploy independently prior to integrated Safari acceptance.
