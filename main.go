@@ -1122,9 +1122,17 @@ let suiteHandoff='';
 function readSuiteHandoff(){
  const fragment=new URLSearchParams(location.hash.slice(1));
  const delivered=fragment.get('suite_token');
- if(delivered!==null){
+ const browserOnly=fragment.get('suite_mode')==='local';
+ if(delivered!==null || browserOnly){
   history.replaceState(null,'',location.pathname+location.search);
-  if(/^[a-f0-9]{64}$/.test(delivered)){try{sessionStorage.setItem(suiteHandoffKey,delivered)}catch(_){}}
+  if(browserOnly){
+   // An explicit browser-only launch replaces any cached handoff.
+   try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
+  }else if(/^[a-f0-9]{64}$/.test(delivered)){
+   try{sessionStorage.setItem(suiteHandoffKey,delivered)}catch(_){}
+  }else {
+   try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
+  }
  }
  try{suiteHandoff=sessionStorage.getItem(suiteHandoffKey)||''}catch(_){suiteHandoff=''}
  if(!/^[a-f0-9]{64}$/.test(suiteHandoff))suiteHandoff='';
@@ -1135,11 +1143,6 @@ const suiteKeys=[wlKey,activeKey,flagStorageKey,'mauri_stock_symbols','mauri_sto
 const syncStatus=document.getElementById('suite-sync-status');
 const suiteIdentityEl=document.getElementById('suite-account-identity');
 let suiteExpiresAt=0;
-let suiteRenewPending=false;
-const suiteRenewButton=document.createElement('button');
-suiteRenewButton.type='button';suiteRenewButton.textContent='Renew';
-suiteRenewButton.style.cssText='margin-left:10px;padding:5px 10px;border:1px solid var(--accent);border-radius:8px;background:transparent;color:var(--accent);font:inherit;cursor:pointer';
-suiteIdentityEl.after(suiteRenewButton);
 function updateSuiteAccountClock(){
  const left=Math.max(0,Math.ceil((suiteExpiresAt-Date.now())/1000));
  if(left===0 && suiteSignedIn){
@@ -1153,31 +1156,7 @@ function updateSuiteAccountClock(){
   suiteIdentityEl.textContent='Not signed in · Browser-only settings';
   suiteIdentityEl.hidden=false;
  }
- suiteRenewButton.hidden=!(suiteSignedIn&&left>0);
- suiteRenewButton.disabled=suiteRenewPending;
- suiteRenewButton.textContent='Renew';
 }
-async function renewSuiteAccount(){
- if(!suiteHandoff || Date.now()>=suiteExpiresAt){location.assign(suiteBase+'/');return}
- if(suiteRenewPending)return;
- suiteRenewPending=true;updateSuiteAccountClock();
- try{
-  const response=await fetch(suiteBase+'/api/handoff/renew',{method:'POST',credentials:'omit',cache:'no-store',headers:{Authorization:'Bearer '+suiteHandoff}});
-  if(!response.ok)throw Error('Renewal failed (HTTP '+response.status+')');
-  const profile=await response.json();
-  if(!/^[a-f0-9]{64}$/.test(profile.token)||!Date.parse(profile.expiresAt))throw Error('Invalid renewal response');
-  suiteHandoff=profile.token;suiteExpiresAt=Date.parse(profile.expiresAt);
-  try{sessionStorage.setItem(suiteHandoffKey,suiteHandoff)}catch(_){}
-  // Renewal response confirms identity and expiration. Keep the header
-  // visible instead of resetting it during a second profile fetch.
-  if(typeof profile.user==='string' && profile.user && profile.user!==suiteAccountIdentity){
-   suiteAccountIdentity=profile.user;suiteRevision=null;suiteInitialOverwriteApproved=false;
-  }
-  suiteFeedback('');
- }catch(e){suiteFeedback(e.message)}
- finally{suiteRenewPending=false;updateSuiteAccountClock()}
-}
-suiteRenewButton.addEventListener('click',renewSuiteAccount);
 setInterval(updateSuiteAccountClock,1000);
 function suiteFeedback(text){syncStatus.textContent=text;syncStatus.hidden=!text}
 let suiteSignedIn=false;
