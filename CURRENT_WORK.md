@@ -1,22 +1,11 @@
-# MauriStocks — current work
+# MauriStocks — current work (2026-11-04)
 
-**As of 2026-11-02.** Authoritative merged baseline: GitHub `main`. Active new integration branch: `feat/homepage-storage-sync`, [draft PR #3](https://github.com/richard-mauri/mauristocks/pull/3). Previous independent UI draft [PR #2](https://github.com/richard-mauri/mauristocks/pull/2) must not be overwritten or silently merged.
+Authoritative baseline: GitHub `main`. Active issue [#6](https://github.com/richard-mauri/mauristocks/issues/6), branch `fix/6-homepage-return`, [draft PR #7](https://github.com/richard-mauri/mauristocks/pull/7) targeting main. This is an independent part of Homepage Issue #11 / PR #12, which changes launcher navigation to same-tab. Scope: Adding a styled native same-tab Back to Homepage link in the dashboard header. Quote provider, watchlists, preference storage and optional suite token handoff stay unchanged.
 
-## Objective
+Owner Mac/Safari acceptance of return link, mobile visibility, light/dark contrast and same-tab navigation is pending. Go regression test checks presence of native link. GitHub CI must be checked at the exact final PR head. No merge, release or service restart authorized. Existing local work and Cloudflare configuration are unverified and must not be overwritten.
 
-Add explicit optional Homepage-account persistence for MauriStocks watchlists and user preferences without removing browser-only operation. The Homepage server owns authentication and per-user isolated data; MauriStocks has no token administration.
+Other work: existing UI and optional Homepage storage synchronization candidates require independent review; do not merge them into this change.
 
-## Implemented in draft PR #3
+Owner Safari feedback on navigation PRs: app links worked but the return controls differed in position/hover style, and MauriStocks displayed a second 'Open Homepage' button while signed out. Latest candidate uses identical `.suite-home-link` CSS in all apps and positions the link at top-left above primary heading. MauriStocks retains only the universal return link while signed out; its account Renew button is visible only while signed in. Mac/Safari visual acceptance of this revision is outstanding.
 
-- Added Load from account control beside watchlist controls. Save As New, Save Changes, Delete List and changes to refresh interval, visible columns (including Reset columns), sorting, flagged stars, symbol link destination and selected watchlist schedule account saves when signed in; signed-out use is browser-only. Removed redundant Save to account control.
-- The app always writes browser `localStorage` first. After signed-in user preference/watchlist changes, a debounced save pushes the latest snapshot to server using revision checks; signed-out changes remain browser-only. Explicit Load from account remains available.
-- At `https://stocks.themauris.org`, a read-only credentialed Homepage profile request supplies the username; credentialed GET to `https://home.themauris.org/api/storage/mauristocks` detects availability (200 record exists, 404 authenticated but empty, 401 signed out). The cross-origin `/api/session` endpoint is intentionally not used.
-- First write to an existing account record asks for confirmation, subsequent watchlist edits use the server revision; HTTP 409 refuses concurrent overwrites. Unsupported stored data is not overwritten. Load validates a versioned data envelope, asks for confirmation, snapshots old local values and tries to restore them if applying new values throws.
-- No raw token is accepted or stored in this app. Signed-out and localhost use existing browser settings, without server sync.
-- App version remains 1.0.0; provider, quote, refresh and watchlist logic otherwise unchanged.
-
-## Pending acceptance
-
-Check latest CI at exact head (not yet verified); run `go test -count=1 ./...` and `bash ./devbuild.sh` on owner's Mac; inspect Safari UX at `https://stocks.themauris.org` across signed-out/user/admin states, including save, load, conflicting revisions, unsupported records, refresh, stars, columns, and local-only mode. Verify no errors in Web Inspector, and ensure server side persistence is backed up. The first draft is **not production accepted**.
-
-Do not merge, release, restart either service, modify tunnels or DNS, or migrate data without explicit owner approval.
+Owner Safari revision (2026-11-04): the large bordered Back to Homepage control was visually too prominent. All four apps now use a 12px text-sized, subdued link placed immediately beneath each primary heading, with hover background and underline rather than a full-height button. NewsGo also removes the duplicate signed-out 'Open from Homepage' prompt and 'Open Homepage' action; the signed-in token Renew control remains. Updated code and tests are in the existing draft PR; Mac/Safari acceptance remains unverified.
