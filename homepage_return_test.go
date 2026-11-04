@@ -16,7 +16,8 @@ func TestDashboardHasSameTabHomepageReturn(t *testing.T) {
  if strings.Contains(source,`class="suite-home-link" target="_blank"`) {
   t.Fatal("Homepage return should not open another tab")
  }
- if !strings.Contains(source,"suiteRenewButton.hidden=!(suiteSignedIn&&left>0)") {t.Fatal("account action must be hidden without active renewal")}
+ if strings.Contains(source,"suiteRenewButton") || strings.Contains(source,"renewSuiteAccount(") {t.Fatal("no separate app-token renewal UI is permitted")}
+ if !strings.Contains(source,"fragment.get('suite_mode')==='local'") || !strings.Contains(source,"sessionStorage.removeItem(suiteHandoffKey)") {t.Fatal("browser-only launch must discard stale handoff")}
  if strings.Contains(source,"suiteRenewButton.textContent=suiteSignedIn&&left>0?'Renew':'Open Homepage'") {t.Fatal("redundant Open Homepage action remains")}
  if !strings.Contains(source,"Not signed in · Browser-only settings") {t.Fatal("signed-out state feedback missing")}
  if !strings.Contains(source,".suite-home-link:hover{background:rgba(96,151,172,.16);color:var(--accent,#69c6d3);text-decoration:underline;opacity:1}") {t.Fatal("standardized hover border style missing")}
