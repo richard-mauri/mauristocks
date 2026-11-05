@@ -1150,7 +1150,7 @@ function updateSuiteAccountClock(){
   try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
  }
  if(suiteSignedIn){
-  suiteIdentityEl.textContent='Signed in as '+suiteAccountIdentity+' · '+String(Math.floor(left/60)).padStart(2,'0')+':'+String(left%60).padStart(2,'0')+' remaining';
+  suiteIdentityEl.textContent='Signed in as '+suiteAccountIdentity;
   suiteIdentityEl.hidden=false;
  }else{
   suiteIdentityEl.textContent='Not signed in · Browser-only settings';
