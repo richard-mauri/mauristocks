@@ -23,3 +23,18 @@ func TestDashboardHasSameTabHomepageReturn(t *testing.T) {
  if !strings.Contains(source,".suite-home-link:hover{background:rgba(96,151,172,.16);color:var(--accent,#69c6d3);text-decoration:underline;opacity:1}") {t.Fatal("standardized hover border style missing")}
 
 }
+
+func TestHomepageAccountHeaderOmitsMinuteCountdown(t *testing.T) {
+ code,err:=os.ReadFile("main.go")
+ if err!=nil{t.Fatal(err)}
+ source:=string(code)
+ if !strings.Contains(source,"suiteIdentityEl.textContent='Signed in as '+suiteAccountIdentity;") {
+  t.Fatal("signed-in header must show identity without a minute countdown")
+ }
+ if !strings.Contains(source,"if(left===0 && suiteSignedIn)") {
+  t.Fatal("existing session expiry enforcement must remain")
+ }
+ if strings.Contains(source,"remaining';") {
+  t.Fatal("signed-in account header still displays a countdown")
+ }
+}
