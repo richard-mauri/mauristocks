@@ -1,7 +1,9 @@
-# Current work — 2026-11-04
+# Current work
 
-GitHub `main` is the merged baseline. Active issue [#8](https://github.com/richard-mauri/mauristocks/issues/8), branch `fix/8-twelve-hour-homepage-session`, coordinated with Homepage draft PR #12 (issues #11 and #15). Proposed change: use only the twelve-hour Homepage login lifetime for app account access, with server-side sign-out revocation; remove the separate token Renew control. An explicit `#suite_mode=local` launch clears the cached bearer while preserving browser-local preferences; authenticated `#suite_token=...` launches store the newly issued bearer, and ordinary reloads can reuse it only if the server verifies it.
+**Authoritative source:** GitHub `main` is the merged baseline. The previously outstanding feature/fix issues and PRs were closed as of 2026-11-04; do not interpret old handoff notes as active work.
 
-Approved UI refinement: show `Signed in as <user>` / `Not signed in` in the app header with no minute countdown; retain internal expiry checks and server validation. No Homepage Manage Tokens UI change is included in this scoped client revision.
+**Active change now:** documentation-only reconciliation on `docs/current-suite-baseline-20261104`, [draft PR #10](https://github.com/richard-mauri/mauristocks/pull/10) targeting `main`. The goal is to make the five standard Markdown files accurately describe the current implemented suite. There is no active runtime feature/fix PR in this repository.
 
-No changes to application data models, user settings, backend role checks, local build counter, tunnel configuration or semantic version. GitHub CI at final draft-PR head and Mac/Safari integration acceptance are required. Test signed-in launch, signed-out local-only launch after visiting an authenticated app, sign-out revocation, normal refresh, and re-sign-in. None of the three services may be merged/deployed/restarted without owner authorization; coordinate all three drafts before integrated testing.
+**Current implementation:** MauriStocks serves stock quotes and browser-local watchlists. Optional account save/load uses Homepage's single 12-hour session-bound handoff and user-scoped storage. The header displays identity only, with no countdown or Renew control.
+
+**Next action:** review the documentation diff, check Markdown links and the PR's exact-head CI status, correct any factual errors, then request explicit owner approval to merge this documentation-only PR. Mac/Safari runtime retesting or app restart is not required for text-only changes. No merge, tag, release, deployment, branch deletion or tunnel change has been approved for this PR.
