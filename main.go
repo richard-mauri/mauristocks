@@ -1118,6 +1118,9 @@ setRefreshInterval();
 // until the user explicitly saves or loads; no background synchronization occurs.
 const suiteBase='https://home.themauris.org';
 const suiteHandoffKey='mauristocks.homepage.handoff.v1';
+// An explicit #suite_mode=local suppresses recovery for this visit, but
+// later fresh visits recheck Homepage for a newly valid persistent login.
+let explicitBrowserOnly=false;
 let suiteHandoff='';
 function readSuiteHandoff(){
  const fragment=new URLSearchParams(location.hash.slice(1));
@@ -1126,7 +1129,8 @@ function readSuiteHandoff(){
  if(delivered!==null || browserOnly){
   history.replaceState(null,'',location.pathname+location.search);
   if(browserOnly){
-   // An explicit browser-only launch replaces any cached handoff.
+   // Homepage confirms no active login; do not loop back during this visit.
+   explicitBrowserOnly=true;
    try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
   }else if(/^[a-f0-9]{64}$/.test(delivered)){
    try{sessionStorage.setItem(suiteHandoffKey,delivered)}catch(_){}
@@ -1143,11 +1147,18 @@ const suiteKeys=[wlKey,activeKey,flagStorageKey,'mauri_stock_symbols','mauri_sto
 const syncStatus=document.getElementById('suite-sync-status');
 const suiteIdentityEl=document.getElementById('suite-account-identity');
 let suiteExpiresAt=0;
+let expiryCheckPending=false,expiryRetryAfter=0;
 function updateSuiteAccountClock(){
  const left=Math.max(0,Math.ceil((suiteExpiresAt-Date.now())/1000));
  if(left===0 && suiteSignedIn){
-  suiteSignedIn=false;syncLoad.disabled=true;suiteHandoff='';
-  try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
+  // Never trust cached expiry to revoke a handoff; Homepage may have
+  // extended its parent while this tab was elsewhere.
+  suiteSignedIn=false;syncLoad.disabled=true;
+ }
+ if(suiteHandoff && suiteExpiresAt>0 && left===0 &&
+    !expiryCheckPending && Date.now()>=expiryRetryAfter){
+  expiryCheckPending=true;expiryRetryAfter=Date.now()+30000;
+  void refreshSuiteSession().finally(()=>{expiryCheckPending=false});
  }
  if(suiteSignedIn){
   suiteIdentityEl.textContent='Signed in as '+suiteAccountIdentity;
@@ -1200,9 +1211,19 @@ async function suiteRecord(){
 }
 async function refreshSuiteSession(){
  // Preserve the visible identity and countdown during verification.
- if(location.protocol!=='https:' || location.hostname!=='stocks.themauris.org' || !suiteHandoff){
+ if(location.protocol!=='https:' || location.hostname!=='stocks.themauris.org'){
   suiteSignedIn=false;syncLoad.disabled=true;updateSuiteAccountClock();
-  suiteFeedback('Not signed in · Open MauriStocks from Homepage to access your account.');return;
+  suiteFeedback('Not signed in · Browser-only settings');return;
+ }
+ if(!suiteHandoff && !explicitBrowserOnly){
+  // Only Homepage can read the persistent host-only cookie/session ID.
+  // Its trusted bridge returns an authorized child bearer or local mode.
+  location.replace(suiteBase+'/launch/stocks');
+  return;
+ }
+ if(!suiteHandoff){
+  suiteSignedIn=false;syncLoad.disabled=true;updateSuiteAccountClock();
+  suiteFeedback('Not signed in · Browser-only settings');return;
  }
  try{
   const profile=await suiteRequest('/api/session/profile');
