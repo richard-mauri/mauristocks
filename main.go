@@ -1131,7 +1131,7 @@ function readSuiteHandoff(){
   if(browserOnly){
    // Homepage confirms no active login; do not loop back during this visit.
    explicitBrowserOnly=true;
-   try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){
+   try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
   }else if(/^[a-f0-9]{64}$/.test(delivered)){
    try{sessionStorage.setItem(suiteHandoffKey,delivered)}catch(_){}
   }else {
