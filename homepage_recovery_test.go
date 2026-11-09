@@ -38,7 +38,7 @@ func TestCachedExpiryRevalidatesHomepageBeforeDiscardingHandoff(t *testing.T) {
  if err!=nil{t.Fatal(err)}
  js:=string(raw)
  a:=strings.Index(js,"function updateSuiteAccountClock(){")
- b:=strings.Index(js,"setInterval(updateSuiteAccountClock,1000)",a)
+ b:=a+strings.Index(js[a:],"setInterval(updateSuiteAccountClock,1000)")
  if a<0||b<0{t.Fatal("session display code not found")}
  clock:=js[a:b]
  if strings.Contains(clock,"sessionStorage.removeItem(suiteHandoffKey)")||
