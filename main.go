@@ -1229,20 +1229,32 @@ function paintHeatmap(){
  hs.textContent=!total?'Waiting for quotes…':ready?'Complete • '+weighted.length+' weighted · '+missing.length+' unavailable/unweighted':capState==='error'&&capKey===currentKey?'Capitalization lookup interrupted • '+weighted.length+' weighted':capBusy?'Loading capitalization • '+done+'/'+total+' checked · '+weighted.length+' weighted':'Preparing capitalization…';
  let key=heatExponent.toFixed(2)+'|'+weighted.map(a=>a.q.symbol+':'+a.cap).join('|');
  if(key!==layoutKey){
-  layoutKey=key;hideHeatTip();ha.replaceChildren();tiles.clear();
+  layoutKey=key;
   let rects=[];divideHeat(weighted,0,0,100,100,true,rects);
+  const keep=new Set(rects.map(r=>r.item.q.symbol));
+  // Preserve existing anchors (and their colors) across capitalization
+  // updates and slider changes. Rebuilding the whole panel causes a flash.
+  for(const [symbol,el] of tiles){
+   if(!keep.has(symbol)){
+    if(heatTipTarget===el)hideHeatTip();
+    el.remove();tiles.delete(symbol);
+   }
+  }
   for(const r of rects){
-   let el=document.createElement('a');el.className='heat-tile';
+   const symbol=r.item.q.symbol;
+   let el=tiles.get(symbol);
+   if(!el){
+    el=document.createElement('a');el.className='heat-tile';
+    let label=document.createElement('strong');label.textContent=symbol;
+    let pct=document.createElement('span');el.append(label,pct);ha.appendChild(el);tiles.set(symbol,el);
+    const detail=()=>showHeatTip(el,el._heatQuote||r.item.q,el._heatCap||r.item.cap);
+    el.addEventListener('mouseenter',detail);
+    el.addEventListener('mouseleave',()=>{if(heatTipTarget===el)hideHeatTip()});
+    el.addEventListener('focus',detail);
+    el.addEventListener('blur',()=>{if(heatTipTarget===el)hideHeatTip()});
+    el.addEventListener('click',event=>{if(event.pointerType==='touch'&&heatTapTarget!==el){event.preventDefault();detail();heatTapTarget=el}});
+   }
    el.style.left=r.x+'%';el.style.top=r.y+'%';el.style.width=r.w+'%';el.style.height=r.h+'%';
-   let label=document.createElement('strong');label.textContent=r.item.q.symbol;
-   let pct=document.createElement('span');el.append(label,pct);ha.appendChild(el);tiles.set(r.item.q.symbol,el);
-   const detail=()=>showHeatTip(el,el._heatQuote||r.item.q,el._heatCap||r.item.cap);
-   el.addEventListener('mouseenter',detail);
-   el.addEventListener('mouseleave',()=>{if(heatTipTarget===el)hideHeatTip()});
-   el.addEventListener('focus',detail);
-   el.addEventListener('blur',()=>{if(heatTipTarget===el)hideHeatTip()});
-   el.addEventListener('click',event=>{if(event.pointerType==='touch'&&heatTapTarget!==el){event.preventDefault();detail();heatTapTarget=el}});
-
   }
  }
  for(const e of weighted){
