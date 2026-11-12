@@ -829,7 +829,15 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 
 .heat-switch{display:flex;align-items:center;gap:.45rem;margin:9px 0;color:var(--ink)}.heat-switch select{font:inherit;padding:.55rem .6rem;min-width:150px;border-radius:6px;background:var(--panel);color:var(--ink);border:1px solid var(--border);cursor:pointer}
 .heat-panel[hidden],.tablewrap[hidden],.heat-tip[hidden]{display:none!important}
-html{background-color:var(--bg);background-image:radial-gradient(ellipse 65% 55% at 100% 0%,light-dark(rgba(66,177,174,.10),rgba(12,91,92,.19)),transparent 72%),radial-gradient(ellipse 60% 58% at 0% 100%,light-dark(rgba(77,174,162,.10),rgba(12,92,86,.17)),transparent 76%);background-attachment:fixed}
+/* Homepage-inspired corner ambience on :root itself. The earlier :root
+   background shorthand otherwise wins over an html background-image rule. */
+:root{
+ background:
+  radial-gradient(ellipse 660px 530px at calc(100% + 180px) -40px,light-dark(rgba(12,147,150,.16),rgba(48,200,184,.18)) 0%,transparent 84%),
+  radial-gradient(ellipse 530px 500px at -100px 100%,light-dark(rgba(12,147,150,.15),rgba(48,200,184,.16)) 0%,transparent 86%),
+  var(--bg);
+ background-attachment:fixed;
+}
 body{background:transparent}
 .heat-tip{position:fixed;z-index:1000;pointer-events:none;box-sizing:border-box;width:max-content;max-width:min(320px,calc(100vw - 24px));padding:12px 14px;background:var(--panel);color:var(--ink);border:1px solid var(--accent);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.36);font-size:13px;line-height:1.5}
 .heat-tip strong{display:block;color:var(--accent);font-size:15px}.heat-tip-row{display:flex;justify-content:space-between;gap:12px}.heat-tip-row span:last-child{font-variant-numeric:tabular-nums;text-align:right}.heat-tip-note{color:var(--muted);font-size:11px;margin-top:6px}
