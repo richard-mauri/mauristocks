@@ -1852,15 +1852,24 @@ func main() {
 		log.Fatalf("Invalid port %q: %v", *port, err)
 	}
 	if os.Getenv("FINNHUB_API_KEY")!="" {log.Print("Finnhub company profiles: enabled")} else {log.Print("Finnhub company profiles: disabled (verified mappings only)")}
+	activity,activityErr:=NewActivityReporter(os.Getenv("STOCKS_ACTIVITY_URL"),os.Getenv("HOMEPAGE_ACTIVITY_KEY_STOCKS"))
+	if activityErr!=nil {log.Print("MauriStocks activity reporting disabled: invalid configuration")}
+	if activityErr!=nil {activity=nil}
+	if activity!=nil {
+	 ctx,cancel:=context.WithCancel(context.Background())
+	 defer cancel()
+	 go activity.Run(ctx)
+	}
+
  addr := net.JoinHostPort(*host, *port)
 	tmpl := template.Must(template.New("index").Parse(page))
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/quotes", quotesHandler)
- mux.HandleFunc("/api/market-caps",marketCapsHandler)
- mux.HandleFunc("/api/market-top",topMarketHandler)
- mux.HandleFunc("/api/company", companyHandler)
- mux.HandleFunc("/company", companyRedirectHandler)
- mux.HandleFunc("/api/most-active", mostActiveHandler)
+ mux.HandleFunc("/api/market-caps",track(marketCapsHandler))
+ mux.HandleFunc("/api/market-top",track(topMarketHandler))
+ mux.HandleFunc("/api/company", track(companyHandler))
+ mux.HandleFunc("/company", track(companyRedirectHandler))
+ mux.HandleFunc("/api/most-active", track(mostActiveHandler))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("ok")) })
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
