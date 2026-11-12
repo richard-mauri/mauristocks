@@ -1157,7 +1157,7 @@ function paintHeatmap(){
  const total=quotes.length,done=quotes.filter(q=>capCompleted.has(q.symbol)).length;
  const currentKey=[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort().join(',');
  const ready=capState==='ready'&&capKey===currentKey;
- hs.textContent=!total?'Waiting for quotes…':ready?'Loaded • '+weighted.length+' weighted · '+missing.length+' unavailable/unweighted':capState==='error'&&capKey===currentKey?'Capitalization lookup interrupted • '+weighted.length+' weighted':capBusy?'Loading capitalization • '+done+'/'+total+' checked · '+weighted.length+' weighted':'Preparing capitalization…';
+ hs.textContent=!total?'Waiting for quotes…':ready?'Complete • '+weighted.length+' weighted · '+missing.length+' unavailable/unweighted':capState==='error'&&capKey===currentKey?'Capitalization lookup interrupted • '+weighted.length+' weighted':capBusy?'Loading capitalization • '+done+'/'+total+' checked · '+weighted.length+' weighted':'Preparing capitalization…';
  let key=weighted.map(a=>a.q.symbol+':'+a.cap).join('|');
  if(key!==layoutKey){
   layoutKey=key;hideHeatTip();ha.replaceChildren();tiles.clear();
@@ -1190,49 +1190,102 @@ function paintHeatmap(){
  if(missing.length&&!capBusy){let label=document.createElement('span');label.textContent='Unweighted / unavailable:';hm.appendChild(label);
   for(const q of missing){let el=document.createElement('span');el.textContent=q.symbol;hm.appendChild(el)}}
 }
-async function loadCaps(){
- if(heatView!=='heatmap'||capBusy||!quotes.length)return;
- const symbols=[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort(),key=symbols.join(',');
- if(key===capKey)return;
- capState='loading';paintHeatmap();
- // The browser cache survives a local test-server restart, avoiding another
- // 20-symbol cold lookup. Metadata is public; no tokens are stored here.
+// Cache capitalization by symbol, not by complete watchlist. This allows
+// overlapping personal lists to reuse previously checked positive and missing
+// entries without repeating the Finnhub request on every selection.
+const capRecordKey='mauristocks_cap_records_v1';
+const capRecords=new Map();
+let capRecordsLoaded=false;
+function loadCapRecords(){
+ if(capRecordsLoaded)return;
+ capRecordsLoaded=true;
+ const now=Date.now();
  try{
-  const saved=JSON.parse(localStorage.getItem('mauristocks_cap_cache_v1')||'null');
-  if(saved&&saved.symbols===key&&saved.expires>Date.now()&&Array.isArray(saved.items)){
-   caps=new Map(saved.items.filter(item=>Array.isArray(item)&&typeof item[0]==='string'&&Number.isFinite(item[1])&&item[1]>0));
-   capCompleted=new Set(symbols);capKey=key;capError='';capBusy=false;capState='ready';layoutKey='';paintHeatmap();return;
+  const stored=JSON.parse(localStorage.getItem(capRecordKey)||'null');
+  if(stored&&Array.isArray(stored.items)){
+   for(const record of stored.items){
+    if(!Array.isArray(record)||record.length!==3)continue;
+    const [symbol,value,expires]=record;
+    if(typeof symbol!=='string'||!/^[A-Z0-9][A-Z0-9.^=-]{0,17}$/.test(symbol)||!Number.isFinite(expires)||expires<=now)continue;
+    if(value!==null&&(!Number.isFinite(value)||value<=0))continue;
+    capRecords.set(symbol,{value,expires});
+   }
   }
  }catch(_){}
- capBusy=true;capState='loading';capError='';capCompleted=new Set();caps=new Map();layoutKey='';
- // Request modest batches so tiles emerge while the rest of the watchlist loads.
- // The server independently rate-limits and caches capitalization.
+ // Recover the earlier full-watchlist cache without losing already fetched data.
  try{
-  for(let i=0;i<symbols.length;i+=3){
-   const batch=symbols.slice(i,i+3),response=await fetch('/api/market-caps?symbols='+encodeURIComponent(batch.join(',')),{cache:'no-store'});
+  const old=JSON.parse(localStorage.getItem('mauristocks_cap_cache_v1')||'null');
+  if(old&&old.expires>now&&typeof old.symbols==='string'&&Array.isArray(old.items)){
+   const values=new Map(old.items.filter(x=>Array.isArray(x)&&x.length===2&&Number.isFinite(x[1])&&x[1]>0));
+   for(const symbol of old.symbols.split(',')){
+    if(!symbol||capRecords.has(symbol))continue;
+    capRecords.set(symbol,{value:values.get(symbol)||null,expires:values.has(symbol)?old.expires:Math.min(old.expires,now+60*60*1000)});
+   }
+  }
+ }catch(_){}
+}
+function persistCapRecords(){
+ try{
+  const now=Date.now();
+  const items=[...capRecords].filter(([,r])=>r.expires>now).map(([symbol,r])=>[symbol,r.value,r.expires]);
+  localStorage.setItem(capRecordKey,JSON.stringify({items}));
+ }catch(_){}
+}
+function currentCapSymbols(){
+ return [...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort();
+}
+async function loadCaps(){
+ if(heatView!=='heatmap'||!quotes.length)return;
+ const symbols=currentCapSymbols(),key=symbols.join(',');
+ if(capBusy)return; // The in-flight lookup will trigger this again if the watchlist changed.
+ if(capKey===key&&capState==='ready')return;
+ loadCapRecords();
+ capCompleted=new Set();caps=new Map();capError='';
+ const now=Date.now(),needed=[];
+ for(const symbol of symbols){
+  const record=capRecords.get(symbol);
+  if(record&&record.expires>now){
+   capCompleted.add(symbol);
+   if(Number.isFinite(record.value)&&record.value>0)caps.set(symbol,record.value);
+  }else{
+   needed.push(symbol);
+  }
+ }
+ layoutKey='';
+ capState=needed.length?'loading':'ready';
+ if(!needed.length)capKey=key;
+ paintHeatmap();
+ if(!needed.length)return;
+ capBusy=true;
+ try{
+  for(let i=0;i<needed.length;i+=3){
+   const batch=needed.slice(i,i+3);
+   const response=await fetch('/api/market-caps?symbols='+encodeURIComponent(batch.join(',')),{cache:'no-store'});
    if(!response.ok)throw Error('HTTP '+response.status);
    const payload=await response.json();
    if(!Array.isArray(payload.items))throw Error('Invalid capitalization response');
-   if(key!==[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort().join(','))return;
-   for(const symbol of batch)capCompleted.add(symbol);
-   for(const item of payload.items){
-    if(batch.includes(item.symbol)&&Number.isFinite(item.market_cap)&&item.market_cap>0)caps.set(item.symbol,item.market_cap);
+   const found=new Map(payload.items.filter(item=>batch.includes(item.symbol)).map(item=>[item.symbol,item]));
+   const expiresAt=Date.now();
+   for(const symbol of batch){
+    const item=found.get(symbol);
+    const value=item&&Number.isFinite(item.market_cap)&&item.market_cap>0?item.market_cap:null;
+    capRecords.set(symbol,{value,expires:expiresAt+(value===null?60*60*1000:12*60*60*1000)});
+    if(currentCapSymbols().join(',')===key){
+     capCompleted.add(symbol);
+     if(value!==null)caps.set(symbol,value);
+    }
    }
+   persistCapRecords();
+   if(currentCapSymbols().join(',')!==key)return;
    paintHeatmap();
   }
   capKey=key;capState='ready';
-  try{
-   localStorage.setItem('mauristocks_cap_cache_v1',JSON.stringify({
-    symbols:key,expires:Date.now()+12*60*60*1000,items:[...caps]
-   }));
-  }catch(_){}
- }catch(e){
-  capError=String(e.message||e);
+ }catch(error){
+  capError=String(error.message||error);
   capKey=key;capState='error';
  }finally{
   capBusy=false;paintHeatmap();
-  const current=[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort().join(',');
-  if(heatView==='heatmap'&&current!==key)loadCaps();
+  if(heatView==='heatmap'&&currentCapSymbols().join(',')!==key)loadCaps();
  }
 }
 
