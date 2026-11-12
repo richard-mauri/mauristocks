@@ -841,7 +841,7 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 body{background:transparent}
 .heat-tip{position:fixed;z-index:1000;pointer-events:none;box-sizing:border-box;width:max-content;max-width:min(320px,calc(100vw - 24px));padding:12px 14px;background:var(--panel);color:var(--ink);border:1px solid var(--accent);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.36);font-size:13px;line-height:1.5}
 .heat-tip strong{display:block;color:var(--accent);font-size:15px}.heat-tip-row{display:flex;justify-content:space-between;gap:12px}.heat-tip-row span:last-child{font-variant-numeric:tabular-nums;text-align:right}.heat-tip-note{color:var(--muted);font-size:11px;margin-top:6px}
-.heat-panel{background:linear-gradient(146deg,color-mix(in srgb,var(--soft) 28%,transparent),transparent 58%),var(--panel);border:1px solid var(--border);border-radius:18px;padding:14px;box-shadow:0 12px 32px rgba(0,0,0,.10);margin:8px 0 16px;box-sizing:border-box}
+.heat-panel{background:linear-gradient(146deg,color-mix(in srgb,var(--soft) 28%,transparent),transparent 58%),var(--panel);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:18px;padding:14px;box-shadow:0 12px 32px rgba(0,0,0,.10);margin:8px 0 16px;box-sizing:border-box}
 .heat-panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:0 3px}
 .heat-panel-heading{display:flex;flex-direction:column;gap:2px;min-width:0}
 .heat-panel-kicker{color:var(--muted);font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;font-weight:700}
