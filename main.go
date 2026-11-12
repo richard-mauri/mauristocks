@@ -1404,13 +1404,28 @@ async function refreshQuotes(){
    const expiry=Date.now()+6*60*60*1000;
    for(const symbol of symbols)capRecords.set(symbol,{value:sourceCaps.get(symbol)||null,expires:expiry});
    persistCapRecords();
-   capKey='';
-   // Show correctly sized tiles immediately, without claiming prices have
-   // loaded. Quotes and regular-session color arrive in the usual quote fetch.
-   quotes=symbols.map(symbol=>({symbol,regular_price:null,previous_close:null}));
-   renderQuotes();
-   paintHeatmap();
-   loadCaps();
+   // A timed/manual refresh must retain the current quotes and colors.
+   // Only a genuinely new symbol universe gets neutral placeholder tiles.
+   const displayedSymbols=new Set(quotes.map(q=>q.symbol));
+   const sameUniverse=quotes.length===symbols.length&&symbols.every(symbol=>displayedSymbols.has(symbol));
+   if(!sameUniverse){
+    capKey='';
+    quotes=symbols.map(symbol=>({symbol,regular_price:null,previous_close:null}));
+    renderQuotes();
+    paintHeatmap();
+    loadCaps();
+   }else{
+    // If the ranking snapshot changes capitalization but not membership,
+    // update tile geometry in place while retaining the last quote colors.
+    const capsChanged=symbols.some(symbol=>(caps.get(symbol)||null)!==(sourceCaps.get(symbol)||null));
+    if(capsChanged){
+     caps=new Map(sourceCaps);
+     capCompleted=new Set(symbols);
+     capKey=[...symbols].sort().join(',');
+     capState='ready';
+     paintHeatmap();
+    }
+   }
   }else if(activeWatchlist===dynamicName){
    const ranked=await fetch('/api/most-active',{cache:'no-store'});
    if(!ranked.ok)throw new Error('Most Active ranking unavailable: '+(await ranked.text()).trim());
