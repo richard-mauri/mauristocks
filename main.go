@@ -1141,6 +1141,15 @@ async function loadCaps(){
  if(heatView!=='heatmap'||capBusy||!quotes.length)return;
  const symbols=[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort(),key=symbols.join(',');
  if(key===capKey)return;
+ // The browser cache survives a local test-server restart, avoiding another
+ // 20-symbol cold lookup. Metadata is public; no tokens are stored here.
+ try{
+  const saved=JSON.parse(localStorage.getItem('mauristocks_cap_cache_v1')||'null');
+  if(saved&&saved.symbols===key&&saved.expires>Date.now()&&Array.isArray(saved.items)){
+   caps=new Map(saved.items.filter(item=>Array.isArray(item)&&typeof item[0]==='string'&&Number.isFinite(item[1])&&item[1]>0));
+   capCompleted=new Set(symbols);capKey=key;capError='';capBusy=false;layoutKey='';paintHeatmap();return;
+  }
+ }catch(_){}
  capBusy=true;capError='';capCompleted=new Set();caps=new Map();layoutKey='';
  // Request modest batches so tiles emerge while the rest of the watchlist loads.
  // The server independently rate-limits and caches capitalization.
@@ -1158,6 +1167,11 @@ async function loadCaps(){
    paintHeatmap();
   }
   capKey=key;
+  try{
+   localStorage.setItem('mauristocks_cap_cache_v1',JSON.stringify({
+    symbols:key,expires:Date.now()+12*60*60*1000,items:[...caps]
+   }));
+  }catch(_){}
  }catch(e){
   capError=String(e.message||e);
   capKey=key;
