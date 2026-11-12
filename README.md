@@ -21,9 +21,17 @@ You can refresh quotes manually or choose Never, 5 seconds, 30 seconds, 1 minute
 
 Click a ticker to open the selected research destination: Google Finance, Stock Analysis, a known company website or an investor-relations page when a verified destination is available. Company website discovery can optionally be enabled using Finnhub.
 
-A **Columns** menu above the quote table lets you show or hide individual columns and reset their visibility. Visible columns automatically fit their content with modest padding; manual resizing is not necessary. Column visibility preferences are saved in this browser (previously saved manual widths are ignored). The Symbol column stays visible, and extended-session pricing still disappears automatically during regular market sessions. The Symbol links destination selector is next to Columns.
+A **Columns** menu inside the Table panel (and hidden in Heatmap view) lets you show or hide individual columns and reset their visibility. Visible columns automatically fit their content with modest padding; manual resizing is not necessary. Column visibility preferences are saved in this browser (previously saved manual widths are ignored). The Symbol column stays visible, and extended-session pricing still disappears automatically during regular market sessions. The Symbol links destination selector is next to Columns.
 
 An **About / Data Notes** section expands for more explanation and is collapsed by default on phones and computers. The table may scroll horizontally on a narrow screen.
+
+## Watchlist heatmap (draft feature, Issue #13)
+
+Use the theme-matched **View** dropdown (Table or Heatmap) to switch views of the currently selected watchlist. The heatmap sits in a recessed market panel with a muted slate-teal surround, a fine border, inset depth, a watchlist title and concise coverage status. These styles use existing theme variables and do not change the red/green price colors or shared palette. The heatmap sizes company tiles in proportion to market capitalization and colors them by **regular-market price versus previous close**, independently of the table's active-session Change %. The browser measures actual tile pixel dimensions and rendered text widths to show the symbol and percentage change when each fits; even small tiles may show a ticker if space permits. Tile details appear in a readable hover/focus popup (first tap on touch devices) showing capitalization, regular price, change and quote time; tapping again follows the selected research link. Tiles open the existing selected research destination. Symbols without valid capitalization (including ETFs and some unsupported tickers) appear in a separate **Unweighted / unavailable** group rather than receiving invented weights.
+
+Capitalization arrives in small batches so weighted tiles appear progressively on first use. A per-symbol browser cache reuses capitalization across overlapping watchlists and test-server restarts (12 hours for valid capitalization, one hour for unavailable values); it stores no API credentials. Previously cached watchlist-level results are migrated automatically. The heatmap follows the application's unchanged shared light/dark palette and cyan accents, with faint top-right/bottom-left background glows; it never displays server credential instructions to browser users.\n\nThe heatmap reuses the existing `/api/quotes` responses and the same Never / 5 seconds / 30 seconds / 1 minute / 5 minutes refresh control. It does **not** start a separate quote timer or claim exchange-level real-time updates. Only tile values and colors repaint during normal quote refreshes; tile area is recomputed if capitalization/selected symbols change. Automatic requests still pause while the page is hidden.
+
+Weighted tiles require **`FINNHUB_API_KEY` configured server-side**. The independent `/api/market-caps?symbols=NVDA,AVGO` endpoint requests Finnhub Company Profile 2 metadata, validates the ticker and USD currency, converts the provider's USD-million capitalization to USD, rate-limits upstream requests, and caches successful values for 24 hours and unsupported values for one hour. It may be slow during an initially uncached watchlist. Missing key, coverage, quota or provider failures leave the quote table usable but may prevent weighted tiles from displaying. Do not embed the Finnhub key in browser code. This feature has not yet received owner Mac/Safari acceptance.
 
 ## Requirements and local use
 
@@ -47,6 +55,7 @@ To optionally look up company websites, configure `FINNHUB_API_KEY` as a **serve
 | `/` | Browser quote dashboard |
 | `/api/quotes` | Default symbols or `?symbols=MU,NVDA,AVGO` |
 | `/api/most-active` | Dynamic volume-ranked list when provider access succeeds |
+| `/api/market-caps?symbols=NVDA,AVGO` | Independent cached capitalization metadata (requires `FINNHUB_API_KEY`) |
 | `/api/company?symbol=MU` | Resolved company website metadata |
 | `/company?symbol=MU` | Redirect to resolved company website when known |
 | `/healthz` | Health response |

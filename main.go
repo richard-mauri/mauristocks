@@ -587,6 +587,78 @@ func quotesHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(Response{FetchedAt: time.Now().UTC(), Quotes: result})
 }
 
+
+type marketCapItem struct {
+ Symbol string `json:"symbol"`
+ MarketCap *float64 `json:"market_cap,omitempty"`
+ AsOf *time.Time `json:"asof,omitempty"`
+ Source string `json:"source,omitempty"`
+}
+type marketCapEntry struct { item marketCapItem; expires time.Time }
+var marketCaps = struct {
+ sync.Mutex
+ entries map[string]marketCapEntry
+ nextRequest time.Time
+}{entries:make(map[string]marketCapEntry)}
+// Company Profile 2 capitalization is denominated in millions. Convert to USD.
+func lookupMarketCap(ctx context.Context,symbol string) marketCapItem {
+ item:=marketCapItem{Symbol:symbol}
+ token:=os.Getenv("FINNHUB_API_KEY")
+ if token=="" {return item}
+ marketCaps.Lock()
+ if entry,ok:=marketCaps.entries[symbol];ok && time.Now().Before(entry.expires) {
+  marketCaps.Unlock();return entry.item
+ }
+ start:=time.Now()
+ if marketCaps.nextRequest.After(start){start=marketCaps.nextRequest}
+ marketCaps.nextRequest=start.Add(1100*time.Millisecond)
+ marketCaps.Unlock()
+ if delay:=time.Until(start);delay>0 {
+  select {case <-ctx.Done():return item;case <-time.After(delay):}
+ }
+ req,err:=http.NewRequestWithContext(ctx,http.MethodGet,"https://finnhub.io/api/v1/stock/profile2?symbol="+url.QueryEscape(symbol),nil)
+ if err!=nil{return item}
+ req.Header.Set("X-Finnhub-Token",token)
+ req.Header.Set("Accept","application/json")
+ resp,err:=client.Do(req)
+ if err!=nil{return item}
+ defer resp.Body.Close()
+ if resp.StatusCode!=http.StatusOK {return item}
+ var profile struct {
+  Ticker string `json:"ticker"`
+  Currency string `json:"currency"`
+  MarketCapitalization *float64 `json:"marketCapitalization"`
+ }
+ if json.NewDecoder(io.LimitReader(resp.Body,65536)).Decode(&profile)!=nil{return item}
+ if strings.EqualFold(profile.Ticker,symbol)&&strings.EqualFold(profile.Currency,"USD")&&profile.MarketCapitalization!=nil {
+  n:=*profile.MarketCapitalization*1e6
+  if n>0&&!math.IsInf(n,0)&&!math.IsNaN(n){
+   now:=time.Now().UTC()
+   item.MarketCap=&n;item.AsOf=&now;item.Source="Finnhub profile2"
+  }
+ }
+ ttl:=time.Hour
+ if item.MarketCap!=nil {ttl=24*time.Hour}
+ marketCaps.Lock();marketCaps.entries[symbol]=marketCapEntry{item:item,expires:time.Now().Add(ttl)};marketCaps.Unlock()
+ return item
+}
+func marketCapsHandler(w http.ResponseWriter,r *http.Request){
+ if r.Method!=http.MethodGet {http.Error(w,"GET only",http.StatusMethodNotAllowed);return}
+ if os.Getenv("FINNHUB_API_KEY")=="" {http.Error(w,"market-cap weighting requires FINNHUB_API_KEY",http.StatusServiceUnavailable);return}
+ symbols,err:=normalize(r.URL.Query().Get("symbols"))
+ if err!=nil{http.Error(w,err.Error(),http.StatusBadRequest);return}
+ if len(symbols)>50 {http.Error(w,"maximum 50 symbols",http.StatusBadRequest);return}
+ ctx,cancel:=context.WithTimeout(r.Context(),75*time.Second);defer cancel()
+ items:=make([]marketCapItem,0,len(symbols))
+ for _,symbol:=range symbols {
+  if ctx.Err()!=nil {break}
+  items=append(items,lookupMarketCap(ctx,symbol))
+ }
+ w.Header().Set("Content-Type","application/json; charset=utf-8")
+ w.Header().Set("Cache-Control","no-store")
+ _=json.NewEncoder(w).Encode(map[string]any{"items":items})
+}
+
 const pageTemplate = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mauri's Stock Quotes</title>
 <style>
 :root{color-scheme:light dark;font-family:system-ui,-apple-system,sans-serif}body{max-width:1200px;margin:2rem auto;padding:0 1rem}h1{margin-bottom:.25rem}.muted{opacity:.68;font-size:.88rem}.controls{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.4rem 0}input{flex:1;min-width:260px;padding:.7rem;border:1px solid #888;border-radius:6px;font:inherit}button{padding:.7rem 1.1rem;border:0;border-radius:6px;background:#2868bd;color:white;font:inherit;cursor:pointer}button:disabled{cursor:wait}#refresh{min-width:148px;white-space:nowrap}#refresh.fetching{color:#ffe08a}#refresh.fetching:disabled{opacity:1}table{width:1180px;min-width:1180px;table-layout:fixed;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{padding:.65rem .45rem;text-align:left;border-bottom:1px solid #8885}th{font-size:.85rem}th[data-sort]{cursor:pointer;user-select:none} .sort-button{border:0;background:transparent;color:inherit;padding:.25rem .1rem;font:inherit;font-weight:700;cursor:pointer;width:100%;text-align:left}th.num .sort-button{text-align:right}.sort-button:hover{text-decoration:underline}.sort-button:focus-visible{outline:2px solid #2868bd;outline-offset:2px}.sort-indicator{display:inline-block;margin-left:.2em;color:#8795a4;font-weight:500}.sort-indicator.active{color:#1763b1;font-size:1.15em;font-weight:900}th[data-sort][aria-sort="ascending"] .sort-indicator,th[data-sort][aria-sort="descending"] .sort-indicator{color:#1763b1}th[data-sort]:hover{text-decoration:underline}th[data-sort]:focus-visible{outline:2px solid #2868bd;outline-offset:-2px}th[data-sort][aria-sort="ascending"],th[data-sort][aria-sort="descending"]{text-decoration:underline}td.num,th.num{text-align:right}.up{color:#168243}.down{color:#d54848}.tablewrap{overflow-x:auto}.small{font-size:.8rem;opacity:.75}#message{margin:1rem 0}footer{margin:1.5rem 0;line-height:1.5}footer details summary{cursor:pointer;display:list-item;font-weight:600;width:max-content;max-width:100%;padding:.35rem 0}footer details .notes-content{padding:.45rem 0;max-width:1100px}tr.error td{opacity:.7}a{color:inherit} @media(max-width:650px){body{margin:1rem auto}th,td{font-size:.8rem;padding:.55rem .25rem}}
@@ -671,7 +743,7 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .column-settings[open] .column-menu{position:absolute;top:100%;left:0;z-index:12;padding:10px;min-width:220px;background:var(--panel);border:1px solid var(--border);border-radius:7px}
 .column-menu label{display:flex;align-items:center;gap:8px;padding:5px}
 .column-menu input{min-width:0;flex:none}
-.table-toolbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 10px}.table-toolbar .column-settings{margin:0}.table-toolbar .research-control{display:flex;align-items:center;gap:8px;color:var(--ink)}.table-toolbar .research-control select{background:var(--panel);color:var(--ink);border:1px solid var(--border)}
+.table-toolbar{display:flex;align-items:center;column-gap:30px;row-gap:12px;flex-wrap:wrap;margin:0 0 18px;padding-bottom:16px;border-bottom:1px solid var(--border)}.table-toolbar .column-settings{margin:0}.table-toolbar .research-control{display:flex;align-items:center;gap:8px;color:var(--ink)}.table-toolbar .research-control select{background:var(--panel);color:var(--ink);border:1px solid var(--border)}
 /* Shared semantic palette: ScraperGo / NewsGo. Preserves financial status colors. */
 :root{
  color-scheme:light dark;
@@ -754,7 +826,45 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .suite-dialog button{color:#eef5f8;background:#244954;border:1px solid #41616b;border-radius:9px;padding:9px 18px;font:inherit;cursor:pointer}
 .suite-dialog button:focus-visible,.suite-dialog input:focus-visible{outline:2px solid #69d7e5;outline-offset:2px}
 .suite-account-identity{display:inline-block;margin-top:5px;font-size:.9rem;color:var(--accent);font-weight:650}.suite-account-identity[hidden],.suite-sync-feedback[hidden]{display:none!important}.suite-sync-feedback{margin:8px 0 12px;color:var(--muted);font-size:.93rem;line-height:1.4}.suite-home-link{display:inline-block;margin:4px 0 10px;padding:3px 5px;border-radius:5px;color:var(--accent,#69c6d3);font:500 12px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-decoration:none;opacity:.78;transition:background-color .15s,color .15s,opacity .15s}.suite-home-link:hover{background:rgba(96,151,172,.16);color:var(--accent,#69c6d3);text-decoration:underline;opacity:1}.suite-home-link:focus-visible{outline:2px solid var(--accent,#69c6d3);outline-offset:2px;opacity:1}
-</style></head><body><header class="page-header"><div class="page-heading"><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · __BUILD_LABEL__</span></h1><a class="suite-home-link" href="https://home.themauris.org/">← Back to Homepage</a><span id="suite-account-identity" class="suite-account-identity" hidden></span><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p></div><div class="tanner-brand"><img src="https://raw.githubusercontent.com/richard-mauri/scrapergo/main/tanner.jpg" alt="Tanner, a golden retriever puppy" width="82" height="82"><span>Tanner</span></div></header><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><button id="suite-sync-load" type="button" disabled>Load from account</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><div id="suite-sync-status" class="suite-sync-feedback" role="status" aria-live="polite" hidden></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="table-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label></div><div class="tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
+
+.heat-switch{display:flex;align-items:center;gap:.55rem;margin:0;padding:0;color:var(--ink)}.heat-switch select{font:inherit;padding:.55rem .6rem;min-width:150px;border-radius:6px;background:var(--panel);color:var(--ink);border:1px solid var(--border);cursor:pointer}
+.heat-panel[hidden],.table-panel[hidden],.heat-tip[hidden]{display:none!important}
+.table-panel{border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:22px;background:var(--panel);padding:10px 12px;box-sizing:border-box;margin:0 0 16px}
+.table-panel-toolbar{display:flex;align-items:center;position:relative;z-index:3;padding:0 0 10px}
+.table-panel-toolbar .column-settings{margin:0}
+.table-panel .tablewrap{border:0;border-radius:0;background:transparent;padding:0;margin:0;overflow-x:auto}
+@media(max-width:650px){.table-panel{padding:7px;border-radius:16px}}
+#heat-tablewrap{margin-top:0;margin-bottom:0}
+/* Homepage-inspired corner ambience on :root itself. The earlier :root
+   background shorthand otherwise wins over an html background-image rule. */
+:root{
+ background:
+  radial-gradient(ellipse 660px 530px at calc(100% + 180px) -40px,light-dark(rgba(12,147,150,.16),rgba(48,200,184,.18)) 0%,transparent 84%),
+  radial-gradient(ellipse 530px 500px at -100px 100%,light-dark(rgba(12,147,150,.15),rgba(48,200,184,.16)) 0%,transparent 86%),
+  var(--bg);
+ background-attachment:fixed;
+}
+body{background:transparent}
+.heat-tip{position:fixed;z-index:1000;pointer-events:none;box-sizing:border-box;width:max-content;max-width:min(320px,calc(100vw - 24px));padding:12px 14px;background:var(--panel);color:var(--ink);border:1px solid var(--accent);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.36);font-size:13px;line-height:1.5}
+.heat-tip strong{display:block;color:var(--accent);font-size:15px}.heat-tip-row{display:flex;justify-content:space-between;gap:12px}.heat-tip-row span:last-child{font-variant-numeric:tabular-nums;text-align:right}.heat-tip-note{color:var(--muted);font-size:11px;margin-top:6px}
+.heat-panel{background:linear-gradient(146deg,color-mix(in srgb,var(--soft) 28%,transparent),transparent 58%),var(--panel);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:18px;padding:14px;box-shadow:0 12px 32px rgba(0,0,0,.10);margin:0 0 16px;box-sizing:border-box}
+.heat-panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:0 3px}
+.heat-panel-heading{display:flex;flex-direction:column;gap:2px;min-width:0}
+.heat-panel-kicker{color:var(--muted);font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;font-weight:700}
+.heat-panel-title{color:var(--ink);font-size:1rem;font-weight:700;overflow-wrap:anywhere}
+.heat-panel #heat-status{color:var(--muted);font-size:.8rem;margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.heat-area{position:relative;width:100%;height:430px;background:var(--soft);overflow:hidden;border:1px solid var(--border);border-radius:11px;box-sizing:border-box;box-shadow:inset 0 4px 14px rgba(0,0,0,.15),0 0 0 3px color-mix(in srgb,var(--border) 30%,transparent)}
+.heat-area:empty{height:160px}.heat-area:empty::after{content:"";display:block;margin:28px auto;width:60%;height:12px;border-radius:8px;background:var(--panel)}
+.heat-panel-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:10px 3px 0}
+.heat-panel-foot .muted{margin:0;font-size:.8rem}
+.heat-panel #heat-missing{margin:8px 3px 0}
+@media(max-width:650px){.heat-panel{padding:10px;border-radius:14px}.heat-panel-header{align-items:flex-start}.heat-panel #heat-status{text-align:left}}
+.heat-tile{position:absolute;box-sizing:border-box;border:1px solid var(--panel);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-decoration:none;color:#fff;text-shadow:0 1px 2px #222;padding:2px;font-variant-numeric:tabular-nums;transition:background-color .3s ease,opacity .35s ease}.heat-tile[data-show-change="false"] span{display:none}.heat-tile[data-show-symbol="false"] strong{display:none}
+.heat-tile:focus-visible{outline:3px solid #ffd542;outline-offset:-4px;z-index:1}
+.heat-tile strong{font-size:clamp(10px,1.4vw,18px)}.heat-tile span{font-size:clamp(9px,1vw,14px)}
+.heat-missing{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.heat-missing span{background:#64748b;color:#fff;padding:5px 8px;border-radius:4px;font-size:.85rem}
+@media(max-width:650px){.heat-area{height:310px}.heat-tile strong,.heat-tile span{font-size:10px}}
+</style></head><body><header class="page-header"><div class="page-heading"><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · __BUILD_LABEL__</span></h1><a class="suite-home-link" href="https://home.themauris.org/">← Back to Homepage</a><span id="suite-account-identity" class="suite-account-identity" hidden></span><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p></div><div class="tanner-brand"><img src="https://raw.githubusercontent.com/richard-mauri/scrapergo/main/tanner.jpg" alt="Tanner, a golden retriever puppy" width="82" height="82"><span>Tanner</span></div></header><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><button id="suite-sync-load" type="button" disabled>Load from account</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><div id="suite-sync-status" class="suite-sync-feedback" role="status" aria-live="polite" hidden></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="table-toolbar"><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label><div class="heat-switch"><label for="heat-view">View</label><select id="heat-view" aria-label="Quote display"><option value="table">Table</option><option value="heatmap">Heatmap</option></select></div></div><section id="heat-panel" class="heat-panel" hidden aria-label="Watchlist heatmap"><header class="heat-panel-header"><div class="heat-panel-heading"><span class="heat-panel-kicker">Market overview</span><span id="heat-panel-title" class="heat-panel-title">Default Watchlist</span></div><p id="heat-status" class="muted" role="status"></p></header><div id="heat-area" class="heat-area" aria-label="Market-capitalization weighted tiles"></div><div id="heat-tip" class="heat-tip" role="tooltip" hidden></div><div class="heat-panel-foot"><p class="muted">Tile area: market cap • Color: regular-session percent change from previous close</p></div><div id="heat-missing" class="heat-missing"></div></section><section class="table-panel" id="heat-table-panel" aria-label="Stock quotes table"><div class="table-panel-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details></div><div class="tablewrap" id="heat-tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div></section><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
 <dialog id="suite-dialog" class="suite-dialog" aria-labelledby="suite-dialog-title"><h2 id="suite-dialog-title"></h2><p id="suite-dialog-message"></p><input id="suite-dialog-input" type="text" maxlength="60" hidden aria-label="New watchlist name"><div class="suite-dialog-actions"><button id="suite-dialog-cancel" type="button">Cancel</button><button id="suite-dialog-ok" type="button">OK</button></div></dialog><script>
 // In-page modal uses the same dark palette as the dashboard.
 const suiteDialog=document.getElementById('suite-dialog');
@@ -1001,6 +1111,208 @@ colSpecs.forEach((spec,i)=>{
 });
 const resetCols=document.createElement('button');resetCols.type='button';resetCols.textContent='Reset columns';
 resetCols.addEventListener('click',()=>{colPrefs={hidden:[]};colChecks.forEach(c=>c.checked=true);saveColPrefs();applyColumns()});colMenu.appendChild(resetCols);
+
+const hp=document.getElementById('heat-panel'),ha=document.getElementById('heat-area'),hs=document.getElementById('heat-status'),hm=document.getElementById('heat-missing'),tw=document.getElementById('heat-table-panel');
+const heatSelector=document.getElementById('heat-view'),heatPanelTitle=document.getElementById('heat-panel-title');
+let heatView=localStorage.getItem('mauristocks_view_v1')==='heatmap'?'heatmap':'table';
+let caps=new Map(),capKey='',capBusy=false,layoutKey='',tiles=new Map(),capCompleted=new Set(),capError='',capState='idle';
+const heatTip=document.getElementById('heat-tip');let heatTipTarget=null,heatTapTarget=null;
+function setHeatView(v){
+ heatView=v;hp.hidden=v!=='heatmap';tw.hidden=v!=='table';
+ heatSelector.value=v;
+ try{localStorage.setItem('mauristocks_view_v1',v)}catch(_){}
+ if(v==='heatmap'){paintHeatmap();loadCaps()}else hideHeatTip()
+}
+heatSelector.addEventListener('change',()=>setHeatView(heatSelector.value));
+new ResizeObserver(()=>{if(heatView==='heatmap')for(const tile of tiles.values())fitHeatTileLabels(tile)}).observe(ha);
+function hideHeatTip(){heatTip.hidden=true;heatTipTarget=null;heatTapTarget=null}
+function showHeatTip(node,q,cap){
+ if(!node)return;
+ heatTipTarget=node;heatTip.replaceChildren();
+ const heading=document.createElement('strong');heading.textContent=q.symbol+' — '+(q.name||'Company');heatTip.appendChild(heading);
+ const change=heatChange(q);
+ const rows=[['Market cap',new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',notation:'compact',maximumFractionDigits:2}).format(cap)],['Regular price',money(q.regular_price,q.currency)],['Change',change==null?'Unavailable':(change>=0?'+':'')+change.toFixed(2)+'%'],['Quote time',barTime(q.display_time)]];
+ for(const [name,value] of rows){const row=document.createElement('div');row.className='heat-tip-row';const l=document.createElement('span');l.textContent=name;const v=document.createElement('span');v.textContent=value;row.append(l,v);heatTip.appendChild(row)}
+ const note=document.createElement('div');note.className='heat-tip-note';note.textContent='Select tile to open research';heatTip.appendChild(note);
+ heatTip.hidden=false;
+ const rect=node.getBoundingClientRect(),w=heatTip.offsetWidth,h=heatTip.offsetHeight;
+ heatTip.style.left=Math.max(12,Math.min(window.innerWidth-w-12,rect.left+rect.width/2-w/2))+'px';
+ let top=rect.bottom+10;if(top+h>window.innerHeight-12)top=rect.top-h-10;
+ heatTip.style.top=Math.max(12,top)+'px';
+}
+document.addEventListener('pointerdown',event=>{if(heatTipTarget&&!ha.contains(event.target))hideHeatTip()});
+window.addEventListener('scroll',()=>{if(heatTipTarget)hideHeatTip()},{passive:true});
+window.addEventListener('resize',()=>{if(heatTipTarget)hideHeatTip()});
+function heatChange(q){return Number.isFinite(q.regular_price)&&Number.isFinite(q.previous_close)&&q.previous_close>0?100*(q.regular_price/q.previous_close-1):null}
+function heatColor(p){if(!Number.isFinite(p)||Math.abs(p)<.005)return '#64748b';let v=Math.min(Math.abs(p)/4,1);return 'hsl('+(p>0?145:355)+' '+Math.round(38+v*28)+'% '+Math.round(40-v*12)+'%)'}
+// Binary treemap: sum of child areas equals the parent rectangle.
+function divideHeat(a,x,y,w,h,vertical,out){
+ if(!a.length)return;
+ if(a.length===1){out.push({item:a[0],x,y,w,h});return}
+ const total=a.reduce((v,e)=>v+e.cap,0);let sum=0,k=0;
+ for(let i=0;i<a.length-1;i++){sum+=a[i].cap;k=i+1;if(sum>=total/2)break}
+ let f=sum/total;
+ if(vertical){divideHeat(a.slice(0,k),x,y,w*f,h,false,out);divideHeat(a.slice(k),x+w*f,y,w*(1-f),h,false,out)}
+ else{divideHeat(a.slice(0,k),x,y,w,h*f,true,out);divideHeat(a.slice(k),x,y+h*f,w,h*(1-f),true,out)}
+}
+// Fit labels using actual rendered tile dimensions and font metrics, not
+// percentage-of-heatmap thresholds. A small but wide tile can still show MU.
+const heatLabelCanvas=document.createElement('canvas');
+const heatLabelContext=heatLabelCanvas.getContext('2d');
+function fitHeatTileLabels(el){
+ const symbol=el.querySelector('strong'),change=el.querySelector('span');
+ if(!symbol||!change)return;
+ const width=el.clientWidth,height=el.clientHeight;
+ if(!heatLabelContext){el.dataset.showSymbol=String(width>=32&&height>=17);el.dataset.showChange=String(width>=48&&height>=36);return}
+ heatLabelContext.font=getComputedStyle(symbol).font;
+ const symbolWidth=heatLabelContext.measureText(symbol.textContent).width;
+ heatLabelContext.font=getComputedStyle(change).font;
+ const changeWidth=heatLabelContext.measureText(change.textContent).width;
+ const showSymbol=width>=symbolWidth+9&&height>=19;
+ const showChange=showSymbol&&width>=changeWidth+9&&height>=38;
+ el.dataset.showSymbol=String(showSymbol);
+ el.dataset.showChange=String(showChange);
+}
+
+function paintHeatmap(){
+ if(heatView!=='heatmap')return;
+ heatPanelTitle.textContent=activeWatchlist==='Default'?'Default Watchlist':activeWatchlist;
+ let weighted=quotes.filter(q=>caps.get(q.symbol)>0).map(q=>({q,cap:caps.get(q.symbol)})).sort((a,b)=>b.cap-a.cap||a.q.symbol.localeCompare(b.q.symbol));
+ let missing=quotes.filter(q=>!(caps.get(q.symbol)>0));
+ const total=quotes.length,done=quotes.filter(q=>capCompleted.has(q.symbol)).length;
+ const currentKey=[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort().join(',');
+ const ready=capState==='ready'&&capKey===currentKey;
+ hs.textContent=!total?'Waiting for quotes…':ready?'Complete • '+weighted.length+' weighted · '+missing.length+' unavailable/unweighted':capState==='error'&&capKey===currentKey?'Capitalization lookup interrupted • '+weighted.length+' weighted':capBusy?'Loading capitalization • '+done+'/'+total+' checked · '+weighted.length+' weighted':'Preparing capitalization…';
+ let key=weighted.map(a=>a.q.symbol+':'+a.cap).join('|');
+ if(key!==layoutKey){
+  layoutKey=key;hideHeatTip();ha.replaceChildren();tiles.clear();
+  let rects=[];divideHeat(weighted,0,0,100,100,true,rects);
+  for(const r of rects){
+   let el=document.createElement('a');el.className='heat-tile';
+   el.style.left=r.x+'%';el.style.top=r.y+'%';el.style.width=r.w+'%';el.style.height=r.h+'%';
+   let label=document.createElement('strong');label.textContent=r.item.q.symbol;
+   let pct=document.createElement('span');el.append(label,pct);ha.appendChild(el);tiles.set(r.item.q.symbol,el);
+   const detail=()=>showHeatTip(el,el._heatQuote||r.item.q,el._heatCap||r.item.cap);
+   el.addEventListener('mouseenter',detail);
+   el.addEventListener('mouseleave',()=>{if(heatTipTarget===el)hideHeatTip()});
+   el.addEventListener('focus',detail);
+   el.addEventListener('blur',()=>{if(heatTipTarget===el)hideHeatTip()});
+   el.addEventListener('click',event=>{if(event.pointerType==='touch'&&heatTapTarget!==el){event.preventDefault();detail();heatTapTarget=el}});
+
+  }
+ }
+ for(const e of weighted){
+  let q=e.q,el=tiles.get(q.symbol),p=heatChange(q),link=researchURL(q);
+  el.style.backgroundColor=heatColor(p);
+  el.lastChild.textContent=p==null?'—':(p>=0?'+':'')+p.toFixed(2)+'%';
+  el._heatQuote=q;el._heatCap=e.cap;el.setAttribute('aria-label',q.symbol+' '+(q.name||'')+' '+el.lastChild.textContent);
+  if(heatTipTarget===el)showHeatTip(el,q,e.cap);
+  if(link){el.href=link;el.target='_blank';el.rel='noopener noreferrer'}else el.removeAttribute('href');
+  fitHeatTileLabels(el);
+ }
+ hm.replaceChildren();
+ if(missing.length&&!capBusy){let label=document.createElement('span');label.textContent='Unweighted / unavailable:';hm.appendChild(label);
+  for(const q of missing){let el=document.createElement('span');el.textContent=q.symbol;hm.appendChild(el)}}
+}
+// Cache capitalization by symbol, not by complete watchlist. This allows
+// overlapping personal lists to reuse previously checked positive and missing
+// entries without repeating the Finnhub request on every selection.
+const capRecordKey='mauristocks_cap_records_v1';
+const capRecords=new Map();
+let capRecordsLoaded=false;
+function loadCapRecords(){
+ if(capRecordsLoaded)return;
+ capRecordsLoaded=true;
+ const now=Date.now();
+ try{
+  const stored=JSON.parse(localStorage.getItem(capRecordKey)||'null');
+  if(stored&&Array.isArray(stored.items)){
+   for(const record of stored.items){
+    if(!Array.isArray(record)||record.length!==3)continue;
+    const [symbol,value,expires]=record;
+    if(typeof symbol!=='string'||!/^[A-Z0-9][A-Z0-9.^=-]{0,17}$/.test(symbol)||!Number.isFinite(expires)||expires<=now)continue;
+    if(value!==null&&(!Number.isFinite(value)||value<=0))continue;
+    capRecords.set(symbol,{value,expires});
+   }
+  }
+ }catch(_){}
+ // Recover the earlier full-watchlist cache without losing already fetched data.
+ try{
+  const old=JSON.parse(localStorage.getItem('mauristocks_cap_cache_v1')||'null');
+  if(old&&old.expires>now&&typeof old.symbols==='string'&&Array.isArray(old.items)){
+   const values=new Map(old.items.filter(x=>Array.isArray(x)&&x.length===2&&Number.isFinite(x[1])&&x[1]>0));
+   for(const symbol of old.symbols.split(',')){
+    if(!symbol||capRecords.has(symbol))continue;
+    capRecords.set(symbol,{value:values.get(symbol)||null,expires:values.has(symbol)?old.expires:Math.min(old.expires,now+60*60*1000)});
+   }
+  }
+ }catch(_){}
+}
+function persistCapRecords(){
+ try{
+  const now=Date.now();
+  const items=[...capRecords].filter(([,r])=>r.expires>now).map(([symbol,r])=>[symbol,r.value,r.expires]);
+  localStorage.setItem(capRecordKey,JSON.stringify({items}));
+ }catch(_){}
+}
+function currentCapSymbols(){
+ return [...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort();
+}
+async function loadCaps(){
+ if(heatView!=='heatmap'||!quotes.length)return;
+ const symbols=currentCapSymbols(),key=symbols.join(',');
+ if(capBusy)return; // The in-flight lookup will trigger this again if the watchlist changed.
+ if(capKey===key&&capState==='ready')return;
+ loadCapRecords();
+ capCompleted=new Set();caps=new Map();capError='';
+ const now=Date.now(),needed=[];
+ for(const symbol of symbols){
+  const record=capRecords.get(symbol);
+  if(record&&record.expires>now){
+   capCompleted.add(symbol);
+   if(Number.isFinite(record.value)&&record.value>0)caps.set(symbol,record.value);
+  }else{
+   needed.push(symbol);
+  }
+ }
+ layoutKey='';
+ capState=needed.length?'loading':'ready';
+ if(!needed.length)capKey=key;
+ paintHeatmap();
+ if(!needed.length)return;
+ capBusy=true;
+ try{
+  for(let i=0;i<needed.length;i+=3){
+   const batch=needed.slice(i,i+3);
+   const response=await fetch('/api/market-caps?symbols='+encodeURIComponent(batch.join(',')),{cache:'no-store'});
+   if(!response.ok)throw Error('HTTP '+response.status);
+   const payload=await response.json();
+   if(!Array.isArray(payload.items))throw Error('Invalid capitalization response');
+   const found=new Map(payload.items.filter(item=>batch.includes(item.symbol)).map(item=>[item.symbol,item]));
+   const expiresAt=Date.now();
+   for(const symbol of batch){
+    const item=found.get(symbol);
+    const value=item&&Number.isFinite(item.market_cap)&&item.market_cap>0?item.market_cap:null;
+    capRecords.set(symbol,{value,expires:expiresAt+(value===null?60*60*1000:12*60*60*1000)});
+    if(currentCapSymbols().join(',')===key){
+     capCompleted.add(symbol);
+     if(value!==null)caps.set(symbol,value);
+    }
+   }
+   persistCapRecords();
+   if(currentCapSymbols().join(',')!==key)return;
+   paintHeatmap();
+  }
+  capKey=key;capState='ready';
+ }catch(error){
+  capError=String(error.message||error);
+  capKey=key;capState='error';
+ }finally{
+  capBusy=false;paintHeatmap();
+  if(heatView==='heatmap'&&currentCapSymbols().join(',')!==key)loadCaps();
+ }
+}
+
 function renderQuotes(){
  rows.replaceChildren();
  for(const q of [...quotes].sort(compareQuotes)){
@@ -1092,6 +1404,7 @@ async function refreshQuotes(){
    header.querySelector('button').setAttribute('aria-label','Sort by '+label);
   }
   renderQuotes();
+  paintHeatmap();loadCaps();
   const valid=quotes.filter(q=>q.display_price!=null);
   const extendedCount=quotes.filter(q=>q.extended_price!=null).length;
   const extHead=document.getElementById('extended-heading');extHead.dataset.label=quotes.some(q=>q.session==='premarket')?'Premarket Price':'After-hours Price';
@@ -1295,6 +1608,7 @@ syncLoad.addEventListener('click',async()=>{
 updateSuiteAccountClock();
 refreshSuiteSession();
 window.addEventListener('focus',refreshSuiteSession);
+setHeatView(heatView);
 // Populate the restored watchlist immediately, even when auto refresh is Never.
 refreshQuotes();
 </script></body></html>`
@@ -1419,6 +1733,7 @@ func main() {
 	tmpl := template.Must(template.New("index").Parse(page))
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/quotes", quotesHandler)
+ mux.HandleFunc("/api/market-caps",marketCapsHandler)
  mux.HandleFunc("/api/company", companyHandler)
  mux.HandleFunc("/company", companyRedirectHandler)
  mux.HandleFunc("/api/most-active", mostActiveHandler)
