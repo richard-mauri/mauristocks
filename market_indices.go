@@ -82,7 +82,7 @@ func parseMarketCaps(records [][]string) (map[string]float64,error) {
   if !symbolRE.MatchString(symbol){continue}
   v,err:=strconv.ParseFloat(strings.TrimSpace(record[capCol]),64)
   if err!=nil||v<=0||math.IsNaN(v)||math.IsInf(v,0){continue}
-  caps[symbol]=v
+  if _,exists:=caps[symbol];!exists{caps[symbol]=v}
  }
  if len(caps)<100{return nil,fmt.Errorf("too few valid market-cap rows: %d",len(caps))}
  return caps,nil
