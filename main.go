@@ -870,7 +870,7 @@ body{background:transparent}
 .heat-tile strong{font-size:clamp(10px,1.4vw,18px)}.heat-tile span{font-size:clamp(9px,1vw,14px)}
 .heat-missing{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.heat-missing span{background:#64748b;color:#fff;padding:5px 8px;border-radius:4px;font-size:.85rem}
 @media(max-width:650px){.heat-area{height:310px}.heat-tile strong,.heat-tile span{font-size:10px}}
-</style></head><body><header class="page-header"><div class="page-heading"><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · __BUILD_LABEL__</span></h1><a class="suite-home-link" href="https://home.themauris.org/">← Back to Homepage</a><span id="suite-account-identity" class="suite-account-identity" hidden></span><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p></div><div class="tanner-brand"><img src="https://raw.githubusercontent.com/richard-mauri/scrapergo/main/tanner.jpg" alt="Tanner, a golden retriever puppy" width="82" height="82"><span>Tanner</span></div></header><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><button id="suite-sync-load" type="button" disabled>Load from account</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><div id="suite-sync-status" class="suite-sync-feedback" role="status" aria-live="polite" hidden></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="table-toolbar"><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label><label class="market-control" for="market-select">Market <select id="market-select" aria-label="Market selection"><option value="watchlist">My Watchlists</option><option value="sp500">S&amp;P 500 · Top 30</option><option value="nasdaq100">NASDAQ-100 · Top 30</option><option value="dow30">Dow Jones · 30</option></select></label><div class="heat-switch"><label for="heat-view">View</label><select id="heat-view" aria-label="Quote display"><option value="table">Table</option><option value="heatmap">Heatmap</option></select></div></div><section id="heat-panel" class="heat-panel" hidden aria-label="Watchlist heatmap"><header class="heat-panel-header"><div class="heat-panel-heading"><span class="heat-panel-kicker">Market overview</span><span id="heat-panel-title" class="heat-panel-title">Default Watchlist</span></div><p id="heat-status" class="muted" role="status"></p></header><div class="heat-weight-control"><label for="heat-weight">Tile weighting</label><span class="heat-weight-note">Balanced</span><input id="heat-weight" type="range" min="0.50" max="1.00" step="0.05" value="0.65" aria-label="Heatmap market capitalization weighting exponent"><output id="heat-weight-value" for="heat-weight" class="heat-weight-value">0.65</output><span class="heat-weight-note">Exact market cap (1.00)</span></div><div id="heat-area" class="heat-area" aria-label="Market-capitalization weighted tiles with adjustable size compression"></div><div id="heat-tip" class="heat-tip" role="tooltip" hidden></div><div class="heat-panel-foot"><p class="muted" id="heat-weight-description">Tile area: adjusted market cap (exponent 0.65) • Color: regular-session percent change from previous close</p></div><div id="heat-missing" class="heat-missing"></div></section><section class="table-panel" id="heat-table-panel" aria-label="Stock quotes table"><div class="table-panel-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details></div><div class="tablewrap" id="heat-tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div></section><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
+</style></head><body><header class="page-header"><div class="page-heading"><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · __BUILD_LABEL__</span></h1><a class="suite-home-link" href="https://home.themauris.org/">← Back to Homepage</a><span id="suite-account-identity" class="suite-account-identity" hidden></span><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p></div><div class="tanner-brand"><img src="https://raw.githubusercontent.com/richard-mauri/scrapergo/main/tanner.jpg" alt="Tanner, a golden retriever puppy" width="82" height="82"><span>Tanner</span></div></header><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><div id="suite-sync-status" class="suite-sync-feedback" role="status" aria-live="polite" hidden></div><p id="message" class="muted">Edits to named watchlists save automatically. Use Save As New to create a list. Quotes refresh on demand.</p><div class="table-toolbar"><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label><label class="market-control" for="market-select">Market <select id="market-select" aria-label="Market selection"><option value="watchlist">My Watchlists</option><option value="sp500">S&amp;P 500 · Top 30</option><option value="nasdaq100">NASDAQ-100 · Top 30</option><option value="dow30">Dow Jones · 30</option></select></label><div class="heat-switch"><label for="heat-view">View</label><select id="heat-view" aria-label="Quote display"><option value="table">Table</option><option value="heatmap">Heatmap</option></select></div></div><section id="heat-panel" class="heat-panel" hidden aria-label="Watchlist heatmap"><header class="heat-panel-header"><div class="heat-panel-heading"><span class="heat-panel-kicker">Market overview</span><span id="heat-panel-title" class="heat-panel-title">Default Watchlist</span></div><p id="heat-status" class="muted" role="status"></p></header><div class="heat-weight-control"><label for="heat-weight">Tile weighting</label><span class="heat-weight-note">Balanced</span><input id="heat-weight" type="range" min="0.50" max="1.00" step="0.05" value="0.65" aria-label="Heatmap market capitalization weighting exponent"><output id="heat-weight-value" for="heat-weight" class="heat-weight-value">0.65</output><span class="heat-weight-note">Exact market cap (1.00)</span></div><div id="heat-area" class="heat-area" aria-label="Market-capitalization weighted tiles with adjustable size compression"></div><div id="heat-tip" class="heat-tip" role="tooltip" hidden></div><div class="heat-panel-foot"><p class="muted" id="heat-weight-description">Tile area: adjusted market cap (exponent 0.65) • Color: regular-session percent change from previous close</p></div><div id="heat-missing" class="heat-missing"></div></section><section class="table-panel" id="heat-table-panel" aria-label="Stock quotes table"><div class="table-panel-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details></div><div class="tablewrap" id="heat-tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div></section><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
 <dialog id="suite-dialog" class="suite-dialog" aria-labelledby="suite-dialog-title"><h2 id="suite-dialog-title"></h2><p id="suite-dialog-message"></p><input id="suite-dialog-input" type="text" maxlength="60" hidden aria-label="New watchlist name"><div class="suite-dialog-actions"><button id="suite-dialog-cancel" type="button">Cancel</button><button id="suite-dialog-ok" type="button">OK</button></div></dialog><script>
 // In-page modal uses the same dark palette as the dashboard.
 const suiteDialog=document.getElementById('suite-dialog');
@@ -906,7 +906,7 @@ function suiteAsk(message,kind='confirm'){
 const defaults='MU,AMAT,LRCX,SPCX,AVGO,TSM,TSLA,NVDA,JOBY,PLTR,LMT,AMGN,SNA,FTEC,JEPQ,VOO,IAU,FSTA,IBIT,O';
 const input=document.getElementById('symbols'),button=document.getElementById('refresh'),intervalSelect=document.getElementById('refresh-interval'),rows=document.getElementById('rows'),message=document.getElementById('message'),fetchStatus=document.getElementById('fetch-status');
 const wlSelect=document.getElementById('watchlist-select');
-const wlNew=document.getElementById('watchlist-new'),wlSave=document.getElementById('watchlist-save'),wlDelete=document.getElementById('watchlist-delete');
+const wlNew=document.getElementById('watchlist-new'),wlDelete=document.getElementById('watchlist-delete');
 const wlStatus=document.getElementById('watchlist-status');
 const marketSelect=document.getElementById('market-select');
 const marketNames={watchlist:'My Watchlists',sp500:'S&P 500 · Top 30',nasdaq100:'NASDAQ-100 · Top 30',dow30:'Dow Jones · 30'};
@@ -926,7 +926,7 @@ if(localStorage.getItem(wlKey)===null){const legacy=localStorage.getItem('mauri_
 let activeWatchlist=localStorage.getItem(activeKey)|| (watchlists['My Watchlist']?'My Watchlist':'Default');
 if(activeWatchlist!=='Default'&&activeWatchlist!==dynamicName&&!Object.hasOwn(watchlists,activeWatchlist))activeWatchlist='Default';
 function persistLists(){localStorage.setItem(wlKey,JSON.stringify(watchlists))}
-function updateWatchlistButtons(){const indexed=marketMode!=='watchlist',readOnly=activeWatchlist==='Default'||activeWatchlist===dynamicName;wlSelect.disabled=indexed;wlNew.disabled=indexed;wlSave.disabled=indexed||readOnly;wlDelete.disabled=indexed||readOnly;input.readOnly=indexed||activeWatchlist===dynamicName}
+function updateWatchlistButtons(){const indexed=marketMode!=='watchlist',readOnly=activeWatchlist==='Default'||activeWatchlist===dynamicName;wlSelect.disabled=indexed;wlNew.disabled=indexed;wlDelete.disabled=indexed||readOnly;input.readOnly=indexed||activeWatchlist===dynamicName}
 function updateWatchlistMenu(){wlSelect.replaceChildren();for(const n of ['Default',dynamicName,...Object.keys(watchlists).sort((a,b)=>a.localeCompare(b))]){const op=document.createElement('option');op.value=n;op.textContent=n==='Default'?'Default (20 symbols)':n;wlSelect.appendChild(op)}wlSelect.value=activeWatchlist;updateWatchlistButtons()}
 function selectWatchlist(name,fetchNow=true){if(name!=='Default'&&name!==dynamicName&&!Object.hasOwn(watchlists,name))return;activeWatchlist=name;input.value=name==='Default'?defaults:name===dynamicName?'':watchlists[name];localStorage.setItem(activeKey,name);localStorage.setItem('mauri_stock_symbols',input.value);updateWatchlistMenu();wlStatus.textContent='';if(fetchNow)refreshQuotes()}
 updateWatchlistMenu();selectWatchlist(activeWatchlist,false);
@@ -935,6 +935,7 @@ marketSelect.addEventListener('change',()=>{
  if(button.disabled){marketSelect.value=marketMode;return}
  const next=marketSelect.value;
  if(!Object.hasOwn(marketNames,next))return;
+ saveActiveWatchlist();
  marketMode=next;
  localStorage.setItem('mauristocks_market_v1',next);
  queueSuiteSave();
@@ -945,9 +946,33 @@ marketSelect.addEventListener('change',()=>{
  message.textContent='Loading '+marketNames[next]+'…';
  refreshQuotes();
 });
-wlSelect.addEventListener('change',async()=>{if(button.disabled){wlSelect.value=activeWatchlist;return}if(activeWatchlist!==dynamicName&&input.value!== (activeWatchlist==='Default'?defaults:watchlists[activeWatchlist])&&!(await suiteAsk('Discard unsaved symbol edits and open another watchlist?'))){wlSelect.value=activeWatchlist;return}selectWatchlist(wlSelect.value);queueSuiteSave()});
+// Personal watchlist edits are stored in the browser automatically.
+let watchlistSaveTimer=null;
+function saveActiveWatchlist(){
+ if(watchlistSaveTimer!==null){clearTimeout(watchlistSaveTimer);watchlistSaveTimer=null}
+ if(marketMode!=='watchlist'||activeWatchlist==='Default'||activeWatchlist===dynamicName)return;
+ const symbols=normalizeSymbols(input.value);
+ if(!symbols){wlStatus.textContent='Enter at least one symbol to update this watchlist.';return}
+ if(watchlists[activeWatchlist]===symbols)return;
+ watchlists[activeWatchlist]=symbols;
+ persistLists();
+ localStorage.setItem('mauri_stock_symbols',symbols);
+ wlStatus.textContent='Saved automatically in this browser.';
+ queueSuiteSave();
+}
+input.addEventListener('input',()=>{
+ if(marketMode!=='watchlist'||activeWatchlist==='Default'||activeWatchlist===dynamicName)return;
+ if(watchlistSaveTimer!==null)clearTimeout(watchlistSaveTimer);
+ watchlistSaveTimer=setTimeout(saveActiveWatchlist,600);
+});
+input.addEventListener('change',saveActiveWatchlist);
+wlSelect.addEventListener('change',()=>{
+ if(button.disabled){wlSelect.value=activeWatchlist;return}
+ saveActiveWatchlist();
+ selectWatchlist(wlSelect.value);
+ queueSuiteSave();
+});
 wlNew.addEventListener('click',async()=>{const name=await suiteAsk('Name the new watchlist:','text');if(name===null)return;const n=name.trim();if(!n||n.length>60||(n.toLowerCase()==='default'||n.toLowerCase()===dynamicName.toLowerCase())){wlStatus.textContent='Choose a valid name (up to 60 characters).';return}if(Object.keys(watchlists).some(k=>k.toLowerCase()===n.toLowerCase())){wlStatus.textContent='That watchlist already exists.';return}const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[n]=symbols;persistLists();selectWatchlist(n,false);wlStatus.textContent='Saved '+n+'.';queueSuiteSave()});
-wlSave.addEventListener('click',async()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName)return;const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[activeWatchlist]=symbols;input.value=symbols;persistLists();localStorage.setItem('mauri_stock_symbols',symbols);wlStatus.textContent='Saved '+activeWatchlist+'.';queueSuiteSave()});
 wlDelete.addEventListener('click',async()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName||button.disabled)return;if(!(await suiteAsk('Delete watchlist "'+activeWatchlist+'"?')))return;delete watchlists[activeWatchlist];persistLists();selectWatchlist('Default');wlStatus.textContent='Deleted watchlist.';queueSuiteSave()});
 function money(n,currency){return n==null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:currency||'USD',maximumFractionDigits:2}).format(n)}
 function cell(tr,value,cls){let td=document.createElement('td');td.textContent=value; if(cls)td.className=cls;tr.appendChild(td);return td}
@@ -1427,6 +1452,7 @@ for(const h of sortHeaders){
 renderQuotes();
 async function refreshQuotes(){
  if(button.disabled)return;
+ saveActiveWatchlist();
  let symbols=marketMode==='watchlist'?[...new Set(input.value.toUpperCase().split(',').map(x=>x.trim()).filter(Boolean))]:[];
  if(marketMode==='watchlist'&&activeWatchlist!==dynamicName&&!symbols.length){message.textContent='Enter one or more symbols.';return}
  if(marketMode==='watchlist'&&activeWatchlist!==dynamicName){input.value=symbols.join(',');localStorage.setItem('mauri_stock_symbols',input.value)}
@@ -1550,7 +1576,7 @@ function updateSuiteAccountClock(){
  if(left===0 && suiteSignedIn){
   // Never trust cached expiry to revoke a handoff; Homepage may have
   // extended its parent while this tab was elsewhere.
-  suiteSignedIn=false;syncLoad.disabled=true;
+  suiteSignedIn=false;
  }
  if(suiteHandoff && suiteExpiresAt>0 && left===0 &&
     !expiryCheckPending && Date.now()>=expiryRetryAfter){
@@ -1574,7 +1600,8 @@ let suiteAccountIdentity=null;
 let suiteSavePending=false;
 let suiteSaveQueued=false;
 let suiteSaveTimer=null;
-const syncLoad=document.getElementById('suite-sync-load');
+let suiteCheckedIdentity=null;
+let suiteAccountCheckPending=false;
 const syncEndpoint=suiteBase+'/api/storage/mauristocks';
 async function suiteRequest(path,options={}){
  if(!suiteHandoff)throw Error('Account access unavailable; open MauriStocks from Homepage.');
@@ -1583,7 +1610,7 @@ async function suiteRequest(path,options={}){
  if(response.status===401){
   suiteHandoff='';
   suiteSignedIn=false;
-  syncLoad.disabled=true;
+  
   suiteIdentityEl.hidden=true;
   suiteIdentityEl.textContent='';
   try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
@@ -1609,7 +1636,7 @@ async function suiteRecord(){
 async function refreshSuiteSession(){
  // Preserve the visible identity and countdown during verification.
  if(location.protocol!=='https:' || location.hostname!=='stocks.themauris.org'){
-  suiteSignedIn=false;syncLoad.disabled=true;updateSuiteAccountClock();
+  suiteSignedIn=false;updateSuiteAccountClock();
   suiteFeedback('Not signed in · Browser-only settings');return;
  }
  if(!suiteHandoff && !explicitBrowserOnly){
@@ -1619,21 +1646,22 @@ async function refreshSuiteSession(){
   return;
  }
  if(!suiteHandoff){
-  suiteSignedIn=false;syncLoad.disabled=true;updateSuiteAccountClock();
+  suiteSignedIn=false;updateSuiteAccountClock();
   suiteFeedback('Not signed in · Browser-only settings');return;
  }
  try{
   const profile=await suiteRequest('/api/session/profile');
-  if(profile.status===401){suiteSignedIn=false;syncLoad.disabled=true;updateSuiteAccountClock();suiteFeedback('Account access expired · Open MauriStocks from Homepage.');return}
+  if(profile.status===401){suiteSignedIn=false;updateSuiteAccountClock();suiteFeedback('Account access expired · Open MauriStocks from Homepage.');return}
   if(!profile.ok)throw Error('Account verification HTTP '+profile.status);
   const data=await profile.json();
   suiteExpiresAt=Date.parse(data.expiresAt)||0;
   const identity=typeof data.user==='string'?data.user:'';
   if(!identity){suiteFeedback('Account identity unavailable; browser settings remain local.');return}
   if(suiteAccountIdentity!==identity){suiteRevision=null;suiteInitialOverwriteApproved=false;suiteAccountIdentity=identity}
-  suiteSignedIn=true;syncLoad.disabled=false;
+  suiteSignedIn=true;
   updateSuiteAccountClock();
   suiteFeedback('');
+  void reconcileAccountOnSignIn(identity);
  }catch(e){suiteFeedback('Account connection unavailable; browser settings remain local.')}
 }
 function queueSuiteSave(){
@@ -1670,25 +1698,36 @@ async function saveWatchlistToAccount(){
   suiteFeedback('Settings saved to your account.');
  }catch(e){suiteFeedback(e.message)}finally{suiteSavePending=false}
 }
-syncLoad.addEventListener('click',async()=>{
- syncLoad.disabled=true;
+// Reconcile account settings once per identity. Conflicts require consent.
+async function reconcileAccountOnSignIn(identity){
+ if(!suiteSignedIn||suiteCheckedIdentity===identity||suiteAccountCheckPending)return;
+ suiteAccountCheckPending=true;
  try{
   const existing=await suiteRecord();
-  if(!existing){suiteFeedback('Your account has no saved MauriStocks settings.');return}
-  if(!validSuiteSettings(existing.data))throw Error('Saved account settings have an unsupported format. No local changes made.');
-  if(!(await suiteAsk('Replace watchlists and preferences in this browser with your saved account settings? This will reload MauriStocks.')))return;
-  // Preflight every value before touching localStorage; leave old values alone on quota errors.
+  if(!suiteSignedIn||suiteAccountIdentity!==identity)return;
+  if(!existing){suiteRevision=0;suiteCheckedIdentity=identity;return}
+  if(!validSuiteSettings(existing.data)){
+   suiteFeedback('Account settings have an unsupported format; browser settings unchanged.');
+   suiteCheckedIdentity=identity;return;
+  }
+  const browser=snapshotBrowserSettings().settings,account=existing.data.settings;
+  const same=suiteKeys.every(key=>(browser[key]??null)===(account[key]??null));
+  suiteCheckedIdentity=identity;
+  if(same){suiteRevision=existing.revision;suiteInitialOverwriteApproved=true;return}
+  if(!(await suiteAsk('Saved account settings differ from this browser. Restore account watchlists and preferences here? Cancel preserves browser settings.')))return;
   const backup={};for(const key of suiteKeys)backup[key]=localStorage.getItem(key);
   try{
    for(const key of suiteKeys)localStorage.removeItem(key);
-   for(const [key,value] of Object.entries(existing.data.settings))localStorage.setItem(key,value);
+   for(const [key,value] of Object.entries(account))localStorage.setItem(key,value);
   }catch(e){
    for(const key of suiteKeys){if(backup[key]===null)localStorage.removeItem(key);else localStorage.setItem(key,backup[key])}
    throw Error('Could not apply account settings; browser settings restored.');
   }
   location.reload();
- }catch(e){suiteFeedback(e.message)}finally{syncLoad.disabled=false}
-});
+ }catch(e){suiteFeedback('Account settings could not be checked: '+e.message)}
+ finally{suiteAccountCheckPending=false}
+}
+
 updateSuiteAccountClock();
 refreshSuiteSession();
 window.addEventListener('focus',refreshSuiteSession);
