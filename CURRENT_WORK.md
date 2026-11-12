@@ -1,14 +1,28 @@
 # Current work — MauriStocks
 
-## Issue #13 — market-cap-weighted watchlist heatmap (November 12, 2026)
+## Issue #13 — watchlist heatmap (November 12, 2026)
 
-- **Authoritative baseline:** GitHub `main`, latest identified merge `ead1e7b2f7c4ff99b652aaf1c13ddf881fba5321` (PR #12, Issue #11 session recovery). Reverify the head before integrating subsequent changes.
-- **Branch:** `feat/13-watchlist-heatmap`. Scoped feature work only. Issue: https://github.com/richard-mauri/mauristocks/issues/13.
-- **Approved product scope:** Heatmap of the selected personal/Default watchlist first; market-cap-weighted tile areas and percentage-change color; Table/Heatmap selector; tooltips and existing research links; existing quote refresh settings (Never, 5s, 30s, 1m, 5m) shared by both views.
-- **Shared refresh contract:** Reuse `refreshQuotes()`, `quotes` and `/api/quotes`; do not create independent heatmap polling or duplicate quote traffic. Render from the same snapshot after successful refresh, preserve the existing data on refresh failure, and retain hidden-tab pause semantics. Repaint tile values/colors on each refresh while keeping layout stable until the watchlist, viewport, or cached market caps change.
-- **Market-cap metadata gate:** Existing Yahoo chart results and `Quote` schema do not contain market cap. Test a compatible server-side provider before committing a dependency or claiming weighting works. Investigate existing optional server-side `FINNHUB_API_KEY` using company-profile capitalization (units must be validated). Keep keys server-side, validate source/date/units, cache capitalization much longer than prices, throttle metadata fetches, and never invent missing capitalizations. Clearly separate unweighted/unsupported securities (including funds/ETFs) from weighted common stocks. If a compatible provider cannot be verified, declare this feature blocked rather than quietly substituting arbitrary weights.
-- **Price semantics:** The initial color encodes regular-session percentage change against previous close, not mixed pre/post market baselines. Display the quote timestamp and retrieval timestamp to avoid describing polling as guaranteed live exchange data.
-- **Implementation order:** (1) metadata source proof + tests, (2) safe additive quote metadata API, (3) dependency-light browser squarified treemap, (4) view toggle and shared refresh integration, (5) layout/accessibility/Safari regression, (6) draft PR review. Later scope: major index universes, sector hierarchy, historical periods, export.
-- **Preserve:** Original quote table/sorting, selected watchlists, stars, prices, provider handling, localStorage and per-user Homepage settings, authentication handoff, routes, tunnel and Mac launcher behavior, and semantic version `1.0.0`.
-- **Verification:** No feature implementation, Go/JS test, CI or Mac/Safari acceptance performed in this planning commit. Run `go test -count=1 ./...`, `go build ./...`, existing embedded-script syntax test, exact PR-head CI and owner Mac/Safari acceptance before any merge decision.
-- **Owner boundary:** Draft PR only. No merge, release, deploy, service or tunnel restart, version change, or direct changes to `main` without explicit approval.
+- **Baseline:** GitHub main merge `ead1e7b2f7c4ff99b652aaf1c13ddf881fba5321` (PR #12 merged; previous #11 handoff documentation was stale).
+- **Scoped branch and draft PR:** `feat/13-watchlist-heatmap`; https://github.com/richard-mauri/mauristocks/pull/14. Not merged or deployed.
+- **Implemented:** Table/Heatmap UI switch for the selected watchlist, weighted binary treemap, regular-price versus previous-close color, native research links and titles, browser-local view preference, clearly marked unweighted securities.
+- **Refresh:** Heatmap updates from the existing `refreshQuotes()` and in-memory `quotes`, with the same Never/5/30/60/300-second interval, manual refresh and hidden-tab pause. No second quote loop. Stable tile geometry for changing prices. Separate capitalization lookup only when switching/selecting symbols or opening the heatmap.
+- **Capitalization:** Additive `GET /api/market-caps?symbols=...` route, server-side Finnhub Profile 2 using optional `FINNHUB_API_KEY`, validation of ticker/USD/positive finite capitalization, conversion from USD millions, sequential rate-spaced requests, 24-hour positive and 1-hour missing-value caches. Without a verified, configured API key the heatmap shows the unweighted list and does not fabricate data. The Finnhub free-plan quota/real-world profile coverage still require owner-side verification.
+- **Source files changed:** `main.go`, `dashboard_javascript_syntax_test.go`, `README.md`, `ARCHITECTURE.md`, and this handoff. `DEVELOPMENT.md` and `AGENTS.md` remain unchanged.
+- **Tests added:** HTTP 503 without capitalization credential, 405 unsupported method, and 400 invalid symbols. Existing embedded JavaScript parse test continues in test suite. No actual tests/build run via the connector; GitHub CI for latest PR head is not yet reported. Mac/Safari, live Yahoo quote/provider requests and Finnhub capitalization not verified.
+- **Next:** Verify exact PR-head GitHub Actions, Go build/test and JS parse; verify real Finnhub key, missing ETF securities and quota behavior; inspect Safari desktop/mobile layout; confirm watchlist change, reload, timed and manual refresh, research links, table, account load, light/dark and hidden-tab behavior. Fix any findings in same branch and update PR. Never represent CI as Mac/Safari acceptance.
+- **Owner boundary:** Draft only; no merge, tag, release, semantic version bump, service/tunnel restart, or deployment without explicit owner approval.
+
+## Mac verification (only after owner permits service restart)
+
+```sh
+cd ~/projects/mauristocks
+git status -sb
+git fetch origin
+git switch feat/13-watchlist-heatmap
+git pull --ff-only origin feat/13-watchlist-heatmap
+go test -count=1 ./...
+go build ./...
+bash ./devbuild.sh
+./mauristocks -version
+# Inspect the local stocksgo.sh launcher and get approval before running it.
+```
