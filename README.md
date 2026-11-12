@@ -27,7 +27,7 @@ An **About / Data Notes** section expands for more explanation and is collapsed 
 
 ## Watchlist heatmap (draft feature, Issue #13)
 
-Use **Table / Heatmap** to switch views of the currently selected watchlist. The heatmap sizes company tiles in proportion to market capitalization and colors them by **regular-market price versus previous close**, independently of the table's active-session Change %. Tile titles show capitalization, regular price, change and quote time. Tiles open the existing selected research destination. Symbols without valid capitalization (including ETFs and some unsupported tickers) appear in a separate **Unweighted / unavailable** group rather than receiving invented weights.
+Use the theme-matched **View** dropdown (Table or Heatmap) to switch views of the currently selected watchlist. The heatmap sizes company tiles in proportion to market capitalization and colors them by **regular-market price versus previous close**, independently of the table's active-session Change %. Tile titles show capitalization, regular price, change and quote time. Tiles open the existing selected research destination. Symbols without valid capitalization (including ETFs and some unsupported tickers) appear in a separate **Unweighted / unavailable** group rather than receiving invented weights.
 
 The heatmap reuses the existing `/api/quotes` responses and the same Never / 5 seconds / 30 seconds / 1 minute / 5 minutes refresh control. It does **not** start a separate quote timer or claim exchange-level real-time updates. Only tile values and colors repaint during normal quote refreshes; tile area is recomputed if capitalization/selected symbols change. Automatic requests still pause while the page is hidden.
 
