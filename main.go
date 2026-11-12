@@ -827,8 +827,9 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .suite-dialog button:focus-visible,.suite-dialog input:focus-visible{outline:2px solid #69d7e5;outline-offset:2px}
 .suite-account-identity{display:inline-block;margin-top:5px;font-size:.9rem;color:var(--accent);font-weight:650}.suite-account-identity[hidden],.suite-sync-feedback[hidden]{display:none!important}.suite-sync-feedback{margin:8px 0 12px;color:var(--muted);font-size:.93rem;line-height:1.4}.suite-home-link{display:inline-block;margin:4px 0 10px;padding:3px 5px;border-radius:5px;color:var(--accent,#69c6d3);font:500 12px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-decoration:none;opacity:.78;transition:background-color .15s,color .15s,opacity .15s}.suite-home-link:hover{background:rgba(96,151,172,.16);color:var(--accent,#69c6d3);text-decoration:underline;opacity:1}.suite-home-link:focus-visible{outline:2px solid var(--accent,#69c6d3);outline-offset:2px;opacity:1}
 
-.heat-switch{display:flex;align-items:center;gap:.45rem;margin:9px 0;color:var(--ink)}.heat-switch select{font:inherit;padding:.55rem .6rem;min-width:150px;border-radius:6px;background:var(--panel);color:var(--ink);border:1px solid var(--border);cursor:pointer}
+.heat-switch{display:flex;align-items:center;gap:.55rem;margin:18px 0 18px;padding-top:17px;border-top:1px solid var(--border);color:var(--ink)}.heat-switch select{font:inherit;padding:.55rem .6rem;min-width:150px;border-radius:6px;background:var(--panel);color:var(--ink);border:1px solid var(--border);cursor:pointer}
 .heat-panel[hidden],.tablewrap[hidden],.heat-tip[hidden]{display:none!important}
+#heat-tablewrap{margin-top:0;margin-bottom:16px}
 /* Homepage-inspired corner ambience on :root itself. The earlier :root
    background shorthand otherwise wins over an html background-image rule. */
 :root{
@@ -841,7 +842,7 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 body{background:transparent}
 .heat-tip{position:fixed;z-index:1000;pointer-events:none;box-sizing:border-box;width:max-content;max-width:min(320px,calc(100vw - 24px));padding:12px 14px;background:var(--panel);color:var(--ink);border:1px solid var(--accent);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.36);font-size:13px;line-height:1.5}
 .heat-tip strong{display:block;color:var(--accent);font-size:15px}.heat-tip-row{display:flex;justify-content:space-between;gap:12px}.heat-tip-row span:last-child{font-variant-numeric:tabular-nums;text-align:right}.heat-tip-note{color:var(--muted);font-size:11px;margin-top:6px}
-.heat-panel{background:linear-gradient(146deg,color-mix(in srgb,var(--soft) 28%,transparent),transparent 58%),var(--panel);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:18px;padding:14px;box-shadow:0 12px 32px rgba(0,0,0,.10);margin:8px 0 16px;box-sizing:border-box}
+.heat-panel{background:linear-gradient(146deg,color-mix(in srgb,var(--soft) 28%,transparent),transparent 58%),var(--panel);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:18px;padding:14px;box-shadow:0 12px 32px rgba(0,0,0,.10);margin:0 0 16px;box-sizing:border-box}
 .heat-panel-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:0 3px}
 .heat-panel-heading{display:flex;flex-direction:column;gap:2px;min-width:0}
 .heat-panel-kicker{color:var(--muted);font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;font-weight:700}
