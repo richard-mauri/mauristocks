@@ -50,3 +50,20 @@ func TestMarketCapEndpointRejectsBadSymbols(t *testing.T) {
  marketCapsHandler(rec,req)
  if rec.Code!=http.StatusBadRequest {t.Fatalf("expected 400, got %d",rec.Code)}
 }
+
+ // Regression: changing Symbol links must refresh existing heatmap anchor hrefs
+ // immediately, not just table rows or after a subsequent price refresh.
+func TestResearchSiteChangeUpdatesHeatmapLinks(t *testing.T) {
+ scriptStart:=strings.Index(page,"<script>")
+ if scriptStart<0 {t.Fatal("dashboard script missing")}
+ script:=page[scriptStart:]
+ changeHandler:="researchSelect.addEventListener('change',()=>{"
+ start:=strings.Index(script,changeHandler)
+ if start<0 {t.Fatal("Symbol links change listener missing")}
+ end:=strings.Index(script[start:],"});")
+ if end<0 {t.Fatal("Symbol links change listener malformed")}
+ handler:=script[start:start+end]
+ if !strings.Contains(handler,"renderQuotes()") || !strings.Contains(handler,"paintHeatmap()") {
+  t.Fatal("Symbol links change must update both table and existing heatmap tile links")
+ }
+}
