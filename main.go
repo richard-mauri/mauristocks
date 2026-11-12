@@ -1405,6 +1405,12 @@ async function refreshQuotes(){
    for(const symbol of symbols)capRecords.set(symbol,{value:sourceCaps.get(symbol)||null,expires:expiry});
    persistCapRecords();
    capKey='';
+   // Show correctly sized tiles immediately, without claiming prices have
+   // loaded. Quotes and regular-session color arrive in the usual quote fetch.
+   quotes=symbols.map(symbol=>({symbol,regular_price:null,previous_close:null}));
+   renderQuotes();
+   paintHeatmap();
+   loadCaps();
   }else if(activeWatchlist===dynamicName){
    const ranked=await fetch('/api/most-active',{cache:'no-store'});
    if(!ranked.ok)throw new Error('Most Active ranking unavailable: '+(await ranked.text()).trim());
