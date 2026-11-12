@@ -1148,7 +1148,7 @@ async function loadCaps(){
   caps=new Map(data.items.filter(x=>Number.isFinite(x.market_cap)&&x.market_cap>0).map(x=>[x.symbol,x.market_cap]));
   capKey=key;layoutKey='';
  }catch(e){capKey=key;hs.textContent='Market-cap data unavailable: '+e.message}
- finally{capBusy=false;paintHeatmap()}
+ finally{capBusy=false;paintHeatmap();if(heatView==='heatmap'&&quotes.length&&[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort().join(',')!==capKey)loadCaps()}
 }
 
 function renderQuotes(){
