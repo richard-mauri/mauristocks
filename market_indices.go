@@ -113,7 +113,7 @@ func rankMarketTop(market string,members []string,caps map[string]float64,now ti
   if selected[i].MarketCap==selected[j].MarketCap{return selected[i].Symbol<selected[j].Symbol}
   return selected[i].MarketCap>selected[j].MarketCap
  })
- if len(selected)<marketTopCount{return marketTopResponse{},fmt.Errorf("market %s has only %d constituents with valid market cap",market,len(selected))}
+ if (market!="dow30"&&len(selected)<marketTopCount)||(market=="dow30"&&len(members)!=marketTopCount){return marketTopResponse{},fmt.Errorf("market %s contains %d members and %d with valid market cap",market,len(members),len(selected))}
  response:=marketTopResponse{Market:market,Constituents:len(members),WithCaps:len(selected),RankedAt:now.UTC(),Source:"Nasdaq screener snapshot (zyhe16); index membership (zyhe16/yfiua)"}
  if market=="dow30"{
   // Dow has 30 constituents. Keep every symbol even when its capitalization
