@@ -67,3 +67,26 @@ func TestResearchSiteChangeUpdatesHeatmapLinks(t *testing.T) {
   t.Fatal("Symbol links change must update both table and existing heatmap tile links")
  }
 }
+
+// Regression: an adjustable exponent must drive treemap geometry while
+// preserving raw capitalization values for labels and research tooltips.
+func TestHeatmapWeightingControlAndSizing(t *testing.T) {
+ required:=[]string{
+  `id="heat-weight" type="range" min="0.50" max="1.00" step="0.05" value="0.65"`,
+  `id="heat-weight-value"`,
+  `mauristocks_heat_weight_v1`,
+  `heatWeightSlider.addEventListener('input'`,
+  `localStorage.setItem(heatWeightKey,next)`,
+  `Math.pow(caps.get(q.symbol),heatExponent)`,
+  `v+e.weight`,
+  `sum+=a[i].weight`,
+  `heatExponent.toFixed(2)+'|'`,
+  `cap:caps.get(q.symbol)`,
+ }
+ for _,item:=range required{
+  if !strings.Contains(page,item){t.Errorf("missing heatmap weighting behavior: %s",item)}
+ }
+ if !strings.Contains(page,`heatExponent===1?'Tile area: exact market cap'`){
+  t.Error("uncompressed tile area must be labeled as exact market cap")
+ }
+}
