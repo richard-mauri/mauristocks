@@ -1064,7 +1064,7 @@ const researchSelect=document.getElementById('research-site');
 const researchSites=new Set(['google','stockanalysis','corporate','ir']);
 const savedResearchSite=localStorage.getItem('mauri_research_site');
 if(researchSites.has(savedResearchSite))researchSelect.value=savedResearchSite;
-researchSelect.addEventListener('change',()=>{localStorage.setItem('mauri_research_site',researchSelect.value);renderQuotes();queueSuiteSave()});
+researchSelect.addEventListener('change',()=>{localStorage.setItem('mauri_research_site',researchSelect.value);renderQuotes();paintHeatmap();queueSuiteSave()});
 const irURLs={
  MU:'https://investors.micron.com', AMAT:'https://ir.appliedmaterials.com',
  LRCX:'https://investor.lamresearch.com', SPCX:'https://ir.spacex.com/',
