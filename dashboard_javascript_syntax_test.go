@@ -67,3 +67,25 @@ func TestResearchSiteChangeUpdatesHeatmapLinks(t *testing.T) {
   t.Fatal("Symbol links change must update both table and existing heatmap tile links")
  }
 }
+
+// The save/load buttons were removed in favor of browser autosave and a guarded
+// account check. Assert that future UI edits cannot regress to manual saving.
+func TestWatchlistBrowserAutosaveAndNoManualAccountButtons(t *testing.T) {
+ if strings.Contains(page,`id="watchlist-save"`) || strings.Contains(page,`id="suite-sync-load"`) {
+  t.Fatal("manual Save Changes / Load from account controls must not be present")
+ }
+ checks:=[]string{
+  "input.addEventListener('input',",
+  "watchlistSaveTimer=setTimeout(saveActiveWatchlist,600)",
+  "input.addEventListener('change',saveActiveWatchlist)",
+  "wlSelect.addEventListener('change',()=>",
+  "saveActiveWatchlist();",
+  "persistLists();",
+  "queueSuiteSave();",
+  "reconcileAccountOnSignIn(identity)",
+  "suiteAsk('Saved account settings differ from this browser.",
+ }
+ for _,check:=range checks {
+  if !strings.Contains(page,check){t.Errorf("missing automatic persistence behavior: %s",check)}
+ }
+}
