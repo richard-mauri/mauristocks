@@ -25,6 +25,14 @@ A **Columns** menu above the quote table lets you show or hide individual column
 
 An **About / Data Notes** section expands for more explanation and is collapsed by default on phones and computers. The table may scroll horizontally on a narrow screen.
 
+## Watchlist heatmap (draft feature, Issue #13)
+
+Use **Table / Heatmap** to switch views of the currently selected watchlist. The heatmap sizes company tiles in proportion to market capitalization and colors them by **regular-market price versus previous close**, independently of the table's active-session Change %. Tile titles show capitalization, regular price, change and quote time. Tiles open the existing selected research destination. Symbols without valid capitalization (including ETFs and some unsupported tickers) appear in a separate **Unweighted / unavailable** group rather than receiving invented weights.
+
+The heatmap reuses the existing `/api/quotes` responses and the same Never / 5 seconds / 30 seconds / 1 minute / 5 minutes refresh control. It does **not** start a separate quote timer or claim exchange-level real-time updates. Only tile values and colors repaint during normal quote refreshes; tile area is recomputed if capitalization/selected symbols change. Automatic requests still pause while the page is hidden.
+
+Weighted tiles require **`FINNHUB_API_KEY` configured server-side**. The independent `/api/market-caps?symbols=NVDA,AVGO` endpoint requests Finnhub Company Profile 2 metadata, validates the ticker and USD currency, converts the provider's USD-million capitalization to USD, rate-limits upstream requests, and caches successful values for 24 hours and unsupported values for one hour. It may be slow during an initially uncached watchlist. Missing key, coverage, quota or provider failures leave the quote table usable but may prevent weighted tiles from displaying. Do not embed the Finnhub key in browser code. This feature has not yet received owner Mac/Safari acceptance.
+
 ## Requirements and local use
 
 You need Go, a current browser and upstream network access. The program uses the Go standard library and does not require a database or third-party Go module. From the documented local repository folder:
@@ -47,6 +55,7 @@ To optionally look up company websites, configure `FINNHUB_API_KEY` as a **serve
 | `/` | Browser quote dashboard |
 | `/api/quotes` | Default symbols or `?symbols=MU,NVDA,AVGO` |
 | `/api/most-active` | Dynamic volume-ranked list when provider access succeeds |
+| `/api/market-caps?symbols=NVDA,AVGO` | Independent cached capitalization metadata (requires `FINNHUB_API_KEY`) |
 | `/api/company?symbol=MU` | Resolved company website metadata |
 | `/company?symbol=MU` | Redirect to resolved company website when known |
 | `/healthz` | Health response |
