@@ -36,3 +36,7 @@ The first version uses a small alternating-axis area-preserving binary treemap w
 ## Adjustable heatmap capitalization exponent (draft PR)
 
 Heatmap's Tile weighting slider controls exponent `p` in geometric weight `market_cap ** p`, 0.50–1.00 in 0.05 increments (default 0.65). The binary treemap partitions on the exponentiated weight; actual USD capitalization remains in `cap` for tooltips and ranking. Including the exponent in `layoutKey` forces a treemap relayout when the control changes, without new quote or metadata fetches. The footer accurately describes adjusted versus exact area. Browser localStorage key `mauristocks_heat_weight_v1` is independent of Homepage account settings keys; existing account ownership and isolation stay unchanged.
+
+## Stable heatmap tile DOM across refreshes
+
+Treemap relayout reconciles existing anchors by symbol rather than clearing all tiles. On a change to exponent or capitalization, positions are updated on existing nodes; only newly added symbols create nodes and departed symbols are removed. This avoids empty-container flashes, preserves existing colors and research links during ongoing quote refresh, and retains keyboard focus for unchanged symbols. Layout updates still use the same geometric weighted partition and tooltip capitalization values.
