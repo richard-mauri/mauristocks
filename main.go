@@ -747,15 +747,15 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 /* Shared semantic palette: ScraperGo / NewsGo. Preserves financial status colors. */
 :root{
  color-scheme:light dark;
- --bg:light-dark(#f5f5f0,#0e141a);
- --panel:light-dark(#ffffff,#19232b);
+ --bg:light-dark(#f5f5f0,#14272a);
+ --panel:light-dark(#ffffff,#1e3439);
  --ink:light-dark(#182631,#eef2f4);
  --muted:light-dark(#60707b,#a5b3bb);
- --border:light-dark(#dce2e1,#34434a);
+ --border:light-dark(#dce2e1,#3b5960);
  --accent:light-dark(#126877,#69c6d3);
- --soft:light-dark(#e6f3f3,#203c43);
- --row-alt:light-dark(#f2f7f6,#202d35);
- --row-hover:light-dark(#e5f0ef,#29414a);
+ --soft:light-dark(#e6f3f3,#25474c);
+ --row-alt:light-dark(#f2f7f6,#244047);
+ --row-hover:light-dark(#e5f0ef,#31545b);
  --starred:light-dark(#fff5d6,#4b3a20);
  --gain:light-dark(#087b38,#72d89b);
  --loss:light-dark(#b42334,#ff9696);
@@ -829,8 +829,8 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 
 .heat-switch{display:flex;align-items:center;gap:.45rem;margin:9px 0;color:var(--ink)}.heat-switch select{font:inherit;padding:.55rem .6rem;min-width:150px;border-radius:6px;background:var(--panel);color:var(--ink);border:1px solid var(--border);cursor:pointer}
 .heat-panel[hidden],.tablewrap[hidden]{display:none!important}
-.heat-area{position:relative;width:100%;height:430px;background:#dde3e9;overflow:hidden;border-radius:5px}
-.heat-tile{position:absolute;box-sizing:border-box;border:1px solid white;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-decoration:none;color:#fff;text-shadow:0 1px 2px #222;padding:2px;font-variant-numeric:tabular-nums}
+.heat-area{position:relative;width:100%;height:430px;background:var(--panel);overflow:hidden;border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:18px;box-sizing:border-box}.heat-area:empty{height:160px}.heat-area:empty::after{content:"";display:block;margin:28px auto;width:60%;height:12px;border-radius:8px;background:var(--soft)}
+.heat-tile{position:absolute;box-sizing:border-box;border:1px solid var(--panel);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-decoration:none;color:#fff;text-shadow:0 1px 2px #222;padding:2px;font-variant-numeric:tabular-nums;transition:background-color .3s ease,opacity .35s ease}.heat-tile[data-small="true"] span{display:none}.heat-tile[data-small="true"] strong{font-size:9px}.heat-tile[data-tiny="true"] strong{display:none}
 .heat-tile:focus-visible{outline:3px solid #ffd542;outline-offset:-4px;z-index:1}
 .heat-tile strong{font-size:clamp(10px,1.4vw,18px)}.heat-tile span{font-size:clamp(9px,1vw,14px)}
 .heat-missing{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.heat-missing span{background:#64748b;color:#fff;padding:5px 8px;border-radius:4px;font-size:.85rem}
@@ -1086,7 +1086,7 @@ resetCols.addEventListener('click',()=>{colPrefs={hidden:[]};colChecks.forEach(c
 const hp=document.getElementById('heat-panel'),ha=document.getElementById('heat-area'),hs=document.getElementById('heat-status'),hm=document.getElementById('heat-missing'),tw=document.getElementById('heat-tablewrap');
 const heatSelector=document.getElementById('heat-view');
 let heatView=localStorage.getItem('mauristocks_view_v1')==='heatmap'?'heatmap':'table';
-let caps=new Map(),capKey='',capBusy=false,layoutKey='',tiles=new Map();
+let caps=new Map(),capKey='',capBusy=false,layoutKey='',tiles=new Map(),capPending=new Set(),capCompleted=new Set(),capError='';
 function setHeatView(v){
  heatView=v;hp.hidden=v!=='heatmap';tw.hidden=v!=='table';
  heatSelector.value=v;
@@ -1110,7 +1110,8 @@ function paintHeatmap(){
  if(heatView!=='heatmap')return;
  let weighted=quotes.filter(q=>caps.get(q.symbol)>0).map(q=>({q,cap:caps.get(q.symbol)})).sort((a,b)=>b.cap-a.cap||a.q.symbol.localeCompare(b.q.symbol));
  let missing=quotes.filter(q=>!(caps.get(q.symbol)>0));
- hs.textContent=weighted.length+'/'+quotes.length+' symbols weighted'+(capBusy?' • Loading market cap…':'')+(!weighted.length?' • Requires a configured FINNHUB_API_KEY.':'');
+ const total=quotes.length,done=quotes.filter(q=>capCompleted.has(q.symbol)).length;
+ hs.textContent=capBusy?'Preparing heatmap • '+done+'/'+total+' symbols checked':capError?'Market capitalization temporarily unavailable':weighted.length+' of '+total+' symbols weighted by market cap';
  let key=weighted.map(a=>a.q.symbol+':'+a.cap).join('|');
  if(key!==layoutKey){
   layoutKey=key;ha.replaceChildren();tiles.clear();
@@ -1129,26 +1130,42 @@ function paintHeatmap(){
   el.title=q.symbol+' • '+(q.name||'')+' • Cap: '+new Intl.NumberFormat('en-US',{notation:'compact',style:'currency',currency:'USD'}).format(e.cap)+' • Price: '+money(q.regular_price,q.currency)+' • '+el.lastChild.textContent+' • Quote: '+barTime(q.display_time);
   el.setAttribute('aria-label',el.title);
   if(link){el.href=link;el.target='_blank';el.rel='noopener noreferrer'}else el.removeAttribute('href');
-  el.lastChild.hidden=parseFloat(el.style.width)<10||parseFloat(el.style.height)<12;
+  const small=parseFloat(el.style.width)<10||parseFloat(el.style.height)<12;
+  el.dataset.small=String(small);el.dataset.tiny=String(parseFloat(el.style.width)<5||parseFloat(el.style.height)<6);
  }
  hm.replaceChildren();
- if(missing.length){let label=document.createElement('span');label.textContent='Unweighted / unavailable:';hm.appendChild(label);
+ if(missing.length&&!capBusy){let label=document.createElement('span');label.textContent='Unweighted / unavailable:';hm.appendChild(label);
   for(const q of missing){let el=document.createElement('span');el.textContent=q.symbol;hm.appendChild(el)}}
 }
 async function loadCaps(){
  if(heatView!=='heatmap'||capBusy||!quotes.length)return;
- let symbols=[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort(),key=symbols.join(',');
+ const symbols=[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort(),key=symbols.join(',');
  if(key===capKey)return;
- capBusy=true;paintHeatmap();
+ capBusy=true;capError='';capCompleted=new Set();caps=new Map();layoutKey='';
+ // Request modest batches so tiles emerge while the rest of the watchlist loads.
+ // The server independently rate-limits and caches capitalization.
  try{
-  let response=await fetch('/api/market-caps?symbols='+encodeURIComponent(key),{cache:'no-store'});
-  if(!response.ok)throw Error('HTTP '+response.status);
-  let data=await response.json();if(!Array.isArray(data.items))throw Error('invalid market-cap response');
-  if(key!==[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort().join(','))return;
-  caps=new Map(data.items.filter(x=>Number.isFinite(x.market_cap)&&x.market_cap>0).map(x=>[x.symbol,x.market_cap]));
-  capKey=key;layoutKey='';
- }catch(e){capKey=key;hs.textContent='Market-cap data unavailable: '+e.message}
- finally{capBusy=false;paintHeatmap();if(heatView==='heatmap'&&quotes.length&&[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort().join(',')!==capKey)loadCaps()}
+  for(let i=0;i<symbols.length;i+=3){
+   const batch=symbols.slice(i,i+3),response=await fetch('/api/market-caps?symbols='+encodeURIComponent(batch.join(',')),{cache:'no-store'});
+   if(!response.ok)throw Error('HTTP '+response.status);
+   const payload=await response.json();
+   if(!Array.isArray(payload.items))throw Error('Invalid capitalization response');
+   if(key!==[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort().join(','))return;
+   for(const symbol of batch)capCompleted.add(symbol);
+   for(const item of payload.items){
+    if(batch.includes(item.symbol)&&Number.isFinite(item.market_cap)&&item.market_cap>0)caps.set(item.symbol,item.market_cap);
+   }
+   paintHeatmap();
+  }
+  capKey=key;
+ }catch(e){
+  capError=String(e.message||e);
+  capKey=key;
+ }finally{
+  capBusy=false;paintHeatmap();
+  const current=[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort().join(',');
+  if(heatView==='heatmap'&&current!==key)loadCaps();
+ }
 }
 
 function renderQuotes(){
