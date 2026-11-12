@@ -826,7 +826,16 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .suite-dialog button{color:#eef5f8;background:#244954;border:1px solid #41616b;border-radius:9px;padding:9px 18px;font:inherit;cursor:pointer}
 .suite-dialog button:focus-visible,.suite-dialog input:focus-visible{outline:2px solid #69d7e5;outline-offset:2px}
 .suite-account-identity{display:inline-block;margin-top:5px;font-size:.9rem;color:var(--accent);font-weight:650}.suite-account-identity[hidden],.suite-sync-feedback[hidden]{display:none!important}.suite-sync-feedback{margin:8px 0 12px;color:var(--muted);font-size:.93rem;line-height:1.4}.suite-home-link{display:inline-block;margin:4px 0 10px;padding:3px 5px;border-radius:5px;color:var(--accent,#69c6d3);font:500 12px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-decoration:none;opacity:.78;transition:background-color .15s,color .15s,opacity .15s}.suite-home-link:hover{background:rgba(96,151,172,.16);color:var(--accent,#69c6d3);text-decoration:underline;opacity:1}.suite-home-link:focus-visible{outline:2px solid var(--accent,#69c6d3);outline-offset:2px;opacity:1}
-</style></head><body><header class="page-header"><div class="page-heading"><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · __BUILD_LABEL__</span></h1><a class="suite-home-link" href="https://home.themauris.org/">← Back to Homepage</a><span id="suite-account-identity" class="suite-account-identity" hidden></span><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p></div><div class="tanner-brand"><img src="https://raw.githubusercontent.com/richard-mauri/scrapergo/main/tanner.jpg" alt="Tanner, a golden retriever puppy" width="82" height="82"><span>Tanner</span></div></header><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><button id="suite-sync-load" type="button" disabled>Load from account</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><div id="suite-sync-status" class="suite-sync-feedback" role="status" aria-live="polite" hidden></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="table-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label></div><div class="tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
+
+.heat-switch{display:flex;gap:8px;margin:9px 0}.heat-switch button{padding:7px 14px}.heat-switch button[aria-pressed="false"]{background:#64748b}
+.heat-panel[hidden],.tablewrap[hidden]{display:none!important}
+.heat-area{position:relative;width:100%;height:430px;background:#dde3e9;overflow:hidden;border-radius:5px}
+.heat-tile{position:absolute;box-sizing:border-box;border:1px solid white;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-decoration:none;color:#fff;text-shadow:0 1px 2px #222;padding:2px;font-variant-numeric:tabular-nums}
+.heat-tile:focus-visible{outline:3px solid #ffd542;outline-offset:-4px;z-index:1}
+.heat-tile strong{font-size:clamp(10px,1.4vw,18px)}.heat-tile span{font-size:clamp(9px,1vw,14px)}
+.heat-missing{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.heat-missing span{background:#64748b;color:#fff;padding:5px 8px;border-radius:4px;font-size:.85rem}
+@media(max-width:650px){.heat-area{height:310px}.heat-tile strong,.heat-tile span{font-size:10px}}
+</style></head><body><header class="page-header"><div class="page-heading"><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · __BUILD_LABEL__</span></h1><a class="suite-home-link" href="https://home.themauris.org/">← Back to Homepage</a><span id="suite-account-identity" class="suite-account-identity" hidden></span><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p></div><div class="tanner-brand"><img src="https://raw.githubusercontent.com/richard-mauri/scrapergo/main/tanner.jpg" alt="Tanner, a golden retriever puppy" width="82" height="82"><span>Tanner</span></div></header><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><button id="suite-sync-load" type="button" disabled>Load from account</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><div id="suite-sync-status" class="suite-sync-feedback" role="status" aria-live="polite" hidden></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="table-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label></div><div class="heat-switch"><button type="button" id="heat-table" aria-pressed="true">Table</button><button type="button" id="heat-map" aria-pressed="false">Heatmap</button></div><section id="heat-panel" class="heat-panel" hidden><p id="heat-status" class="muted" role="status"></p><div id="heat-area" class="heat-area" aria-label="Watchlist weighted heatmap"></div><p class="muted">Tile area: market cap • Color: regular-session percent change from previous close</p><div id="heat-missing" class="heat-missing"></div></section><div class="tablewrap" id="heat-tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
 <dialog id="suite-dialog" class="suite-dialog" aria-labelledby="suite-dialog-title"><h2 id="suite-dialog-title"></h2><p id="suite-dialog-message"></p><input id="suite-dialog-input" type="text" maxlength="60" hidden aria-label="New watchlist name"><div class="suite-dialog-actions"><button id="suite-dialog-cancel" type="button">Cancel</button><button id="suite-dialog-ok" type="button">OK</button></div></dialog><script>
 // In-page modal uses the same dark palette as the dashboard.
 const suiteDialog=document.getElementById('suite-dialog');
@@ -1073,6 +1082,75 @@ colSpecs.forEach((spec,i)=>{
 });
 const resetCols=document.createElement('button');resetCols.type='button';resetCols.textContent='Reset columns';
 resetCols.addEventListener('click',()=>{colPrefs={hidden:[]};colChecks.forEach(c=>c.checked=true);saveColPrefs();applyColumns()});colMenu.appendChild(resetCols);
+
+const hp=document.getElementById('heat-panel'),ha=document.getElementById('heat-area'),hs=document.getElementById('heat-status'),hm=document.getElementById('heat-missing'),tw=document.getElementById('heat-tablewrap');
+const ht=document.getElementById('heat-table'),hb=document.getElementById('heat-map');
+let heatView=localStorage.getItem('mauristocks_view_v1')==='heatmap'?'heatmap':'table';
+let caps=new Map(),capKey='',capBusy=false,layoutKey='',tiles=new Map();
+function setHeatView(v){
+ heatView=v;hp.hidden=v!=='heatmap';tw.hidden=v!=='table';
+ ht.setAttribute('aria-pressed',String(v==='table'));hb.setAttribute('aria-pressed',String(v==='heatmap'));
+ try{localStorage.setItem('mauristocks_view_v1',v)}catch(_){}
+ if(v==='heatmap'){paintHeatmap();loadCaps()}
+}
+ht.addEventListener('click',()=>setHeatView('table'));hb.addEventListener('click',()=>setHeatView('heatmap'));
+function heatChange(q){return Number.isFinite(q.regular_price)&&Number.isFinite(q.previous_close)&&q.previous_close>0?100*(q.regular_price/q.previous_close-1):null}
+function heatColor(p){if(!Number.isFinite(p)||Math.abs(p)<.005)return '#64748b';let v=Math.min(Math.abs(p)/4,1);return 'hsl('+(p>0?145:355)+' '+Math.round(38+v*28)+'% '+Math.round(40-v*12)+'%)'}
+// Binary treemap: sum of child areas equals the parent rectangle.
+function divideHeat(a,x,y,w,h,vertical,out){
+ if(!a.length)return;
+ if(a.length===1){out.push({item:a[0],x,y,w,h});return}
+ const total=a.reduce((v,e)=>v+e.cap,0);let sum=0,k=0;
+ for(let i=0;i<a.length-1;i++){sum+=a[i].cap;k=i+1;if(sum>=total/2)break}
+ let f=sum/total;
+ if(vertical){divideHeat(a.slice(0,k),x,y,w*f,h,false,out);divideHeat(a.slice(k),x+w*f,y,w*(1-f),h,false,out)}
+ else{divideHeat(a.slice(0,k),x,y,w,h*f,true,out);divideHeat(a.slice(k),x,y+h*f,w,h*(1-f),true,out)}
+}
+function paintHeatmap(){
+ if(heatView!=='heatmap')return;
+ let weighted=quotes.filter(q=>caps.get(q.symbol)>0).map(q=>({q,cap:caps.get(q.symbol)})).sort((a,b)=>b.cap-a.cap||a.q.symbol.localeCompare(b.q.symbol));
+ let missing=quotes.filter(q=>!(caps.get(q.symbol)>0));
+ hs.textContent=weighted.length+'/'+quotes.length+' symbols weighted'+(capBusy?' • Loading market cap…':'')+(!weighted.length?' • Requires a configured FINNHUB_API_KEY.':'');
+ let key=weighted.map(a=>a.q.symbol+':'+a.cap).join('|');
+ if(key!==layoutKey){
+  layoutKey=key;ha.replaceChildren();tiles.clear();
+  let rects=[];divideHeat(weighted,0,0,100,100,true,rects);
+  for(const r of rects){
+   let el=document.createElement('a');el.className='heat-tile';
+   el.style.left=r.x+'%';el.style.top=r.y+'%';el.style.width=r.w+'%';el.style.height=r.h+'%';
+   let label=document.createElement('strong');label.textContent=r.item.q.symbol;
+   let pct=document.createElement('span');el.append(label,pct);ha.appendChild(el);tiles.set(r.item.q.symbol,el);
+  }
+ }
+ for(const e of weighted){
+  let q=e.q,el=tiles.get(q.symbol),p=heatChange(q),link=researchURL(q);
+  el.style.backgroundColor=heatColor(p);
+  el.lastChild.textContent=p==null?'—':(p>=0?'+':'')+p.toFixed(2)+'%';
+  el.title=q.symbol+' • '+(q.name||'')+' • Cap: '+new Intl.NumberFormat('en-US',{notation:'compact',style:'currency',currency:'USD'}).format(e.cap)+' • Price: '+money(q.regular_price,q.currency)+' • '+el.lastChild.textContent+' • Quote: '+barTime(q.display_time);
+  el.setAttribute('aria-label',el.title);
+  if(link){el.href=link;el.target='_blank';el.rel='noopener noreferrer'}else el.removeAttribute('href');
+  el.lastChild.hidden=parseFloat(el.style.width)<10||parseFloat(el.style.height)<12;
+ }
+ hm.replaceChildren();
+ if(missing.length){let label=document.createElement('span');label.textContent='Unweighted / unavailable:';hm.appendChild(label);
+  for(const q of missing){let el=document.createElement('span');el.textContent=q.symbol;hm.appendChild(el)}}
+}
+async function loadCaps(){
+ if(heatView!=='heatmap'||capBusy||!quotes.length)return;
+ let symbols=[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort(),key=symbols.join(',');
+ if(key===capKey)return;
+ capBusy=true;paintHeatmap();
+ try{
+  let response=await fetch('/api/market-caps?symbols='+encodeURIComponent(key),{cache:'no-store'});
+  if(!response.ok)throw Error('HTTP '+response.status);
+  let data=await response.json();if(!Array.isArray(data.items))throw Error('invalid market-cap response');
+  if(key!==[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort().join(','))return;
+  caps=new Map(data.items.filter(x=>Number.isFinite(x.market_cap)&&x.market_cap>0).map(x=>[x.symbol,x.market_cap]));
+  capKey=key;layoutKey='';
+ }catch(e){capKey=key;hs.textContent='Market-cap data unavailable: '+e.message}
+ finally{capBusy=false;paintHeatmap()}
+}
+
 function renderQuotes(){
  rows.replaceChildren();
  for(const q of [...quotes].sort(compareQuotes)){
@@ -1164,6 +1242,7 @@ async function refreshQuotes(){
    header.querySelector('button').setAttribute('aria-label','Sort by '+label);
   }
   renderQuotes();
+  paintHeatmap();loadCaps();
   const valid=quotes.filter(q=>q.display_price!=null);
   const extendedCount=quotes.filter(q=>q.extended_price!=null).length;
   const extHead=document.getElementById('extended-heading');extHead.dataset.label=quotes.some(q=>q.session==='premarket')?'Premarket Price':'After-hours Price';
@@ -1367,6 +1446,7 @@ syncLoad.addEventListener('click',async()=>{
 updateSuiteAccountClock();
 refreshSuiteSession();
 window.addEventListener('focus',refreshSuiteSession);
+setHeatView(heatView);
 // Populate the restored watchlist immediately, even when auto refresh is Never.
 refreshQuotes();
 </script></body></html>`
