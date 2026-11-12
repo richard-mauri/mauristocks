@@ -587,6 +587,78 @@ func quotesHandler(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(Response{FetchedAt: time.Now().UTC(), Quotes: result})
 }
 
+
+type marketCapItem struct {
+ Symbol string `json:"symbol"`
+ MarketCap *float64 `json:"market_cap,omitempty"`
+ AsOf *time.Time `json:"asof,omitempty"`
+ Source string `json:"source,omitempty"`
+}
+type marketCapEntry struct { item marketCapItem; expires time.Time }
+var marketCaps = struct {
+ sync.Mutex
+ entries map[string]marketCapEntry
+ nextRequest time.Time
+}{entries:make(map[string]marketCapEntry)}
+// Company Profile 2 capitalization is denominated in millions. Convert to USD.
+func lookupMarketCap(ctx context.Context,symbol string) marketCapItem {
+ item:=marketCapItem{Symbol:symbol}
+ token:=os.Getenv("FINNHUB_API_KEY")
+ if token=="" {return item}
+ marketCaps.Lock()
+ if entry,ok:=marketCaps.entries[symbol];ok && time.Now().Before(entry.expires) {
+  marketCaps.Unlock();return entry.item
+ }
+ start:=time.Now()
+ if marketCaps.nextRequest.After(start){start=marketCaps.nextRequest}
+ marketCaps.nextRequest=start.Add(1100*time.Millisecond)
+ marketCaps.Unlock()
+ if delay:=time.Until(start);delay>0 {
+  select {case <-ctx.Done():return item;case <-time.After(delay):}
+ }
+ req,err:=http.NewRequestWithContext(ctx,http.MethodGet,"https://finnhub.io/api/v1/stock/profile2?symbol="+url.QueryEscape(symbol),nil)
+ if err!=nil{return item}
+ req.Header.Set("X-Finnhub-Token",token)
+ req.Header.Set("Accept","application/json")
+ resp,err:=client.Do(req)
+ if err!=nil{return item}
+ defer resp.Body.Close()
+ if resp.StatusCode!=http.StatusOK {return item}
+ var profile struct {
+  Ticker string `json:"ticker"`
+  Currency string `json:"currency"`
+  MarketCapitalization *float64 `json:"marketCapitalization"`
+ }
+ if json.NewDecoder(io.LimitReader(resp.Body,65536)).Decode(&profile)!=nil{return item}
+ if strings.EqualFold(profile.Ticker,symbol)&&strings.EqualFold(profile.Currency,"USD")&&profile.MarketCapitalization!=nil {
+  n:=*profile.MarketCapitalization*1e6
+  if n>0&&!math.IsInf(n,0)&&!math.IsNaN(n){
+   now:=time.Now().UTC()
+   item.MarketCap=&n;item.AsOf=&now;item.Source="Finnhub profile2"
+  }
+ }
+ ttl:=time.Hour
+ if item.MarketCap!=nil {ttl=24*time.Hour}
+ marketCaps.Lock();marketCaps.entries[symbol]=marketCapEntry{item:item,expires:time.Now().Add(ttl)};marketCaps.Unlock()
+ return item
+}
+func marketCapsHandler(w http.ResponseWriter,r *http.Request){
+ if r.Method!=http.MethodGet {http.Error(w,"GET only",http.StatusMethodNotAllowed);return}
+ if os.Getenv("FINNHUB_API_KEY")=="" {http.Error(w,"market-cap weighting requires FINNHUB_API_KEY",http.StatusServiceUnavailable);return}
+ symbols,err:=normalize(r.URL.Query().Get("symbols"))
+ if err!=nil{http.Error(w,err.Error(),http.StatusBadRequest);return}
+ if len(symbols)>50 {http.Error(w,"maximum 50 symbols",http.StatusBadRequest);return}
+ ctx,cancel:=context.WithTimeout(r.Context(),75*time.Second);defer cancel()
+ items:=make([]marketCapItem,0,len(symbols))
+ for _,symbol:=range symbols {
+  if ctx.Err()!=nil {break}
+  items=append(items,lookupMarketCap(ctx,symbol))
+ }
+ w.Header().Set("Content-Type","application/json; charset=utf-8")
+ w.Header().Set("Cache-Control","no-store")
+ _=json.NewEncoder(w).Encode(map[string]any{"items":items})
+}
+
 const pageTemplate = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mauri's Stock Quotes</title>
 <style>
 :root{color-scheme:light dark;font-family:system-ui,-apple-system,sans-serif}body{max-width:1200px;margin:2rem auto;padding:0 1rem}h1{margin-bottom:.25rem}.muted{opacity:.68;font-size:.88rem}.controls{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.4rem 0}input{flex:1;min-width:260px;padding:.7rem;border:1px solid #888;border-radius:6px;font:inherit}button{padding:.7rem 1.1rem;border:0;border-radius:6px;background:#2868bd;color:white;font:inherit;cursor:pointer}button:disabled{cursor:wait}#refresh{min-width:148px;white-space:nowrap}#refresh.fetching{color:#ffe08a}#refresh.fetching:disabled{opacity:1}table{width:1180px;min-width:1180px;table-layout:fixed;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{padding:.65rem .45rem;text-align:left;border-bottom:1px solid #8885}th{font-size:.85rem}th[data-sort]{cursor:pointer;user-select:none} .sort-button{border:0;background:transparent;color:inherit;padding:.25rem .1rem;font:inherit;font-weight:700;cursor:pointer;width:100%;text-align:left}th.num .sort-button{text-align:right}.sort-button:hover{text-decoration:underline}.sort-button:focus-visible{outline:2px solid #2868bd;outline-offset:2px}.sort-indicator{display:inline-block;margin-left:.2em;color:#8795a4;font-weight:500}.sort-indicator.active{color:#1763b1;font-size:1.15em;font-weight:900}th[data-sort][aria-sort="ascending"] .sort-indicator,th[data-sort][aria-sort="descending"] .sort-indicator{color:#1763b1}th[data-sort]:hover{text-decoration:underline}th[data-sort]:focus-visible{outline:2px solid #2868bd;outline-offset:-2px}th[data-sort][aria-sort="ascending"],th[data-sort][aria-sort="descending"]{text-decoration:underline}td.num,th.num{text-align:right}.up{color:#168243}.down{color:#d54848}.tablewrap{overflow-x:auto}.small{font-size:.8rem;opacity:.75}#message{margin:1rem 0}footer{margin:1.5rem 0;line-height:1.5}footer details summary{cursor:pointer;display:list-item;font-weight:600;width:max-content;max-width:100%;padding:.35rem 0}footer details .notes-content{padding:.45rem 0;max-width:1100px}tr.error td{opacity:.7}a{color:inherit} @media(max-width:650px){body{margin:1rem auto}th,td{font-size:.8rem;padding:.55rem .25rem}}
@@ -1419,6 +1491,7 @@ func main() {
 	tmpl := template.Must(template.New("index").Parse(page))
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/quotes", quotesHandler)
+ mux.HandleFunc("/api/market-caps",marketCapsHandler)
  mux.HandleFunc("/api/company", companyHandler)
  mux.HandleFunc("/company", companyRedirectHandler)
  mux.HandleFunc("/api/most-active", mostActiveHandler)
