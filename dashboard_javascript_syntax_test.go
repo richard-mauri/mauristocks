@@ -2,6 +2,8 @@ package main
 
 import (
  "os/exec"
+ "net/http"
+ "net/http/httptest"
  "strings"
  "testing"
 )
@@ -26,4 +28,25 @@ func TestEmbeddedDashboardJavaScriptParses(t *testing.T) {
  cmd.Stdin=strings.NewReader(script)
  output,err:=cmd.CombinedOutput()
  if err!=nil{t.Fatalf("embedded dashboard JavaScript syntax invalid: %v\n%s",err,output)}
+}
+
+func TestMarketCapEndpointRequiresServerKey(t *testing.T) {
+ t.Setenv("FINNHUB_API_KEY","")
+ req:=httptest.NewRequest(http.MethodGet,"/api/market-caps?symbols=NVDA",nil)
+ rec:=httptest.NewRecorder()
+ marketCapsHandler(rec,req)
+ if rec.Code!=http.StatusServiceUnavailable {t.Fatalf("expected 503, got %d",rec.Code)}
+}
+func TestMarketCapEndpointRejectsOtherMethods(t *testing.T) {
+ req:=httptest.NewRequest(http.MethodPost,"/api/market-caps?symbols=NVDA",nil)
+ rec:=httptest.NewRecorder()
+ marketCapsHandler(rec,req)
+ if rec.Code!=http.StatusMethodNotAllowed {t.Fatalf("expected 405, got %d",rec.Code)}
+}
+func TestMarketCapEndpointRejectsBadSymbols(t *testing.T) {
+ t.Setenv("FINNHUB_API_KEY","test-only")
+ req:=httptest.NewRequest(http.MethodGet,"/api/market-caps?symbols=INVALID!",nil)
+ rec:=httptest.NewRecorder()
+ marketCapsHandler(rec,req)
+ if rec.Code!=http.StatusBadRequest {t.Fatalf("expected 400, got %d",rec.Code)}
 }
