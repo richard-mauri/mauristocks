@@ -1535,7 +1535,7 @@ function updateSuiteAccountClock(){
  if(left===0 && suiteSignedIn){
   // Never trust cached expiry to revoke a handoff; Homepage may have
   // extended its parent while this tab was elsewhere.
-  suiteSignedIn=false;syncLoad.disabled=true;
+  suiteSignedIn=false;
  }
  if(suiteHandoff && suiteExpiresAt>0 && left===0 &&
     !expiryCheckPending && Date.now()>=expiryRetryAfter){
@@ -1559,7 +1559,8 @@ let suiteAccountIdentity=null;
 let suiteSavePending=false;
 let suiteSaveQueued=false;
 let suiteSaveTimer=null;
-const syncLoad=document.getElementById('suite-sync-load');
+let suiteCheckedIdentity=null;
+let suiteAccountCheckPending=false;
 const syncEndpoint=suiteBase+'/api/storage/mauristocks';
 async function suiteRequest(path,options={}){
  if(!suiteHandoff)throw Error('Account access unavailable; open MauriStocks from Homepage.');
@@ -1568,7 +1569,7 @@ async function suiteRequest(path,options={}){
  if(response.status===401){
   suiteHandoff='';
   suiteSignedIn=false;
-  syncLoad.disabled=true;
+  
   suiteIdentityEl.hidden=true;
   suiteIdentityEl.textContent='';
   try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
@@ -1594,7 +1595,7 @@ async function suiteRecord(){
 async function refreshSuiteSession(){
  // Preserve the visible identity and countdown during verification.
  if(location.protocol!=='https:' || location.hostname!=='stocks.themauris.org'){
-  suiteSignedIn=false;syncLoad.disabled=true;updateSuiteAccountClock();
+  suiteSignedIn=false;updateSuiteAccountClock();
   suiteFeedback('Not signed in · Browser-only settings');return;
  }
  if(!suiteHandoff && !explicitBrowserOnly){
@@ -1604,21 +1605,22 @@ async function refreshSuiteSession(){
   return;
  }
  if(!suiteHandoff){
-  suiteSignedIn=false;syncLoad.disabled=true;updateSuiteAccountClock();
+  suiteSignedIn=false;updateSuiteAccountClock();
   suiteFeedback('Not signed in · Browser-only settings');return;
  }
  try{
   const profile=await suiteRequest('/api/session/profile');
-  if(profile.status===401){suiteSignedIn=false;syncLoad.disabled=true;updateSuiteAccountClock();suiteFeedback('Account access expired · Open MauriStocks from Homepage.');return}
+  if(profile.status===401){suiteSignedIn=false;updateSuiteAccountClock();suiteFeedback('Account access expired · Open MauriStocks from Homepage.');return}
   if(!profile.ok)throw Error('Account verification HTTP '+profile.status);
   const data=await profile.json();
   suiteExpiresAt=Date.parse(data.expiresAt)||0;
   const identity=typeof data.user==='string'?data.user:'';
   if(!identity){suiteFeedback('Account identity unavailable; browser settings remain local.');return}
   if(suiteAccountIdentity!==identity){suiteRevision=null;suiteInitialOverwriteApproved=false;suiteAccountIdentity=identity}
-  suiteSignedIn=true;syncLoad.disabled=false;
+  suiteSignedIn=true;
   updateSuiteAccountClock();
   suiteFeedback('');
+  void reconcileAccountOnSignIn(identity);
  }catch(e){suiteFeedback('Account connection unavailable; browser settings remain local.')}
 }
 function queueSuiteSave(){
@@ -1655,25 +1657,36 @@ async function saveWatchlistToAccount(){
   suiteFeedback('Settings saved to your account.');
  }catch(e){suiteFeedback(e.message)}finally{suiteSavePending=false}
 }
-syncLoad.addEventListener('click',async()=>{
- syncLoad.disabled=true;
+// Reconcile account settings once per identity. Conflicts require consent.
+async function reconcileAccountOnSignIn(identity){
+ if(!suiteSignedIn||suiteCheckedIdentity===identity||suiteAccountCheckPending)return;
+ suiteAccountCheckPending=true;
  try{
   const existing=await suiteRecord();
-  if(!existing){suiteFeedback('Your account has no saved MauriStocks settings.');return}
-  if(!validSuiteSettings(existing.data))throw Error('Saved account settings have an unsupported format. No local changes made.');
-  if(!(await suiteAsk('Replace watchlists and preferences in this browser with your saved account settings? This will reload MauriStocks.')))return;
-  // Preflight every value before touching localStorage; leave old values alone on quota errors.
+  if(!suiteSignedIn||suiteAccountIdentity!==identity)return;
+  if(!existing){suiteRevision=0;suiteCheckedIdentity=identity;return}
+  if(!validSuiteSettings(existing.data)){
+   suiteFeedback('Account settings have an unsupported format; browser settings unchanged.');
+   suiteCheckedIdentity=identity;return;
+  }
+  const browser=snapshotBrowserSettings().settings,account=existing.data.settings;
+  const same=suiteKeys.every(key=>(browser[key]??null)===(account[key]??null));
+  suiteCheckedIdentity=identity;
+  if(same){suiteRevision=existing.revision;suiteInitialOverwriteApproved=true;return}
+  if(!(await suiteAsk('Saved account settings differ from this browser. Restore account watchlists and preferences here? Cancel preserves browser settings.')))return;
   const backup={};for(const key of suiteKeys)backup[key]=localStorage.getItem(key);
   try{
    for(const key of suiteKeys)localStorage.removeItem(key);
-   for(const [key,value] of Object.entries(existing.data.settings))localStorage.setItem(key,value);
+   for(const [key,value] of Object.entries(account))localStorage.setItem(key,value);
   }catch(e){
    for(const key of suiteKeys){if(backup[key]===null)localStorage.removeItem(key);else localStorage.setItem(key,backup[key])}
    throw Error('Could not apply account settings; browser settings restored.');
   }
   location.reload();
- }catch(e){suiteFeedback(e.message)}finally{syncLoad.disabled=false}
-});
+ }catch(e){suiteFeedback('Account settings could not be checked: '+e.message)}
+ finally{suiteAccountCheckPending=false}
+}
+
 updateSuiteAccountClock();
 refreshSuiteSession();
 window.addEventListener('focus',refreshSuiteSession);
