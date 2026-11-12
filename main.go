@@ -747,15 +747,15 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 /* Shared semantic palette: ScraperGo / NewsGo. Preserves financial status colors. */
 :root{
  color-scheme:light dark;
- --bg:light-dark(#f5f5f0,#14272a);
- --panel:light-dark(#ffffff,#1e3439);
+ --bg:light-dark(#f5f5f0,#0e141a);
+ --panel:light-dark(#ffffff,#19232b);
  --ink:light-dark(#182631,#eef2f4);
  --muted:light-dark(#60707b,#a5b3bb);
- --border:light-dark(#dce2e1,#3b5960);
+ --border:light-dark(#dce2e1,#34434a);
  --accent:light-dark(#126877,#69c6d3);
- --soft:light-dark(#e6f3f3,#25474c);
- --row-alt:light-dark(#f2f7f6,#244047);
- --row-hover:light-dark(#e5f0ef,#31545b);
+ --soft:light-dark(#e6f3f3,#203c43);
+ --row-alt:light-dark(#f2f7f6,#202d35);
+ --row-hover:light-dark(#e5f0ef,#29414a);
  --starred:light-dark(#fff5d6,#4b3a20);
  --gain:light-dark(#087b38,#72d89b);
  --loss:light-dark(#b42334,#ff9696);
