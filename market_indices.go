@@ -121,9 +121,11 @@ func rankMarketTop(market string,members []string,caps map[string]float64,now ti
   selected=selected[:0]
   for _,symbol:=range members{
    if v:=caps[symbol];v>0{selected=append(selected,rankedMarketCap{Symbol:symbol,MarketCap:v})}
-   response.Symbols=append(response.Symbols,symbol)
   }
   sort.Slice(selected,func(i,j int)bool{return selected[i].MarketCap>selected[j].MarketCap})
+  for _,item:=range selected{response.Symbols=append(response.Symbols,item.Symbol)}
+  // Preserve any member missing from the capitalizations list, at the end.
+  for _,symbol:=range members{if caps[symbol]<=0{response.Symbols=append(response.Symbols,symbol)}}
  }else{
   selected=selected[:marketTopCount]
   for _,item:=range selected{response.Symbols=append(response.Symbols,item.Symbol)}
