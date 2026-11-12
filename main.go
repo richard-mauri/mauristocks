@@ -1111,7 +1111,7 @@ function paintHeatmap(){
  let weighted=quotes.filter(q=>caps.get(q.symbol)>0).map(q=>({q,cap:caps.get(q.symbol)})).sort((a,b)=>b.cap-a.cap||a.q.symbol.localeCompare(b.q.symbol));
  let missing=quotes.filter(q=>!(caps.get(q.symbol)>0));
  const total=quotes.length,done=quotes.filter(q=>capCompleted.has(q.symbol)).length;
- hs.textContent=capBusy?'Preparing heatmap • '+done+'/'+total+' symbols checked':capError?'Market capitalization temporarily unavailable':weighted.length+' of '+total+' symbols weighted by market cap';
+ hs.textContent=capBusy?'Loading capitalization • '+done+' of '+total+' symbols checked • '+weighted.length+' weighted':capError?'Lookup interrupted • '+weighted.length+' weighted, '+(total-done)+' not checked':'Complete • '+weighted.length+' weighted · '+missing.length+' unavailable/unweighted';
  let key=weighted.map(a=>a.q.symbol+':'+a.cap).join('|');
  if(key!==layoutKey){
   layoutKey=key;ha.replaceChildren();tiles.clear();
