@@ -1404,27 +1404,18 @@ async function refreshQuotes(){
    const expiry=Date.now()+6*60*60*1000;
    for(const symbol of symbols)capRecords.set(symbol,{value:sourceCaps.get(symbol)||null,expires:expiry});
    persistCapRecords();
-   // A timed/manual refresh must retain the current quotes and colors.
-   // Only a genuinely new symbol universe gets neutral placeholder tiles.
+   // Do not paint artificial zero-price quotes: their neutral tiles cause a
+   // grey flash on initial load and whenever the selected index changes.
+   // Prepare capitalization now; the first heatmap paint follows real quotes.
    const displayedSymbols=new Set(quotes.map(q=>q.symbol));
    const sameUniverse=quotes.length===symbols.length&&symbols.every(symbol=>displayedSymbols.has(symbol));
-   if(!sameUniverse){
-    capKey='';
-    quotes=symbols.map(symbol=>({symbol,regular_price:null,previous_close:null}));
-    renderQuotes();
-    paintHeatmap();
-    loadCaps();
-   }else{
-    // If the ranking snapshot changes capitalization but not membership,
-    // update tile geometry in place while retaining the last quote colors.
-    const capsChanged=symbols.some(symbol=>(caps.get(symbol)||null)!==(sourceCaps.get(symbol)||null));
-    if(capsChanged){
-     caps=new Map(sourceCaps);
-     capCompleted=new Set(symbols);
-     capKey=[...symbols].sort().join(',');
-     capState='ready';
-     paintHeatmap();
-    }
+   const capsChanged=symbols.some(symbol=>(caps.get(symbol)||null)!==(sourceCaps.get(symbol)||null));
+   if(!sameUniverse||capsChanged){
+    caps=new Map(sourceCaps);
+    capCompleted=new Set(symbols);
+    capKey=[...symbols].sort().join(',');
+    capState='ready';
+    if(sameUniverse)paintHeatmap();
    }
   }else if(activeWatchlist===dynamicName){
    const ranked=await fetch('/api/most-active',{cache:'no-store'});
