@@ -828,14 +828,18 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .suite-account-identity{display:inline-block;margin-top:5px;font-size:.9rem;color:var(--accent);font-weight:650}.suite-account-identity[hidden],.suite-sync-feedback[hidden]{display:none!important}.suite-sync-feedback{margin:8px 0 12px;color:var(--muted);font-size:.93rem;line-height:1.4}.suite-home-link{display:inline-block;margin:4px 0 10px;padding:3px 5px;border-radius:5px;color:var(--accent,#69c6d3);font:500 12px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-decoration:none;opacity:.78;transition:background-color .15s,color .15s,opacity .15s}.suite-home-link:hover{background:rgba(96,151,172,.16);color:var(--accent,#69c6d3);text-decoration:underline;opacity:1}.suite-home-link:focus-visible{outline:2px solid var(--accent,#69c6d3);outline-offset:2px;opacity:1}
 
 .heat-switch{display:flex;align-items:center;gap:.45rem;margin:9px 0;color:var(--ink)}.heat-switch select{font:inherit;padding:.55rem .6rem;min-width:150px;border-radius:6px;background:var(--panel);color:var(--ink);border:1px solid var(--border);cursor:pointer}
-.heat-panel[hidden],.tablewrap[hidden]{display:none!important}
+.heat-panel[hidden],.tablewrap[hidden],.heat-tip[hidden]{display:none!important}
+html{background-color:var(--bg);background-image:radial-gradient(ellipse 65% 55% at 100% 0%,light-dark(rgba(66,177,174,.10),rgba(12,91,92,.19)),transparent 72%),radial-gradient(ellipse 60% 58% at 0% 100%,light-dark(rgba(77,174,162,.10),rgba(12,92,86,.17)),transparent 76%);background-attachment:fixed}
+body{background:transparent}
+.heat-tip{position:fixed;z-index:1000;pointer-events:none;box-sizing:border-box;width:max-content;max-width:min(320px,calc(100vw - 24px));padding:12px 14px;background:var(--panel);color:var(--ink);border:1px solid var(--accent);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.36);font-size:13px;line-height:1.5}
+.heat-tip strong{display:block;color:var(--accent);font-size:15px}.heat-tip-row{display:flex;justify-content:space-between;gap:12px}.heat-tip-row span:last-child{font-variant-numeric:tabular-nums;text-align:right}.heat-tip-note{color:var(--muted);font-size:11px;margin-top:6px}
 .heat-area{position:relative;width:100%;height:430px;background:var(--panel);overflow:hidden;border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:18px;box-sizing:border-box}.heat-area:empty{height:160px}.heat-area:empty::after{content:"";display:block;margin:28px auto;width:60%;height:12px;border-radius:8px;background:var(--soft)}
 .heat-tile{position:absolute;box-sizing:border-box;border:1px solid var(--panel);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-decoration:none;color:#fff;text-shadow:0 1px 2px #222;padding:2px;font-variant-numeric:tabular-nums;transition:background-color .3s ease,opacity .35s ease}.heat-tile[data-small="true"] span{display:none}.heat-tile[data-small="true"] strong{font-size:9px}.heat-tile[data-tiny="true"] strong{display:none}
 .heat-tile:focus-visible{outline:3px solid #ffd542;outline-offset:-4px;z-index:1}
 .heat-tile strong{font-size:clamp(10px,1.4vw,18px)}.heat-tile span{font-size:clamp(9px,1vw,14px)}
 .heat-missing{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.heat-missing span{background:#64748b;color:#fff;padding:5px 8px;border-radius:4px;font-size:.85rem}
 @media(max-width:650px){.heat-area{height:310px}.heat-tile strong,.heat-tile span{font-size:10px}}
-</style></head><body><header class="page-header"><div class="page-heading"><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · __BUILD_LABEL__</span></h1><a class="suite-home-link" href="https://home.themauris.org/">← Back to Homepage</a><span id="suite-account-identity" class="suite-account-identity" hidden></span><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p></div><div class="tanner-brand"><img src="https://raw.githubusercontent.com/richard-mauri/scrapergo/main/tanner.jpg" alt="Tanner, a golden retriever puppy" width="82" height="82"><span>Tanner</span></div></header><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><button id="suite-sync-load" type="button" disabled>Load from account</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><div id="suite-sync-status" class="suite-sync-feedback" role="status" aria-live="polite" hidden></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="table-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label></div><div class="heat-switch"><label for="heat-view">View</label><select id="heat-view" aria-label="Quote display"><option value="table">Table</option><option value="heatmap">Heatmap</option></select></div><section id="heat-panel" class="heat-panel" hidden><p id="heat-status" class="muted" role="status"></p><div id="heat-area" class="heat-area" aria-label="Watchlist weighted heatmap"></div><p class="muted">Tile area: market cap • Color: regular-session percent change from previous close</p><div id="heat-missing" class="heat-missing"></div></section><div class="tablewrap" id="heat-tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
+</style></head><body><header class="page-header"><div class="page-heading"><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · __BUILD_LABEL__</span></h1><a class="suite-home-link" href="https://home.themauris.org/">← Back to Homepage</a><span id="suite-account-identity" class="suite-account-identity" hidden></span><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p></div><div class="tanner-brand"><img src="https://raw.githubusercontent.com/richard-mauri/scrapergo/main/tanner.jpg" alt="Tanner, a golden retriever puppy" width="82" height="82"><span>Tanner</span></div></header><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><label for="watchlist-select">Watchlist</label><select id="watchlist-select" aria-label="Saved watchlist"></select><button id="watchlist-new" type="button">Save As New</button><button id="watchlist-save" type="button">Save Changes</button><button id="watchlist-delete" type="button">Delete List</button><button id="suite-sync-load" type="button" disabled>Load from account</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><div id="suite-sync-status" class="suite-sync-feedback" role="status" aria-live="polite" hidden></div><p id="message" class="muted">Edit symbols, then Save As New or Save Changes to keep a named watchlist. Quotes refresh on demand.</p><div class="table-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label></div><div class="heat-switch"><label for="heat-view">View</label><select id="heat-view" aria-label="Quote display"><option value="table">Table</option><option value="heatmap">Heatmap</option></select></div><section id="heat-panel" class="heat-panel" hidden><p id="heat-status" class="muted" role="status"></p><div id="heat-area" class="heat-area" aria-label="Watchlist weighted heatmap"></div><div id="heat-tip" class="heat-tip" role="tooltip" hidden></div><p class="muted">Tile area: market cap • Color: regular-session percent change from previous close</p><div id="heat-missing" class="heat-missing"></div></section><div class="tablewrap" id="heat-tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
 <dialog id="suite-dialog" class="suite-dialog" aria-labelledby="suite-dialog-title"><h2 id="suite-dialog-title"></h2><p id="suite-dialog-message"></p><input id="suite-dialog-input" type="text" maxlength="60" hidden aria-label="New watchlist name"><div class="suite-dialog-actions"><button id="suite-dialog-cancel" type="button">Cancel</button><button id="suite-dialog-ok" type="button">OK</button></div></dialog><script>
 // In-page modal uses the same dark palette as the dashboard.
 const suiteDialog=document.getElementById('suite-dialog');
@@ -1086,14 +1090,33 @@ resetCols.addEventListener('click',()=>{colPrefs={hidden:[]};colChecks.forEach(c
 const hp=document.getElementById('heat-panel'),ha=document.getElementById('heat-area'),hs=document.getElementById('heat-status'),hm=document.getElementById('heat-missing'),tw=document.getElementById('heat-tablewrap');
 const heatSelector=document.getElementById('heat-view');
 let heatView=localStorage.getItem('mauristocks_view_v1')==='heatmap'?'heatmap':'table';
-let caps=new Map(),capKey='',capBusy=false,layoutKey='',tiles=new Map(),capPending=new Set(),capCompleted=new Set(),capError='';
+let caps=new Map(),capKey='',capBusy=false,layoutKey='',tiles=new Map(),capCompleted=new Set(),capError='',capState='idle';
+const heatTip=document.getElementById('heat-tip');let heatTipTarget=null,heatTapTarget=null;
 function setHeatView(v){
  heatView=v;hp.hidden=v!=='heatmap';tw.hidden=v!=='table';
  heatSelector.value=v;
  try{localStorage.setItem('mauristocks_view_v1',v)}catch(_){}
- if(v==='heatmap'){paintHeatmap();loadCaps()}
+ if(v==='heatmap'){paintHeatmap();loadCaps()}else hideHeatTip()
 }
 heatSelector.addEventListener('change',()=>setHeatView(heatSelector.value));
+function hideHeatTip(){heatTip.hidden=true;heatTipTarget=null;heatTapTarget=null}
+function showHeatTip(node,q,cap){
+ if(!node)return;
+ heatTipTarget=node;heatTip.replaceChildren();
+ const heading=document.createElement('strong');heading.textContent=q.symbol+' — '+(q.name||'Company');heatTip.appendChild(heading);
+ const change=heatChange(q);
+ const rows=[['Market cap',new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',notation:'compact',maximumFractionDigits:2}).format(cap)],['Regular price',money(q.regular_price,q.currency)],['Change',change==null?'Unavailable':(change>=0?'+':'')+change.toFixed(2)+'%'],['Quote time',barTime(q.display_time)]];
+ for(const [name,value] of rows){const row=document.createElement('div');row.className='heat-tip-row';const l=document.createElement('span');l.textContent=name;const v=document.createElement('span');v.textContent=value;row.append(l,v);heatTip.appendChild(row)}
+ const note=document.createElement('div');note.className='heat-tip-note';note.textContent='Select tile to open research';heatTip.appendChild(note);
+ heatTip.hidden=false;
+ const rect=node.getBoundingClientRect(),w=heatTip.offsetWidth,h=heatTip.offsetHeight;
+ heatTip.style.left=Math.max(12,Math.min(window.innerWidth-w-12,rect.left+rect.width/2-w/2))+'px';
+ let top=rect.bottom+10;if(top+h>window.innerHeight-12)top=rect.top-h-10;
+ heatTip.style.top=Math.max(12,top)+'px';
+}
+document.addEventListener('pointerdown',event=>{if(heatTipTarget&&!ha.contains(event.target))hideHeatTip()});
+window.addEventListener('scroll',()=>{if(heatTipTarget)hideHeatTip()},{passive:true});
+window.addEventListener('resize',()=>{if(heatTipTarget)hideHeatTip()});
 function heatChange(q){return Number.isFinite(q.regular_price)&&Number.isFinite(q.previous_close)&&q.previous_close>0?100*(q.regular_price/q.previous_close-1):null}
 function heatColor(p){if(!Number.isFinite(p)||Math.abs(p)<.005)return '#64748b';let v=Math.min(Math.abs(p)/4,1);return 'hsl('+(p>0?145:355)+' '+Math.round(38+v*28)+'% '+Math.round(40-v*12)+'%)'}
 // Binary treemap: sum of child areas equals the parent rectangle.
@@ -1111,24 +1134,33 @@ function paintHeatmap(){
  let weighted=quotes.filter(q=>caps.get(q.symbol)>0).map(q=>({q,cap:caps.get(q.symbol)})).sort((a,b)=>b.cap-a.cap||a.q.symbol.localeCompare(b.q.symbol));
  let missing=quotes.filter(q=>!(caps.get(q.symbol)>0));
  const total=quotes.length,done=quotes.filter(q=>capCompleted.has(q.symbol)).length;
- hs.textContent=capBusy?'Loading capitalization • '+done+' of '+total+' symbols checked • '+weighted.length+' weighted':capError?'Lookup interrupted • '+weighted.length+' weighted, '+(total-done)+' not checked':'Complete • '+weighted.length+' weighted · '+missing.length+' unavailable/unweighted';
+ const currentKey=[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort().join(',');
+ const ready=capState==='ready'&&capKey===currentKey;
+ hs.textContent=!total?'Waiting for quotes…':ready?'Loaded • '+weighted.length+' weighted · '+missing.length+' unavailable/unweighted':capState==='error'&&capKey===currentKey?'Capitalization lookup interrupted • '+weighted.length+' weighted':capBusy?'Loading capitalization • '+done+'/'+total+' checked · '+weighted.length+' weighted':'Preparing capitalization…';
  let key=weighted.map(a=>a.q.symbol+':'+a.cap).join('|');
  if(key!==layoutKey){
-  layoutKey=key;ha.replaceChildren();tiles.clear();
+  layoutKey=key;hideHeatTip();ha.replaceChildren();tiles.clear();
   let rects=[];divideHeat(weighted,0,0,100,100,true,rects);
   for(const r of rects){
    let el=document.createElement('a');el.className='heat-tile';
    el.style.left=r.x+'%';el.style.top=r.y+'%';el.style.width=r.w+'%';el.style.height=r.h+'%';
    let label=document.createElement('strong');label.textContent=r.item.q.symbol;
    let pct=document.createElement('span');el.append(label,pct);ha.appendChild(el);tiles.set(r.item.q.symbol,el);
+   const detail=()=>showHeatTip(el,el._heatQuote||r.item.q,el._heatCap||r.item.cap);
+   el.addEventListener('mouseenter',detail);
+   el.addEventListener('mouseleave',()=>{if(heatTipTarget===el)hideHeatTip()});
+   el.addEventListener('focus',detail);
+   el.addEventListener('blur',()=>{if(heatTipTarget===el)hideHeatTip()});
+   el.addEventListener('click',event=>{if(event.pointerType==='touch'&&heatTapTarget!==el){event.preventDefault();detail();heatTapTarget=el}});
+
   }
  }
  for(const e of weighted){
   let q=e.q,el=tiles.get(q.symbol),p=heatChange(q),link=researchURL(q);
   el.style.backgroundColor=heatColor(p);
   el.lastChild.textContent=p==null?'—':(p>=0?'+':'')+p.toFixed(2)+'%';
-  el.title=q.symbol+' • '+(q.name||'')+' • Cap: '+new Intl.NumberFormat('en-US',{notation:'compact',style:'currency',currency:'USD'}).format(e.cap)+' • Price: '+money(q.regular_price,q.currency)+' • '+el.lastChild.textContent+' • Quote: '+barTime(q.display_time);
-  el.setAttribute('aria-label',el.title);
+  el._heatQuote=q;el._heatCap=e.cap;el.setAttribute('aria-label',q.symbol+' '+(q.name||'')+' '+el.lastChild.textContent);
+  if(heatTipTarget===el)showHeatTip(el,q,e.cap);
   if(link){el.href=link;el.target='_blank';el.rel='noopener noreferrer'}else el.removeAttribute('href');
   const small=parseFloat(el.style.width)<10||parseFloat(el.style.height)<12;
   el.dataset.small=String(small);el.dataset.tiny=String(parseFloat(el.style.width)<5||parseFloat(el.style.height)<6);
@@ -1141,16 +1173,17 @@ async function loadCaps(){
  if(heatView!=='heatmap'||capBusy||!quotes.length)return;
  const symbols=[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort(),key=symbols.join(',');
  if(key===capKey)return;
+ capState='loading';paintHeatmap();
  // The browser cache survives a local test-server restart, avoiding another
  // 20-symbol cold lookup. Metadata is public; no tokens are stored here.
  try{
   const saved=JSON.parse(localStorage.getItem('mauristocks_cap_cache_v1')||'null');
   if(saved&&saved.symbols===key&&saved.expires>Date.now()&&Array.isArray(saved.items)){
    caps=new Map(saved.items.filter(item=>Array.isArray(item)&&typeof item[0]==='string'&&Number.isFinite(item[1])&&item[1]>0));
-   capCompleted=new Set(symbols);capKey=key;capError='';capBusy=false;layoutKey='';paintHeatmap();return;
+   capCompleted=new Set(symbols);capKey=key;capError='';capBusy=false;capState='ready';layoutKey='';paintHeatmap();return;
   }
  }catch(_){}
- capBusy=true;capError='';capCompleted=new Set();caps=new Map();layoutKey='';
+ capBusy=true;capState='loading';capError='';capCompleted=new Set();caps=new Map();layoutKey='';
  // Request modest batches so tiles emerge while the rest of the watchlist loads.
  // The server independently rate-limits and caches capitalization.
  try{
@@ -1166,7 +1199,7 @@ async function loadCaps(){
    }
    paintHeatmap();
   }
-  capKey=key;
+  capKey=key;capState='ready';
   try{
    localStorage.setItem('mauristocks_cap_cache_v1',JSON.stringify({
     symbols:key,expires:Date.now()+12*60*60*1000,items:[...caps]
@@ -1174,7 +1207,7 @@ async function loadCaps(){
   }catch(_){}
  }catch(e){
   capError=String(e.message||e);
-  capKey=key;
+  capKey=key;capState='error';
  }finally{
   capBusy=false;paintHeatmap();
   const current=[...new Set(quotes.map(q=>q.symbol).filter(Boolean))].sort().join(',');
