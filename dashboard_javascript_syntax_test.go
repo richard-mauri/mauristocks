@@ -111,3 +111,52 @@ func TestHeatmapRelayoutRetainsExistingTiles(t *testing.T) {
   if !strings.Contains(paint,required){t.Errorf("missing tile reconciliation behavior %s",required)}
  }
 }
+
+// All user-editable browser preferences must use the same per-account,
+// revision-checked Homepage settings record. Provider metadata caches do not
+// belong in that record. Preserve compatibility with old schema:1 settings.
+func TestAccountSettingsIncludeEveryDisplayPreference(t *testing.T) {
+ start:=strings.Index(page,"const suiteKeys=[")
+ if start<0{t.Fatal("suite account preference list missing")}
+ end:=strings.Index(page[start:],"];")
+ if end<0{t.Fatal("suite account preference list not terminated")}
+ keys:=page[start:start+end]
+ for _,key:=range []string{
+  "wlKey","activeKey","flagStorageKey",
+  "'mauri_stock_symbols'","'mauri_stock_sort'",
+  "'mauri_stock_refresh_interval'","'mauri_research_site'",
+  "'mauristocks_columns_v1'","'mauristocks_market_v1'",
+  "'mauristocks_view_v1'","heatWeightKey",
+ }{
+  if !strings.Contains(keys,key){t.Errorf("user preference not included in account record: %s",key)}
+ }
+ if strings.Contains(keys,"capRecordKey")||strings.Contains(keys,"mauristocks_cap_cache_v1"){
+  t.Fatal("stock metadata caches must remain browser-local")
+ }
+ if !strings.Contains(page,"return {schema:1,settings};") {
+  t.Fatal("legacy account settings schema compatibility lost")
+ }
+}
+func TestDisplayPreferenceEventsQueueAccountSave(t *testing.T) {
+ checks:=[]struct{start,end string}{
+  {"marketSelect.addEventListener('change',()=>{","wlSelect.addEventListener('change'"},
+  {"heatWeightSlider.addEventListener('input',()=>{","let heatView="},
+  {"heatSelector.addEventListener('change',()=>{","new ResizeObserver"},
+ }
+ for _,check:=range checks{
+  start:=strings.Index(page,check.start)
+  if start<0{t.Errorf("missing preference listener: %s",check.start);continue}
+  end:=strings.Index(page[start:],check.end)
+  if end<0{t.Errorf("missing listener boundary: %s",check.end);continue}
+  body:=page[start:start+end]
+  if !strings.Contains(body,"queueSuiteSave()"){
+   t.Errorf("preference listener does not request account synchronization: %s",check.start)
+  }
+ }
+ if !strings.Contains(page,"if(!suiteSignedIn)return;"){
+  t.Fatal("browser-only users must not send account writes")
+ }
+ if !strings.Contains(page,"if(response.status===409)"){
+  t.Fatal("account revision-conflict protection missing")
+ }
+}
