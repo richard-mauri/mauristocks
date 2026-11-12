@@ -21,11 +21,21 @@ You can refresh quotes manually or choose Never, 5 seconds, 30 seconds, 1 minute
 
 Click a ticker to open the selected research destination: Google Finance, Stock Analysis, a known company website or an investor-relations page when a verified destination is available. Company website discovery can optionally be enabled using Finnhub.
 
-A **Columns** menu inside the Table panel (and hidden in Heatmap view) lets you show or hide individual columns and reset their visibility. Visible columns automatically fit their content with modest padding; manual resizing is not necessary. Column visibility preferences are saved in this browser (previously saved manual widths are ignored). The Symbol column stays visible, and extended-session pricing still disappears automatically during regular market sessions. The Symbol links destination selector is next to Columns.
+A **Columns** menu inside the Table panel (and hidden in Heatmap view) lets you show or hide individual columns and reset their visibility. Visible columns automatically fit their content with modest padding; manual resizing is not necessary. Column visibility preferences are saved in this browser (previously saved manual widths are ignored). The Symbol column stays visible, and extended-session pricing still disappears automatically during regular market sessions. The Symbol links destination selector is in the shared toolbar alongside Market and View.
 
 An **About / Data Notes** section expands for more explanation and is collapsed by default on phones and computers. The table may scroll horizontally on a narrow screen.
 
-## Watchlist heatmap (draft feature, Issue #13)
+## Market index selections (draft, PR #15)
+
+The shared **Market** dropdown offers **My Watchlists**, **S&P 500 · Top 30**, **NASDAQ-100 · Top 30**, and **Dow Jones · 30**. Each selection works in both **Table** and **Heatmap** view. Selecting an index temporarily makes the personal watchlist controls read-only; switching back restores the previous personal watchlist without replacing or saving its symbols.
+
+Top 30 means the 30 constituents with the largest available **USD market capitalization**, not the entire index. For Dow Jones, all 30 member tickers are retained and ordered by capitalization even if a weight cannot be retrieved; Dow's actual index is price-weighted. Heatmap tile area consistently represents available **market capitalization**, not official index weight. If a capitalization is unavailable the company remains unweighted rather than receiving an invented number.
+
+The Go server obtains S&P membership from zyhe16's regularly updated S&P list, NASDAQ-100/Dow membership from yfiua's generally monthly index constituent snapshots, and market capitalization from zyhe16's Nasdaq screener-based daily dataset. These are unofficial third-party snapshots, **not real-time or guaranteed current**. The server refreshes and shares them across market selections on a six-hour TTL; the browser reuses the included capitalization values immediately, avoiding Finnhub's sequential per-symbol delay on market selections. A temporary upstream outage may use an already cached snapshot. Quotes still come from the existing Yahoo endpoint and the current refresh schedule. Large watchlists at very short refresh intervals can trigger unofficial quote-provider limits.
+
+**Local validation:** after checkout, use `bash ./devbuild.sh` in the original `~/projects/mauristocks` repository. Do not restart `stocksgo.sh` or the tunnel without approval.
+
+## Watchlist heatmap (Issue #13)
 
 Use the theme-matched **View** dropdown (Table or Heatmap) to switch views of the currently selected watchlist. The heatmap sits in a recessed market panel with a muted slate-teal surround, a fine border, inset depth, a watchlist title and concise coverage status. These styles use existing theme variables and do not change the red/green price colors or shared palette. The heatmap sizes company tiles in proportion to market capitalization and colors them by **regular-market price versus previous close**, independently of the table's active-session Change %. The browser measures actual tile pixel dimensions and rendered text widths to show the symbol and percentage change when each fits; even small tiles may show a ticker if space permits. Tile details appear in a readable hover/focus popup (first tap on touch devices) showing capitalization, regular price, change and quote time; tapping again follows the selected research link. Tiles open the existing selected research destination. Symbols without valid capitalization (including ETFs and some unsupported tickers) appear in a separate **Unweighted / unavailable** group rather than receiving invented weights.
 
