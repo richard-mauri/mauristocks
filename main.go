@@ -937,6 +937,7 @@ marketSelect.addEventListener('change',()=>{
  if(!Object.hasOwn(marketNames,next))return;
  marketMode=next;
  localStorage.setItem('mauristocks_market_v1',next);
+ queueSuiteSave();
  if(next==='watchlist')selectWatchlist(activeWatchlist,false);
  else input.value='';
  updateWatchlistButtons();
@@ -1157,6 +1158,7 @@ heatWeightSlider.addEventListener('input',()=>{
  try{localStorage.setItem(heatWeightKey,next)}catch(_){}
  updateHeatWeightLabels();
  paintHeatmap();
+ queueSuiteSave();
 });
 let heatView=localStorage.getItem('mauristocks_view_v1')==='heatmap'?'heatmap':'table';
 let caps=new Map(),capKey='',capBusy=false,layoutKey='',tiles=new Map(),capCompleted=new Set(),capError='',capState='idle';
@@ -1167,7 +1169,7 @@ function setHeatView(v){
  try{localStorage.setItem('mauristocks_view_v1',v)}catch(_){}
  if(v==='heatmap'){paintHeatmap();loadCaps()}else hideHeatTip()
 }
-heatSelector.addEventListener('change',()=>setHeatView(heatSelector.value));
+heatSelector.addEventListener('change',()=>{setHeatView(heatSelector.value);queueSuiteSave()});
 new ResizeObserver(()=>{if(heatView==='heatmap')for(const tile of tiles.values())fitHeatTileLabels(tile)}).observe(ha);
 function hideHeatTip(){heatTip.hidden=true;heatTipTarget=null;heatTapTarget=null}
 function showHeatTip(node,q,cap){
@@ -1538,7 +1540,7 @@ function readSuiteHandoff(){
 }
 readSuiteHandoff();
 
-const suiteKeys=[wlKey,activeKey,flagStorageKey,'mauri_stock_symbols','mauri_stock_sort','mauri_stock_refresh_interval','mauri_research_site','mauristocks_columns_v1'];
+const suiteKeys=[wlKey,activeKey,flagStorageKey,'mauri_stock_symbols','mauri_stock_sort','mauri_stock_refresh_interval','mauri_research_site','mauristocks_columns_v1','mauristocks_market_v1','mauristocks_view_v1',heatWeightKey];
 const syncStatus=document.getElementById('suite-sync-status');
 const suiteIdentityEl=document.getElementById('suite-account-identity');
 let suiteExpiresAt=0;
