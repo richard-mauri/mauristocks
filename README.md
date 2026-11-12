@@ -15,7 +15,7 @@ MauriStocks displays stock symbols, exchanges, company names, regular-session pr
 
 The **Price** column represents regular-session pricing, while **Premarket Price** or **After-hours Price** is shown separately. Extended-session Change $ and Change % compare the extended price against the adjacent regular price; regular-session changes compare the regular price with the previous close. Price coloring may indicate movement between distinct timestamped observations; extended-price coloring compares that displayed price with the regular price.
 
-Use the permanent **Default** watchlist, create and edit named personal lists, or choose **Most Active — Top 20 (Dynamic)**, which is ranked by share volume when Yahoo's unofficial screener data is available. Personal watchlists, selected list, sort choices and refresh preferences are saved in the current browser. Flags are separate: clicking ☆ turns it into ★ and highlights the ticker's entire row. Browser-saved settings do not synchronize between devices.
+Use the permanent **Default** watchlist, create and edit named personal lists, or choose **Most Active — Top 20 (Dynamic)**, which is ranked by share volume when Yahoo's unofficial screener data is available. Personal watchlists, selected list, sort choices and refresh preferences are saved automatically in the current browser, including when not signed in. Editing a named watchlist saves it after a brief pause or when leaving its symbol field; there is no Save Changes button. Use Save As New to create a named list; Default and dynamic market lists remain fixed. Flags are separate: clicking ☆ turns it into ★ and highlights the ticker's entire row. When signed in through Homepage, MauriStocks also attempts to synchronize changes with your account. At sign-in, matching saved settings need no action; if browser and account settings differ, the user is asked before replacing browser settings. Declining preserves the browser; a later account overwrite still requires its existing confirmation.
 
 You can refresh quotes manually or choose Never, 5 seconds, 30 seconds, 1 minute or 5 minutes. The page loads the selected list on opening. Automatic requests pause when the page is hidden. Very short intervals may trigger provider rate limits.
 
@@ -24,6 +24,10 @@ Click a ticker to open the selected research destination: Google Finance, Stock 
 A **Columns** menu inside the Table panel (and hidden in Heatmap view) lets you show or hide individual columns and reset their visibility. Visible columns automatically fit their content with modest padding; manual resizing is not necessary. Column visibility preferences are saved in this browser (previously saved manual widths are ignored). The Symbol column stays visible, and extended-session pricing still disappears automatically during regular market sessions. The Symbol links destination selector is in the shared toolbar alongside Market and View.
 
 An **About / Data Notes** section expands for more explanation and is collapsed by default on phones and computers. The table may scroll horizontally on a narrow screen.
+
+## Automatic local and account persistence
+
+There are no manual **Save Changes** or **Load from account** controls. Named watchlists and other preferences save to the current browser automatically, including in browser-only mode. A named watchlist edit is committed after 600 ms of inactivity, when leaving the input field, or before selecting a different list or market; Default and dynamic watchlists remain templates. If signed in, the existing debounced account-save mechanism also runs. Upon authenticated sign-in the app checks the account record once per identity and restores matching settings without interruption; when the browser and account differ, restoration is offered only with explicit confirmation. Declining keeps the browser version and avoids silent account overwrites.
 
 ## Market index selections (draft, PR #15)
 
