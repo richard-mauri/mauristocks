@@ -90,3 +90,24 @@ func TestHeatmapWeightingControlAndSizing(t *testing.T) {
   t.Error("uncompressed tile area must be labeled as exact market cap")
  }
 }
+
+// A cap refresh or weight-slider adjustment must never blank/rebuild all tiles.
+// Existing DOM anchors, colors, keyboard focus and links should survive a relayout.
+func TestHeatmapRelayoutRetainsExistingTiles(t *testing.T) {
+ start:=strings.Index(page,"function paintHeatmap(){")
+ end:=strings.Index(page[start:],"// Cache capitalization by symbol")
+ if start<0||end<0{t.Fatal("heatmap paint function not found")}
+ paint:=page[start:start+end]
+ if strings.Contains(paint,"ha.replaceChildren()")||strings.Contains(paint,"tiles.clear()"){
+  t.Fatal("heatmap relayout clears the whole panel, causing refresh flash")
+ }
+ for _,required:=range []string{
+  "let el=tiles.get(symbol)",
+  "if(!el){",
+  "el.remove();tiles.delete(symbol)",
+  "el.style.left=r.x+'%'",
+  "el.style.width=r.w+'%'",
+ }{
+  if !strings.Contains(paint,required){t.Errorf("missing tile reconciliation behavior %s",required)}
+ }
+}
