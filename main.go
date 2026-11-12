@@ -1862,9 +1862,30 @@ func main() {
 	}
 
  addr := net.JoinHostPort(*host, *port)
-	tmpl := template.Must(template.New("index").Parse(page))
+  dashboardPage:=page
+  if activity!=nil {
+   dashboardPage=strings.Replace(dashboardPage,"</body>","<script defer src=\"/activity.js\"></script></body>",1)
+  }
+ 	tmpl := template.Must(template.New("index").Parse(dashboardPage))
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/quotes", quotesHandler)
+  if activity!=nil {
+   mux.HandleFunc("/api/activity/ping",activity.ping)
+   mux.HandleFunc("/activity.js",func(w http.ResponseWriter,r *http.Request){
+    if r.Method!=http.MethodGet {w.Header().Set("Allow","GET");http.Error(w,"method not allowed",405);return}
+    w.Header().Set("Content-Type","application/javascript; charset=utf-8")
+    w.Header().Set("Cache-Control","no-store")
+    w.Header().Set("X-Content-Type-Options","nosniff")
+    _,_=io.WriteString(w,activityJS)
+   })
+  }
+  track:=func(next http.HandlerFunc)http.HandlerFunc{
+   if activity==nil {return next}
+   return func(w http.ResponseWriter,r *http.Request){
+    done:=activity.working();defer done()
+    next(w,r)
+   }
+  }
+ 	mux.HandleFunc("/api/quotes",track(quotesHandler))
  mux.HandleFunc("/api/market-caps",track(marketCapsHandler))
  mux.HandleFunc("/api/market-top",track(topMarketHandler))
  mux.HandleFunc("/api/company", track(companyHandler))
