@@ -1,24 +1,25 @@
 # Current work — MauriStocks
 
-## Issue #19 — Homepage suite activity reporting (November 12, 2026)
+## Issue #22 — verified Homepage guest/session and activity
 
-- **Verified merged baseline:** GitHub `main` is at PR #18's merged heatmap/autosave commit `b92dc5ea6fc4821c7ca6a3896373794a2758f16e`. GitHub comparison `main...feat/19-suite-activity` shows **8 commits ahead and 0 behind**, with merge base exactly that merged PR #18 commit. Activity PR #20 **already contains** the adjustable heatmap weighting, autosave, per-user settings sync, and flicker fixes. No code merge/rebase or separate reconciliation is required. Activity work is on `feat/19-suite-activity`, draft [PR #20](https://github.com/richard-mauri/mauristocks/pull/20), Issue #19.
-- **Scope:** optional per-tab anonymous/unverified visibility and interaction pings, rolling 2/5/15/60-minute observed presence, and bounded in-flight API request accounting for quotes, market caps/top, Most Active and company lookup. One server-only aggregate report per 60 seconds to Homepage collector with `stocks` identity, keyed by `HOMEPAGE_ACTIVITY_KEY_STOCKS` and URL `STOCKS_ACTIVITY_URL`. Unconfigured reporter has no page script or outbound reports.
-- **Security:** the browser receives no collector key; telemetry sends no symbol, account, portfolio, price, tab ID or session secret to Homepage. Signed-in tabs are not independently verified for telemetry and therefore count as anonymous/unverified. Reporter failures do not affect quote or watchlist behavior. Independent tunnels and per-user settings are unchanged.
-- **Validation:** Go tests cover protocol, presence windows, same-origin rejection, in-flight work and disabled config. GitHub Go CI #127 passed at code head `560156c25eacc8155cf4cd60364c9427ced3acc5`; this documentation commit requires its own latest-head CI check. Mac/Safari/real Homepage collector integration **not run**. No deployment, restart, version bump or merge.
-- **Next:** check documentation-head CI; run isolated Mac test on port 8086 with private matching service key and existing test Homepage on 8788, verifying MauriStocks activity and the already-included merged heatmap features in Safari. Owner must authorize any production installation/restart.
+- **Merged baseline:** GitHub `main` contains the heatmap/autosave and optional suite activity work (PRs #18 and #20). Source branch `feat/22-session-aware-activity` starts from `main`; draft PR pending. Issue: https://github.com/richard-mauri/mauristocks/issues/22.
+- **Scope:** Reuse existing Homepage child bearer; validate it server-side against `/api/session/profile` before attributing browser presence. Deduplicate multiple tabs by Homepage's origin-scoped pseudonymous parent session alias; return signed-in sessions, unique users and bounded user summaries to the existing private collector. Revoked bearers return 401, temporarily unavailable Homepage returns 503, and anonymous pings remain distinct. No bearer or alias is included in transmitted telemetry.
+- **Browser UX:** When optional activity monitoring is enabled, show verified named or one-hour guest identity and a non-dismissible sign-in dialog for invalid/local sessions with a deliberate Go to Homepage action. Guest settings remain browser-local. Named-user settings retain existing Homepage storage and conflict protection. Homepage remains sole sign-in authority. There is no automatic redirect on expiry.
+- **Preserved:** quotes, table/heatmap, market/index calculation, watchlist autosave, browser-only persistence, environment secrets, independent tunnel and installed service. No semantic version bump.
+- **Validation to finish:** Go compiler unavailable in agent's temporary environment; run GitHub Go CI at exact draft PR head. JavaScript syntax and Git diff whitespace checks passed before push. Owner Mac/Safari sign-in, guest, expiry/revocation and activity acceptance remain unverified. No merge, release, tag, restart or tunnel change authorized.
 
-## Owner Mac acceptance (requires explicit permission before production restart)
+## Owner Mac review (launcher requires separate restart approval)
 
 ```sh
 cd ~/projects/mauristocks
 git status -sb
 git fetch origin
-git checkout feat/19-suite-activity
-git pull --ff-only origin feat/19-suite-activity
+git checkout feat/22-session-aware-activity
+git pull --ff-only origin feat/22-session-aware-activity
+go test -count=1 ./...
 bash ./devbuild.sh
 ./mauristocks -version
 ./stocksgo.sh
 ```
 
-The launcher restarts the installed service and tunnel. Do not use it for isolated smoke testing or until owner authorization. The owner's checkout was confirmed clean on `main`. The activity branch already includes merged PR #18; use an isolated worktree for smoke testing or intentionally switch this clean checkout after confirming no new changes.
+Do not run the last command until approving a restart of MauriStocks and its tunnel. First inspect local changes and consider an isolated worktree to preserve the owner's checkout. Safari tests must verify Homepage named/guest launch, guest-only browser settings, revoked/expired modal, one user's multiple tabs counted once, and unchanged market/watchlist behavior.

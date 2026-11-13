@@ -68,3 +68,36 @@ func TestStockActivityScriptPrivateAndOptional(t *testing.T){
  }
  if !strings.Contains(page,"</body>"){t.Fatal("page template anchor missing")}
 }
+
+func TestStocksVerifiedSessionsAndRevocation(t *testing.T) {
+ valid:=true
+ homepage:=httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){
+  if r.URL.Path!="/api/session/profile" || r.Header.Get("Origin")!="https://stocks.themauris.org" {t.Errorf("unexpected profile request %s",r.URL.Path);http.Error(w,"bad origin",403);return}
+  if !valid || r.Header.Get("Authorization")!="Bearer "+strings.Repeat("a",64) {http.Error(w,"revoked",401);return}
+  w.Header().Set("Content-Type","application/json")
+  _=json.NewEncoder(w).Encode(map[string]string{"user":"guest-example","activitySession":strings.Repeat("b",64),"activityUser":strings.Repeat("c",64)})
+ }))
+ defer homepage.Close()
+ a,err:=NewActivityReporter(homepage.URL+"/api/admin/activity/ingest",strings.Repeat("k",40))
+ if err!=nil{t.Fatal(err)}
+ for _,id:=range []string{strings.Repeat("d",32),strings.Repeat("e",32)} {
+  req:=httptest.NewRequest(http.MethodPost,"http://localhost:8082/api/activity/ping",strings.NewReader(`{"id":"`+id+`","visible":true}`))
+  req.Header.Set("Origin","http://localhost:8082")
+  req.Header.Set("Content-Type","application/json")
+  req.Header.Set("Authorization","Bearer "+strings.Repeat("a",64))
+  result:=httptest.NewRecorder();a.ping(result,req)
+  if result.Code!=204 {t.Fatalf("verified ping status %d",result.Code)}
+ }
+ aggregate:=a.snapshot()
+ if aggregate.Active2!=1 || aggregate.Authenticated!=1 || aggregate.UniqueUsers!=1 || aggregate.Anonymous!=0 || len(aggregate.Users)!=1 || aggregate.Users[0].Sessions!=1 {t.Fatalf("session deduplication: %+v",aggregate)}
+ valid=false
+ req:=httptest.NewRequest(http.MethodPost,"http://localhost:8082/api/activity/ping",strings.NewReader(`{"id":"`+strings.Repeat("d",32)+`","visible":true}`))
+ req.Header.Set("Origin","http://localhost:8082");req.Header.Set("Content-Type","application/json")
+ req.Header.Set("Authorization","Bearer "+strings.Repeat("a",64))
+ result:=httptest.NewRecorder();a.ping(result,req)
+ if result.Code!=401 {t.Fatalf("revoked session status %d",result.Code)}
+ if strings.Contains(activityJS,"HOMEPAGE_ACTIVITY_KEY_STOCKS") {t.Fatal("collector credential exposed")}
+ for _,part:=range []string{"Suite sign-in required","Go to Homepage","event.preventDefault()","response.status!==401"} {
+  if !strings.Contains(activityJS,part) {t.Errorf("missing browser session contract %q",part)}
+ }
+}

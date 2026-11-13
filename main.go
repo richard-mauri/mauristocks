@@ -826,6 +826,7 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .suite-dialog button{color:#eef5f8;background:#244954;border:1px solid #41616b;border-radius:9px;padding:9px 18px;font:inherit;cursor:pointer}
 .suite-dialog button:focus-visible,.suite-dialog input:focus-visible{outline:2px solid #69d7e5;outline-offset:2px}
 .suite-account-identity{display:inline-block;margin-top:5px;font-size:.9rem;color:var(--accent);font-weight:650}.suite-account-identity[hidden],.suite-sync-feedback[hidden]{display:none!important}.suite-sync-feedback{margin:8px 0 12px;color:var(--muted);font-size:.93rem;line-height:1.4}.suite-home-link{display:inline-block;margin:4px 0 10px;padding:3px 5px;border-radius:5px;color:var(--accent,#69c6d3);font:500 12px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-decoration:none;opacity:.78;transition:background-color .15s,color .15s,opacity .15s}.suite-home-link:hover{background:rgba(96,151,172,.16);color:var(--accent,#69c6d3);text-decoration:underline;opacity:1}.suite-home-link:focus-visible{outline:2px solid var(--accent,#69c6d3);outline-offset:2px;opacity:1}
+.suite-signin-dialog{max-width:min(440px,calc(100vw - 36px));padding:25px;border:1px solid var(--accent);border-radius:12px;background:var(--panel);color:var(--text);box-shadow:0 20px 60px #0009}.suite-signin-dialog::backdrop{background:#071421b8}.suite-signin-dialog h2{margin:0 0 12px;font-size:1.25rem}.suite-signin-dialog p{line-height:1.55}.suite-signin-dialog a{display:inline-block;margin-top:12px;padding:10px 14px;border:1px solid var(--accent);border-radius:7px;color:var(--accent);text-decoration:none}.suite-signin-dialog a:hover,.suite-signin-dialog a:focus-visible{background:rgba(96,151,172,.18)}
 
 .heat-switch{display:flex;align-items:center;gap:.55rem;margin:0;padding:0;color:var(--ink)}.heat-switch select{font:inherit;padding:.55rem .6rem;min-width:150px;border-radius:6px;background:var(--panel);color:var(--ink);border:1px solid var(--border);cursor:pointer}
 .heat-panel[hidden],.table-panel[hidden],.heat-tip[hidden]{display:none!important}
@@ -1586,6 +1587,9 @@ function updateSuiteAccountClock(){
  if(suiteSignedIn){
   suiteIdentityEl.textContent='Signed in as '+suiteAccountIdentity;
   suiteIdentityEl.hidden=false;
+ }else if(suiteGuest){
+  suiteIdentityEl.textContent='Signed in as '+suiteGuest+' · Guest (browser-only settings)';
+  suiteIdentityEl.hidden=false;
  }else{
   suiteIdentityEl.textContent='Not signed in · Browser-only settings';
   suiteIdentityEl.hidden=false;
@@ -1594,6 +1598,7 @@ function updateSuiteAccountClock(){
 setInterval(updateSuiteAccountClock,1000);
 function suiteFeedback(text){syncStatus.textContent=text;syncStatus.hidden=!text}
 let suiteSignedIn=false;
+let suiteGuest='';
 let suiteRevision=null;
 let suiteInitialOverwriteApproved=false;
 let suiteAccountIdentity=null;
@@ -1610,6 +1615,7 @@ async function suiteRequest(path,options={}){
  if(response.status===401){
   suiteHandoff='';
   suiteSignedIn=false;
+  suiteGuest='';
   
   suiteIdentityEl.hidden=true;
   suiteIdentityEl.textContent='';
@@ -1656,6 +1662,16 @@ async function refreshSuiteSession(){
   const data=await profile.json();
   suiteExpiresAt=Date.parse(data.expiresAt)||0;
   const identity=typeof data.user==='string'?data.user:'';
+  if(data.role==='guest'){
+   suiteGuest=identity;
+   suiteSignedIn=false;
+   suiteAccountIdentity=null;
+   suiteIdentityEl.textContent='Signed in as '+identity+' · Guest (browser-only settings)';
+   suiteIdentityEl.hidden=false;
+   suiteFeedback('Guest settings stay in this browser; Homepage does not save them.');
+   return;
+  }
+  suiteGuest='';
   if(!identity){suiteFeedback('Account identity unavailable; browser settings remain local.');return}
   if(suiteAccountIdentity!==identity){suiteRevision=null;suiteInitialOverwriteApproved=false;suiteAccountIdentity=identity}
   suiteSignedIn=true;
@@ -1870,6 +1886,7 @@ func main() {
 	mux := http.NewServeMux()
   if activity!=nil {
    mux.HandleFunc("/api/activity/ping",activity.ping)
+   mux.HandleFunc("/api/activity/identity",activity.identity)
    mux.HandleFunc("/activity.js",func(w http.ResponseWriter,r *http.Request){
     if r.Method!=http.MethodGet {w.Header().Set("Allow","GET");http.Error(w,"method not allowed",405);return}
     w.Header().Set("Content-Type","application/javascript; charset=utf-8")
