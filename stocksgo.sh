@@ -18,6 +18,16 @@ if [[ -f "$HOME/projects/mauristocks/.env" ]]; then
     set +a
 fi
 
+# BEGIN SUITE ACTIVITY ENV - managed by setup-suite-activity.sh
+ACTIVITY_ENV="$HOME/projects/mauristocks/.activity.env"
+if [[ ! -r "$ACTIVITY_ENV" ]]; then
+  echo "Missing readable activity configuration: $ACTIVITY_ENV" >&2
+  exit 1
+fi
+# Private file is generated with export-only assignments; never print it.
+# shellcheck disable=SC1090
+source "$ACTIVITY_ENV"
+# END SUITE ACTIVITY ENV
 # Stop only the STOCKS Cloudflare Tunnel.
 STOCKS_TOKEN="$HOME/projects/mauristocks/.cloudflared/tunnel_token"
 
