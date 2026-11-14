@@ -1,6 +1,6 @@
 # Current work — MauriStocks
 
-**Active documentation review:** Issue #24, branch `docs/24-session-markdown-refresh` based on the merged `main` snapshot; documentation-only draft PR, awaiting owner approval. This branch does not change runtime behavior.
+**Active documentation review:** [Issue #24](https://github.com/richard-mauri/mauristocks/issues/24), branch `docs/24-session-markdown-refresh` targeting `main`, [draft PR #25](https://github.com/richard-mauri/mauristocks/pull/25). This branch changes only Markdown; exact-head CI and owner merge approval are pending.
 
 GitHub `main` at `934415c` includes merged Issue #22 / PR #23 for Homepage-verified named/guest sessions and activity. No issues or PRs remain open and no implementation branch is active. The owner accepted Safari guest sign-in, revocation and presentation.
 
