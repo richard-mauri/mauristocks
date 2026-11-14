@@ -1,25 +1,9 @@
 # Current work — MauriStocks
 
-## Issue #22 — verified Homepage guest/session and activity
+**Active documentation review:** [Issue #24](https://github.com/richard-mauri/mauristocks/issues/24), branch `docs/24-session-markdown-refresh` targeting `main`, [draft PR #25](https://github.com/richard-mauri/mauristocks/pull/25). This branch changes only Markdown; exact-head CI and owner merge approval are pending.
 
-- **Merged baseline:** GitHub `main` contains the heatmap/autosave and optional suite activity work (PRs #18 and #20). Source branch `feat/22-session-aware-activity` starts from `main`; draft PR pending. Issue: https://github.com/richard-mauri/mauristocks/issues/22.
-- **Scope:** Reuse existing Homepage child bearer; validate it server-side against `/api/session/profile` before attributing browser presence. Deduplicate multiple tabs by Homepage's origin-scoped pseudonymous parent session alias; return signed-in sessions, unique users and bounded user summaries to the existing private collector. Revoked bearers return 401, temporarily unavailable Homepage returns 503, and anonymous pings remain distinct. No bearer or alias is included in transmitted telemetry.
-- **Browser UX:** When optional activity monitoring is enabled, show verified named or one-hour guest identity and a non-dismissible sign-in dialog for invalid/local sessions with a deliberate Go to Homepage action. Guest settings remain browser-local. Named-user settings retain existing Homepage storage and conflict protection. Homepage remains sole sign-in authority. There is no automatic redirect on expiry.
-- **Preserved:** quotes, table/heatmap, market/index calculation, watchlist autosave, browser-only persistence, environment secrets, independent tunnel and installed service. No semantic version bump.
-- **Validation to finish:** Go compiler unavailable in agent's temporary environment; run GitHub Go CI at exact draft PR head. JavaScript syntax and Git diff whitespace checks passed before push. Owner Mac/Safari sign-in, guest, expiry/revocation and activity acceptance remain unverified. No merge, release, tag, restart or tunnel change authorized.
+GitHub `main` at `934415c` includes merged Issue #22 / PR #23 for Homepage-verified named/guest sessions and activity. No issues or PRs remain open and no implementation branch is active. The owner accepted Safari guest sign-in, revocation and presentation.
 
-## Owner Mac review (launcher requires separate restart approval)
+MauriStocks validates the Homepage child bearer for guest/named status. Guest settings remain browser-local; named-user Homepage-backed settings remain isolated and revision-controlled. Optional telemetry verifies bearers server-side, deduplicates tabs by pseudonymous parent session, and reports aggregate/private counts without leaking credentials. Invalid/revoked identity gets 401; verification outage gets 503. The sign-in-required dialog is non-dismissible and offers a deliberate Homepage action. Quote retrieval, heatmap, index calculations, watchlists and local persistence are unchanged.
 
-```sh
-cd ~/projects/mauristocks
-git status -sb
-git fetch origin
-git checkout feat/22-session-aware-activity
-git pull --ff-only origin feat/22-session-aware-activity
-go test -count=1 ./...
-bash ./devbuild.sh
-./mauristocks -version
-./stocksgo.sh
-```
-
-Do not run the last command until approving a restart of MauriStocks and its tunnel. First inspect local changes and consider an isolated worktree to preserve the owner's checkout. Safari tests must verify Homepage named/guest launch, guest-only browser settings, revoked/expired modal, one user's multiple tabs counted once, and unchanged market/watchlist behavior.
+**Next:** reconcile Markdown on a documentation-only branch and draft PR from `main`. Validate paths/links and latest-head CI; no Mac launcher or Safari retest is needed for docs alone. Future runtime acceptance and any merge, deploy, version change or restart remain owner-controlled. Recheck GitHub and unpushed owner-local changes before further work.
