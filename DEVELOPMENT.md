@@ -1,6 +1,6 @@
 # MauriStocks — app-specific development and validation
 
-Read [AGENTS.md](AGENTS.md) and the complete [generated suite policy](docs/suite-development-policy.md). Homepage owns shared workflow, checklist, FINISH, promotion and branch cleanup. This file retains app-specific CI and Mac/Safari acceptance.
+Read [AGENTS.md](AGENTS.md) and [Homepage's authoritative suite development policy](https://github.com/richard-mauri/homepage/blob/main/SUITE_DEVELOPMENT_POLICY.md). Homepage owns shared workflow, checklist, FINISH, promotion and branch cleanup. This file retains app-specific CI and Mac/Safari acceptance.
 
 ## CI and local validation
 
