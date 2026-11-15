@@ -1,23 +1,19 @@
-# MauriStocks development and validation
+# MauriStocks — app-specific development and validation
 
-GitHub [main](https://github.com/richard-mauri/mauristocks/tree/main) is the authoritative merged baseline. Read [AGENTS.md](AGENTS.md), [CURRENT_WORK.md](CURRENT_WORK.md), and [ARCHITECTURE.md](ARCHITECTURE.md) before modifying source.
-
-## Branch / review lifecycle
-
-Start a short-lived scope-specific branch from the latest main. Use a draft pull request targeting main, with rationale, risks, exact changed files and CI/acceptance status. Track reproducible independent bugs with GitHub Issues; keep unrelated fixes in separate PRs. Never commit experiments directly to main. Only the owner approves merge, tag, release, deployment, or restart. Do not bump the semantic version during ordinary development. After an owner-approved merge, verify merge status before deleting a branch; preserve unmerged work.
+Read [AGENTS.md](AGENTS.md) and the complete [generated suite policy](docs/suite-development-policy.md). Homepage owns shared workflow, checklist, FINISH, promotion and branch cleanup. This file retains app-specific CI and Mac/Safari acceptance.
 
 ## CI and local validation
 
 [Go CI](.github/workflows/go-ci.yml) follows the ScraperGo workflow: pushes to `dev`, PRs targeting `main`, and manual dispatch; non-blocking gofmt report, then `go test -count=1 ./...` and `go build ./...`. Check the latest PR-head SHA and its actual workflow outcome. Formatting debt output is informational; tests and build are required gates. For documentation-only changes review Markdown links/path/commands plus PR CI; Mac restart/Safari testing is unnecessary.
 
-For code/UI changes, on the owner's Mac inspect local changes first and use:
+For code/UI changes, first inspect the owner's local tree and stop if dirty. Then use the following with the **actual scoped PR branch**, not the historical example:
 
 ```sh
 cd ~/projects/mauristocks
 git status -sb
 git fetch origin
-git checkout ui/content-fit-columns-and-docs
-git pull --ff-only origin ui/content-fit-columns-and-docs
+git checkout ACTUAL-PR-BRANCH
+git pull --ff-only origin ACTUAL-PR-BRANCH
 bash ./devbuild.sh
 ./mauristocks -version
 ./stocksgo.sh
