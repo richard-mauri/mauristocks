@@ -1,6 +1,6 @@
 # Current work — MauriStocks
 
-**Active:** Homepage [Issue #45](https://github.com/richard-mauri/homepage/issues/45) policy adoption on `docs/45-suite-policy-adoption` from GitHub `main`; draft PR to be created and verified. Documentation and a read-only policy validation script/workflow only. Generated local policy v1.0.0 is pinned to Homepage merge `502f56de374f094eec2e6d5107c89d2d963f44fd`. No consumer merge authorized.
+**Active:** Homepage [Issue #45](https://github.com/richard-mauri/homepage/issues/45) policy adoption on `docs/45-suite-policy-adoption` from GitHub `main`; [draft PR #26](https://github.com/richard-mauri/mauristocks/pull/26) open against `main`. Documentation and a read-only policy validation script/workflow only. Generated local policy v1.0.0 is pinned to Homepage merge `502f56de374f094eec2e6d5107c89d2d963f44fd`. No consumer merge authorized.
 
 **Merged context:** Homepage-verified guest/named sessions, per-user revision-controlled settings, pseudonymous optional activity and non-dismissible sign-in are implemented. Invalid/revoked identity returns 401 and verification outage 503. Quote retrieval, heatmaps, watchlists, responsive columns, stars, sorting, provider behavior and local browser data are outside this scope.
 
