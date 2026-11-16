@@ -139,7 +139,7 @@ func TestAccountSettingsIncludeEveryDisplayPreference(t *testing.T) {
 }
 func TestDisplayPreferenceEventsQueueAccountSave(t *testing.T) {
  checks:=[]struct{start,end string}{
-  {"marketSelect.addEventListener('change',()=>{","wlSelect.addEventListener('change'"},
+  {"marketSelect.addEventListener('change',async()=>{","// Only explicit Save Changes / Save As New"},
   {"heatWeightSlider.addEventListener('input',()=>{","let heatView="},
   {"heatSelector.addEventListener('change',()=>{","new ResizeObserver"},
  }
@@ -161,24 +161,49 @@ func TestDisplayPreferenceEventsQueueAccountSave(t *testing.T) {
  }
 }
 
-// The save/load buttons were removed in favor of browser autosave and a guarded
-// account check. Assert that future UI edits cannot regress to manual saving.
-func TestWatchlistBrowserAutosaveAndNoManualAccountButtons(t *testing.T) {
- if strings.Contains(page,`id="watchlist-save"`) || strings.Contains(page,`id="suite-sync-load"`) {
-  t.Fatal("manual Save Changes / Load from account controls must not be present")
+// Symbol edits are no longer autosaved: the owner explicitly requested
+// Save Changes / Save As New / Restore with changed-state gating. Other
+// preferences must continue their guarded Homepage account autosave.
+func TestWatchlistExplicitSaveAndRestoreControls(t *testing.T) {
+ for _,id:=range []string{`id="watchlist-save"`,`id="watchlist-new"`,`id="watchlist-restore"`,`id="watchlist-delete"`}{
+  if !strings.Contains(page,id){t.Errorf("missing watchlist control: %s",id)}
  }
- checks:=[]string{
-  "input.addEventListener('input',",
-  "watchlistSaveTimer=setTimeout(saveActiveWatchlist,600)",
-  "input.addEventListener('change',saveActiveWatchlist)",
-  "wlSelect.addEventListener('change',()=>",
-  "saveActiveWatchlist();",
+ for _,removed:=range []string{`id="watchlist-select"`,`id="suite-sync-load"`,`<option value="watchlist">My Watchlists</option>`,"saveActiveWatchlist();","watchlistSaveTimer"}{
+  if strings.Contains(page,removed){t.Errorf("obsolete watchlist control or autosave remains: %s",removed)}
+ }
+ required:=[]string{
+  "function watchlistChanged()",
+  "normalizeSymbols(input.value)!==normalizeSymbols(savedSymbols())",
+  "wlSave.disabled=indexed||readOnly||!changed",
+  "wlNew.disabled=indexed||!changed",
+  "wlRestore.disabled=indexed||!changed",
+  "input.readOnly=indexed||activeWatchlist===dynamicName",
+  "marketSelect.replaceChildren()",
+  "op.value='list:'+n",
+  "if(watchlistChanged()&&!(await suiteAsk('Discard unsaved symbol changes and change Market?')))",
+  "wlSave.addEventListener('click',",
+  "wlRestore.addEventListener('click',",
+  "wlNew.addEventListener('click',",
   "persistLists();",
   "queueSuiteSave();",
   "reconcileAccountOnSignIn(identity)",
   "suiteAsk('Saved account settings differ from this browser.",
  }
- for _,check:=range checks {
-  if !strings.Contains(page,check){t.Errorf("missing automatic persistence behavior: %s",check)}
+ for _,check:=range required {
+  if !strings.Contains(page,check){t.Errorf("missing explicit watchlist behavior: %s",check)}
+ }
+}
+
+func TestQuoteRefreshDoesNotCommitPendingWatchlistEdits(t *testing.T) {
+ start:=strings.Index(page,"async function refreshQuotes(){")
+ if start<0{t.Fatal("quote refresh function not found")}
+ end:=strings.Index(page[start:],"button.addEventListener('click',refreshQuotes)")
+ if end<0{t.Fatal("quote refresh listener boundary not found")}
+ body:=page[start:start+end]
+ if strings.Contains(body,"saveActiveWatchlist()")||strings.Contains(body,"persistLists()")||strings.Contains(body,"localStorage.setItem('mauri_stock_symbols'"){
+  t.Fatal("quote refresh must not persist pending symbol edits")
+ }
+ if !strings.Contains(body,"input.value=symbols.join(',');updateWatchlistButtons()"){
+  t.Fatal("quote refresh must preserve changed-state feedback")
  }
 }
