@@ -6,7 +6,7 @@ Read [AGENTS.md](AGENTS.md) and [Homepage's authoritative suite development poli
 
 [Go CI](.github/workflows/go-ci.yml) follows the ScraperGo workflow: pushes to `dev`, PRs targeting `main`, and manual dispatch; non-blocking gofmt report, then `go test -count=1 ./...` and `go build ./...`. Check the latest PR-head SHA and its actual workflow outcome. Formatting debt output is informational; tests and build are required gates. For documentation-only changes review Markdown links/path/commands plus PR CI; Mac restart/Safari testing is unnecessary.
 
-For code/UI changes, first inspect the owner's local tree and stop if dirty. Then use the following with the **actual scoped PR branch**, not the historical example:
+For code/UI changes, first inspect the owner's local tree and stop if dirty. Use the following with the **actual scoped PR branch**, not the historical example. `./devbuild.sh` is the only required build/test command; do not separately request `go test` or `go build`:
 
 ```sh
 cd ~/projects/mauristocks
@@ -14,10 +14,11 @@ git status -sb
 git fetch origin
 git checkout ACTUAL-PR-BRANCH
 git pull --ff-only origin ACTUAL-PR-BRANCH
-bash ./devbuild.sh
+./devbuild.sh
 ./mauristocks -version
-./stocksgo.sh
 ```
+
+Only after separate owner authorization, run `./stocksgo.sh` to restart the app and tunnel for Safari acceptance.
 
 `devbuild.sh` runs tests, increments a Git-private local build counter and creates the native binary with one identifier shared by the CLI and dashboard. It starts at 000041 for a fresh clone after historical v40, but independently existing checkout counters are retained. CI checks the injected build label without modifying this private counter. `stocksgo.sh` is tracked in GitHub and is the owner's Mac launcher; inspect its current version and any local differences before relying on it. It restarts MauriStocks and its dedicated tunnel, so run it only after owner authorization. Do not overwrite local modifications or assume the launcher uses the newly built binary. In Safari at http://127.0.0.1:8082 verify compact automatic content widths, long names, range labels, hidden/shown columns, table overflow, regular/extended session transitions, sorting, stars, watchlists, refresh and light/dark presentation. GitHub's Linux CI cannot establish Mac/Safari acceptance. Report pass/fail/not-run accurately.
 

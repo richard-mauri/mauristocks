@@ -1,6 +1,12 @@
 # MauriStocks architecture
 
-MauriStocks is currently a single-file Go service: [main.go](main.go) contains the HTTP server, Yahoo Finance request/cache and quote transformation logic, and an embedded HTML/CSS/JavaScript dashboard. [go.mod](go.mod) declares the standard-library-only module. This document describes current ownership, not a completed package refactor.
+MauriStocks keeps its HTTP server, Yahoo Finance request/cache and quote transformation logic, and an embedded HTML/CSS/JavaScript dashboard in [main.go](main.go). [go.mod](go.mod) adds the pinned `github.com/richard-mauri/homepage/shared/ui` module to the standard library. This document describes current ownership, not a completed package refactor.
+
+## Canonical suite buttons
+
+Homepage's `shared/ui` Go module embeds the suite's authoritative `buttons.css`. MauriStocks includes those bytes in its existing inline stylesheet at page-template rendering time; the module is a build-time dependency, not a browser-time Homepage fetch, and no Content Security Policy exception is introduced. Ordinary controls (Refresh quotes, watchlist actions, dialog actions, and the dynamically created Reset columns button) **must** use `button.ui-button`. Local CSS may provide layout and map `--text`/`--line` to the dashboard's `--ink`/`--border` palette, but must not duplicate or override shared ordinary-button appearance, hover, disabled, or focus states. Table sorting buttons (`.sort-button`) and persistent watchlist stars (`.symbol-flag`) have distinct semantic presentations and deliberately remain specialized. Review this contract when adding any button.
+
+Confirmation dialogs focus the dialog container on opening instead of programmatically focusing OK, which previously showed Homepage's keyboard-focus ring before any user interaction. The container has no visual outline; Tab still enters the standard buttons and Enter confirms from the container. The text-entry dialog intentionally focuses its input. The shared button focus styling remains unchanged.
 
 ## Responsibilities
 
