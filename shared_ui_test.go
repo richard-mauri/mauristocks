@@ -52,3 +52,29 @@ func TestConfirmationDialogDoesNotAutofocusOK(t *testing.T) {
 		}
 	}
 }
+
+func TestObsoletePaletteAndWatchlistCSSRemoved(t *testing.T) {
+	for _, obsolete := range []string{
+		".watchlist-controls select{",
+		"color:#1763b1",
+		".up{color:#168243}",
+		".down{color:#d54848}",
+		".symbol-flag[aria-pressed=\"true\"]{color:#946900}",
+		".symbol-flag:hover,.symbol-flag:focus-visible{background:#ffe38b",
+		".range-marker{background:#2563a6",
+	} {
+		if strings.Contains(pageTemplate, obsolete) {
+			t.Errorf("obsolete pre-palette CSS remains: %q", obsolete)
+		}
+	}
+	for _, required := range []string{
+		".sort-button{border:0;",
+		".symbol-flag{background:transparent;",
+		".range-marker{background:var(--accent);",
+		".up{color:var(--gain)}.down{color:var(--loss)}",
+	} {
+		if !strings.Contains(pageTemplate, required) {
+			t.Errorf("functional semantic rule missing: %q", required)
+		}
+	}
+}

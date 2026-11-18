@@ -663,11 +663,11 @@ func marketCapsHandler(w http.ResponseWriter,r *http.Request){
 
 const pageTemplate = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mauri's Stock Quotes</title>
 <style>
-:root{color-scheme:light dark;font-family:system-ui,-apple-system,sans-serif}body{max-width:1200px;margin:2rem auto;padding:0 1rem}h1{margin-bottom:.25rem}.muted{opacity:.68;font-size:.88rem}.controls{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.4rem 0}input{flex:1;min-width:260px;padding:.7rem;border:1px solid #888;border-radius:6px;font:inherit}#refresh{min-width:148px;white-space:nowrap}table{width:1180px;min-width:1180px;table-layout:fixed;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{padding:.65rem .45rem;text-align:left;border-bottom:1px solid #8885}th{font-size:.85rem}th[data-sort]{cursor:pointer;user-select:none} .sort-button{border:0;background:transparent;color:inherit;padding:.25rem .1rem;font:inherit;font-weight:700;cursor:pointer;width:100%;text-align:left}th.num .sort-button{text-align:right}.sort-button:hover{text-decoration:underline}.sort-button:focus-visible{outline:2px solid #2868bd;outline-offset:2px}.sort-indicator{display:inline-block;margin-left:.2em;color:#8795a4;font-weight:500}.sort-indicator.active{color:#1763b1;font-size:1.15em;font-weight:900}th[data-sort][aria-sort="ascending"] .sort-indicator,th[data-sort][aria-sort="descending"] .sort-indicator{color:#1763b1}th[data-sort]:hover{text-decoration:underline}th[data-sort]:focus-visible{outline:2px solid #2868bd;outline-offset:-2px}th[data-sort][aria-sort="ascending"],th[data-sort][aria-sort="descending"]{text-decoration:underline}td.num,th.num{text-align:right}.up{color:#168243}.down{color:#d54848}.tablewrap{overflow-x:auto}.small{font-size:.8rem;opacity:.75}#message{margin:1rem 0}footer{margin:1.5rem 0;line-height:1.5}footer details summary{cursor:pointer;display:list-item;font-weight:600;width:max-content;max-width:100%;padding:.35rem 0}footer details .notes-content{padding:.45rem 0;max-width:1100px}tr.error td{opacity:.7}a{color:inherit} @media(max-width:650px){body{margin:1rem auto}th,td{font-size:.8rem;padding:.55rem .25rem}}
+:root{color-scheme:light dark;font-family:system-ui,-apple-system,sans-serif}body{max-width:1200px;margin:2rem auto;padding:0 1rem}h1{margin-bottom:.25rem}.muted{opacity:.68;font-size:.88rem}.controls{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.4rem 0}input{flex:1;min-width:260px;padding:.7rem;border:1px solid #888;border-radius:6px;font:inherit}#refresh{min-width:148px;white-space:nowrap}table{width:1180px;min-width:1180px;table-layout:fixed;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{padding:.65rem .45rem;text-align:left;border-bottom:1px solid #8885}th{font-size:.85rem}th[data-sort]{cursor:pointer;user-select:none} .sort-button{border:0;background:transparent;color:inherit;padding:.25rem .1rem;font:inherit;font-weight:700;cursor:pointer;width:100%;text-align:left}th.num .sort-button{text-align:right}.sort-button:hover{text-decoration:underline}.sort-button:focus-visible{outline:2px solid #2868bd;outline-offset:2px}.sort-indicator{display:inline-block;margin-left:.2em;color:#8795a4;font-weight:500}.sort-indicator.active{font-size:1.15em;font-weight:900}th[data-sort]:hover{text-decoration:underline}th[data-sort][aria-sort="ascending"],th[data-sort][aria-sort="descending"]{text-decoration:underline}td.num,th.num{text-align:right}.tablewrap{overflow-x:auto}.small{font-size:.8rem;opacity:.75}#message{margin:1rem 0}footer{margin:1.5rem 0;line-height:1.5}footer details summary{cursor:pointer;display:list-item;font-weight:600;width:max-content;max-width:100%;padding:.35rem 0}footer details .notes-content{padding:.45rem 0;max-width:1100px}tr.error td{opacity:.7}a{color:inherit} @media(max-width:650px){body{margin:1rem auto}th,td{font-size:.8rem;padding:.55rem .25rem}}
  .controls{align-items:center}.refresh-label{align-self:center;font-size:.88rem;white-space:nowrap}.controls select{font:inherit;padding:.65rem .5rem;border-radius:6px;border:1px solid #888;background:Canvas;color:CanvasText;cursor:pointer}
-.fetch-status{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.range-cell{padding:.35rem .5rem!important}.range-labels{display:flex;justify-content:space-between;gap:.3rem;font-size:.68rem;line-height:1.25;font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.85}.range-track{position:relative;height:5px;background:color-mix(in srgb,CanvasText 17%,transparent);border-radius:5px;margin:9px 6px 5px}.range-fill{position:absolute;inset:0;border-radius:inherit;background:color-mix(in srgb,CanvasText 35%,transparent)}.price-momentum{font-weight:700}.range-marker{position:absolute;top:50%;width:10px;height:10px;background:#2f89d9;border:1px solid #eef5fc;transform:translate(-50%,-50%) rotate(45deg);box-shadow:0 0 0 1px #2868bd;z-index:1}
+.fetch-status{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.range-cell{padding:.35rem .5rem!important}.range-labels{display:flex;justify-content:space-between;gap:.3rem;font-size:.68rem;line-height:1.25;font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.85}.range-track{position:relative;height:5px;background:color-mix(in srgb,CanvasText 17%,transparent);border-radius:5px;margin:9px 6px 5px}.range-fill{position:absolute;inset:0;border-radius:inherit;background:color-mix(in srgb,CanvasText 35%,transparent)}.price-momentum{font-weight:700}.range-marker{position:absolute;top:50%;border:1px solid var(--panel);transform:translate(-50%,-50%) rotate(45deg);z-index:1}
 
-/* v15: high-contrast light palette, compact rows, clear range labels. */
+/* Historical layout rules; current light/dark colors come from semantic tokens below. */
 :root{color-scheme:light;background:#f4f5f7;color:#111}
 html{min-height:100%;background:#f4f5f7}
 body{background:#f4f5f7;color:#111}
@@ -684,20 +684,17 @@ tbody td{height:34px;box-sizing:border-box}
 input,.controls select{background:#fff;color:#111;border:1px solid #8995a2}
 input:focus,.controls select:focus{outline:2px solid #2868bd;outline-offset:1px}
 
-.up{color:#087b38;font-weight:600}.down{color:#d21d35;font-weight:600}
+.up,.down{font-weight:600}
 a{color:#145ea8}
 .range-cell{padding:3px 7px!important;vertical-align:middle}
 .range-labels{display:flex;justify-content:space-between;gap:5px;line-height:13px;font-size:11px;font-weight:500;color:#111;opacity:1;white-space:nowrap}
 .range-labels span{color:#111}
 .range-track{height:4px;background:#aab5c1;border-radius:4px;margin:8px 6px 3px}
 .range-fill{background:#aab5c1}
-.range-marker{background:#2563a6;border-color:#fff;box-shadow:0 0 0 1px #2563a6;width:9px;height:9px}
+.range-marker{width:9px;height:9px}
 @media(max-width:650px){th,td{padding:4px 5px}.range-cell{padding:3px 5px!important}}
 /* v17 named watchlists */
 .watchlist-controls{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;margin:-.55rem 0 1.1rem}
-.watchlist-controls select{min-width:190px;padding:.55rem;border-radius:6px;border:1px solid #a1adba;background:white;color:#111}
-
-
 #watchlist-status{font-size:.84rem;color:#303946}
 /* v25 link controls */
 .research-control{display:flex;align-items:center;gap:.4rem}
@@ -721,8 +718,6 @@ table.regular-session td.extended-column{display:none}
 tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:hover{background:#fff5d6}
 .symbol-cell{white-space:nowrap}
 .symbol-flag{background:transparent;border:0;color:#727985;cursor:pointer;font-size:16px;line-height:1;padding:2px 3px;margin-right:2px;vertical-align:middle;border-radius:3px}
-.symbol-flag[aria-pressed="true"]{color:#946900}
-.symbol-flag:hover,.symbol-flag:focus-visible{background:#ffe38b;outline:1px solid #aa8a35}
 
 
 
@@ -774,11 +769,9 @@ th,td{color:var(--ink)}
 tbody tr{background:var(--panel)}
 tbody tr:nth-child(even){background:var(--row-alt)}
 tbody tr:hover{background:var(--row-hover)}
-input,.controls select,.watchlist-controls select,.research-control select{
+input,.controls select,.research-control select{
  background:var(--panel);color:var(--ink);border:1px solid var(--border)
 }
-
-
 
 .sort-button,.sort-button:hover,.symbol-flag{background:transparent;color:var(--ink);border:0}
 .sort-indicator.active,th[data-sort][aria-sort="ascending"] .sort-indicator,th[data-sort][aria-sort="descending"] .sort-indicator{color:var(--accent)}
