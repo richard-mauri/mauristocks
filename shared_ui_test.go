@@ -36,3 +36,19 @@ func TestHomepageCanonicalButtons(t *testing.T) {
 		}
 	}
 }
+
+func TestConfirmationDialogDoesNotAutofocusOK(t *testing.T) {
+	if strings.Contains(pageTemplate, "else suiteDialogOK.focus()") {
+		t.Fatal("confirm dialog must not highlight OK before keyboard navigation")
+	}
+	for _, required := range []string{
+		`class="suite-dialog" tabindex="-1"`,
+		"else suiteDialog.focus()",
+		"suiteDialog.addEventListener('keydown',enter)",
+		"suiteDialog.removeEventListener('keydown',enter)",
+	} {
+		if !strings.Contains(pageTemplate, required) {
+			t.Errorf("missing dialog focus/keyboard contract %q", required)
+		}
+	}
+}
