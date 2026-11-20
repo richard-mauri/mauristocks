@@ -903,26 +903,15 @@ function suiteAsk(message,kind='confirm',diffRows=null){
    for(const row of diffRows){
     const item=document.createElement('section');item.className='suite-diff-item';
     const heading=document.createElement('h3');heading.textContent=row.label;item.appendChild(heading);
-    if(row.changes){
-     const changes=document.createElement('div');changes.className='suite-diff-changes';
-     for(const change of row.changes){
-      const line=document.createElement('div');line.className='suite-diff-change';
-      const label=document.createElement('strong');label.textContent=change.label;
-      const symbols=document.createElement('span');symbols.textContent=change.symbols.join(', ');
-      line.append(label,symbols);changes.appendChild(line);
-     }
-     item.appendChild(changes);
-    }else{
-     const pair=document.createElement('div');pair.className='suite-diff-pair';
-     for(const [label,value] of [['This browser',row.browser],['Saved account',row.account]]){
-      const side=document.createElement('div');side.className='suite-diff-value';
-      const title=document.createElement('strong');title.textContent=label;side.appendChild(title);
-      const detail=document.createElement('span');detail.textContent=value===null?'Not saved':value;
-      if(value===null)detail.className='suite-diff-missing';side.appendChild(detail);
-      pair.appendChild(side);
-     }
-     item.appendChild(pair);
+    const pair=document.createElement('div');pair.className='suite-diff-pair';
+    for(const [label,value] of [['This browser',row.browser],['Saved account',row.account]]){
+     const side=document.createElement('div');side.className='suite-diff-value';
+     const title=document.createElement('strong');title.textContent=label;side.appendChild(title);
+     const detail=document.createElement('span');detail.textContent=value===null?'Not present':value;
+     if(value===null)detail.className='suite-diff-missing';side.appendChild(detail);
+     pair.appendChild(side);
     }
+    item.appendChild(pair);
     list.appendChild(item);
    }
    suiteDialogDiff.appendChild(list);
@@ -1672,17 +1661,26 @@ function suiteListEntries(raw){
   return data;
  }catch(_){return null}
 }
+// Compare symbols only within the same named watchlist.
 function suiteSymbolDelta(browser,account){
  if(browser===null||account===null)return null;
- const tokenize=value=>String(value).split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
- const b=new Set(tokenize(browser)),a=new Set(tokenize(account));
- const added=[...b].filter(s=>!a.has(s));
- const removed=[...a].filter(s=>!b.has(s));
- if(!added.length&&!removed.length)return null;
- return {changes:[
-  ...(added.length?[{label:'Added in this browser ('+added.length+')',symbols:added}]:[]),
-  ...(removed.length?[{label:'Removed from this browser ('+removed.length+')',symbols:removed}]:[])
- ]};
+ const tokenize=value=>[...new Set(String(value).split(',').map(s=>s.trim().toUpperCase()).filter(Boolean))];
+ const b=tokenize(browser),a=tokenize(account);
+ const added=b.filter(symbol=>!a.includes(symbol)),removed=a.filter(symbol=>!b.includes(symbol));
+ if(!added.length&&!removed.length){
+  if(b.join(',')===a.join(','))return null;
+  return {browser:'Order differs: '+b.join(', '),account:'Order differs: '+a.join(', ')};
+ }
+ const count=(label,symbols)=>label+' ('+symbols.length+'): '+symbols.join(', ');
+ return {
+  browser:[...(added.length?[count('Added here',added)]:[]),...(removed.length?[count('Missing here',removed)]:[])].join('\n'),
+  account:[...(removed.length?[count('Added here',removed)]:[]),...(added.length?[count('Missing here',added)]:[])].join('\n')
+ };
+}
+function suiteListPresence(symbols){
+ if(symbols===null)return null;
+ const count=normalizeSymbols(symbols).split(',').filter(Boolean).length;
+ return 'Present ('+count+' symbol'+(count===1?'':'s')+')';
 }
 // Column preferences contain an array of hidden column IDs, not booleans.
 function suiteHiddenColumns(raw){
@@ -1733,40 +1731,34 @@ function suiteSettingsDiff(browser,account){
  const browserLists=suiteListEntries(browser[wlKey]??'{}'),accountLists=suiteListEntries(account[wlKey]??'{}');
  for(const key of suiteKeys){
   const b=browser[key]??null,a=account[key]??null;
-  if(b===a)continue;
-  // The legacy symbol mirror is redundant when each snapshot matches
-  // its own selected watchlist, even if the selected lists are different.
-  if(key==='mauri_stock_symbols'&&browserLists&&accountLists){
-   const browserActive=browser[activeKey],accountActive=account[activeKey];
-   if(Object.hasOwn(browserLists,browserActive)&&Object.hasOwn(accountLists,accountActive)&&
-      normalizeSymbols(b??'')===normalizeSymbols(browserLists[browserActive])&&
-      normalizeSymbols(a??'')===normalizeSymbols(accountLists[accountActive]))continue;
-  }
+  // Last saved symbols is a legacy mirror, never an independent watchlist.
+  if(key==='mauri_stock_symbols')continue;
   if(key===wlKey){
    if(browserLists&&accountLists){
-    const start=rows.length;
     for(const name of [...new Set([...Object.keys(browserLists),...Object.keys(accountLists)])].sort()){
-     const local=browserLists[name]??null,remote=accountLists[name]??null;
-     if(local===remote)continue;
+     if(name==='Default'||name===dynamicName)continue;
+     const local=Object.hasOwn(browserLists,name)?browserLists[name]:null;
+     const remote=Object.hasOwn(accountLists,name)?accountLists[name]:null;
+     if(local===null&&remote===null)continue;
+     if(local===null||remote===null){
+      rows.push({label:'Watchlist: '+name,browser:suiteListPresence(local),account:suiteListPresence(remote)});
+      continue;
+     }
      const delta=suiteSymbolDelta(local,remote);
-     rows.push(delta?{label:'Watchlist: '+name,changes:delta.changes}:{label:'Watchlist: '+name,browser:local,account:remote});
+     if(delta)rows.push({label:'Watchlist: '+name,browser:delta.browser,account:delta.account});
     }
-    // Exact stored differences without a visible per-list difference (e.g. object order).
-    if(rows.length===start)rows.push({label:'Watchlists (stored format)',browser:b,account:a});
-   }else rows.push({label:'Watchlists (unrecognized format)',browser:b,account:a});
+   }else if(b!==a){
+    rows.push({label:'Watchlists (unrecognized format)',browser:b,account:a});
+   }
    continue;
   }
+  if(b===a)continue;
   let delta=key==='mauristocks_columns_v1'?suiteColumnDelta(b,a):null;
-  if(key==='mauri_stock_symbols'){
-   const symbolDelta=suiteSymbolDelta(b,a);
-   if(symbolDelta){rows.push({label:'Last saved symbols',changes:symbolDelta.changes});continue}
-  }
   if(key===flagStorageKey&&b!==null&&a!==null){
    try{
     const flagsB=JSON.parse(b),flagsA=JSON.parse(a);
     if(Array.isArray(flagsB)&&Array.isArray(flagsA)&&flagsB.every(s=>typeof s==='string')&&flagsA.every(s=>typeof s==='string')){
-     const symbolDelta=suiteSymbolDelta(flagsB.join(','),flagsA.join(','));
-     if(symbolDelta){rows.push({label:'Flagged symbols',changes:symbolDelta.changes});continue}
+     delta=suiteSymbolDelta(flagsB.join(','),flagsA.join(','));
     }
    }catch(_){}
   }
@@ -1884,10 +1876,11 @@ async function reconcileAccountOnSignIn(identity){
    suiteCheckedIdentity=identity;return;
   }
   const browser=snapshotBrowserSettings().settings,account=existing.data.settings;
-  const same=suiteKeys.every(key=>(browser[key]??null)===(account[key]??null));
+  const differences=suiteSettingsDiff(browser,account);
   suiteCheckedIdentity=identity;
-  if(same){suiteRevision=existing.revision;suiteInitialOverwriteApproved=true;return}
-  if(!(await suiteAsk('These settings differ. Review them before choosing which complete set to keep. Restoring replaces this browser’s saved settings; keeping the browser leaves your account unchanged.','confirm',suiteSettingsDiff(browser,account)))){
+  // Legacy mirrors or JSON formatting can diverge without a user-visible change.
+  if(!differences.length){suiteRevision=existing.revision;suiteInitialOverwriteApproved=true;return}
+  if(!(await suiteAsk('These settings differ. Review them before choosing which complete set to keep. Restoring replaces this browser’s saved settings; keeping the browser leaves your account unchanged.','confirm',differences))){
    suiteFeedback('Browser settings kept. Saved account unchanged.');return;
   }
   const backup={};for(const key of suiteKeys)backup[key]=localStorage.getItem(key);
