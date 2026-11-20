@@ -117,3 +117,7 @@ The account review compares **This browser** on the left with **Saved account** 
 ### Account comparison column headings (Issue #33 draft)
 
 On desktop and tablet, **This browser** and **Saved account** appear as a single shared header row above the scrollable differences. Cards list settings and their paired values without repeating those headings. On narrow mobile widths, each comparison stacks vertically and repeats the side labels inside that card so each value remains identifiable. The column headings and footer actions stay outside the scrolling differences area; no storage, comparison or synchronization behavior changes.
+
+### One save-status message (Issue #33)
+
+The save confirmation appears once, beside **Save Changes**. It reports **Unsaved changes**, **Saving settings to your account…**, **Settings saved to browser and account**, **Settings saved to browser only**, or **Browser saved; account save failed — retry** as appropriate. The earlier independent account-sync line below the watchlist controls has been removed. This changes only how the client reports the existing explicit-save result; no additional account requests or storage writes are introduced.
