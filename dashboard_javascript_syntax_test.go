@@ -76,7 +76,7 @@ func TestHeatmapWeightingControlAndSizing(t *testing.T) {
   `id="heat-weight-value"`,
   `mauristocks_heat_weight_v1`,
   `heatWeightSlider.addEventListener('input'`,
-  `localStorage.setItem(heatWeightKey,next)`,
+  `stageSetting(heatWeightKey,next)`,
   `Math.pow(caps.get(q.symbol),heatExponent)`,
   `v+e.weight`,
   `sum+=a[i].weight`,
@@ -161,7 +161,7 @@ func TestDisplayPreferenceEventsAreStagedUntilSaveChanges(t *testing.T) {
  for _,fragment:=range required{
   if !strings.Contains(page,fragment){t.Errorf("explicit save workflow missing: %s",fragment)}
  }
- for _,forbidden:=range []string{"function queueSuiteSave()","async function commitSettings()","function flushSuiteSave()","setTimeout(()=>{suiteSaveTimer","void commitSettings()"}{
+ for _,forbidden:=range []string{"function queueSuiteSave()","function queueWatchlistAccountSave()","function flushSuiteSave()","setTimeout(()=>{suiteSaveTimer","suiteSaveQueued=true"}{
   if strings.Contains(page,forbidden){t.Errorf("automatic account save path remains: %s",forbidden)}
  }
 }
@@ -189,7 +189,7 @@ func TestWatchlistExplicitSaveAndRestoreControls(t *testing.T) {
   "wlRestore.addEventListener('click',",
   "wlNew.addEventListener('click',",
   "persistLists();",
-  "queueSuiteSave();",
+  "wlSave.addEventListener('click',()=>{void commitSettings()})",
   "reconcileAccountOnSignIn(identity)",
   "suiteSettingsDiff(browser,account)",
  }
@@ -218,7 +218,7 @@ func TestAccountDiffReviewIsReadOnlyAndPreservesSaveGuards(t *testing.T) {
   "function suiteSymbolDelta(browser,account)",
   "const backup={};for(const key of suiteKeys)backup[key]=localStorage.getItem(key)",
   "if(response.status===409)",
-  "function queueWatchlistAccountSave()",
+  "async function commitSettings()",
   "const saved=await saveWatchlistToAccount()",
   "Settings saved in this browser.",
   "Settings saved to your account.",
