@@ -149,4 +149,83 @@ assert.equal(columnRows[0].browser,'Exchange: shown\nName: shown');
 assert.equal(columnRows[0].account,'Exchange: hidden\nName: hidden');
 assert.ok(source.includes("if(!differences.length){suiteRevision=existing.revision;"),'semantically equal settings should not prompt');
 assert.ok(!source.includes("label:'Last saved symbols'"),'legacy mirror must not be shown as a card');
-console.log('Named-watchlist identity, two-column diff, compact dialog and sync feedback checks passed.');
+// Execute the actual Save Changes body in an isolated environment. This
+// checks local commit, a single explicit remote attempt, failed-remote retry,
+// browser-only mode, protection of Default and localStorage rollback.
+const saveStart=source.indexOf('async function commitSettings(){');
+const saveEnd=source.indexOf('async function saveWatchlistToAccount(){',saveStart);
+assert.ok(saveStart>0&&saveEnd>saveStart,'explicit commit source must exist');
+const saveSource=source.slice(saveStart,saveEnd)+'\ncommitSettings';
+function makeSaveHarness({signedIn=true,remoteOK=true,failKey=null}={}){
+ const db=new Map([['mauri_stock_refresh_interval','300'],['mauristocks_columns_v1','{"hidden":[]}']]);
+ let calls=0,lastFeedback='',buttonUpdates=0,allowRemote=remoteOK;
+ const state={
+  pendingSettings:new Map(),accountSyncNeeded:false,settingsSaveBusy:false,
+  suiteSignedIn:signedIn,marketMode:'watchlist',activeWatchlist:'Candidates',
+  dynamicName:'Most Active — Top 20 (Dynamic)',input:{value:'AAPL'},
+  watchlists:{Candidates:'AAPL'},wlStatus:{textContent:''},
+  watchlistChanged:()=>false,normalizeSymbols:v=>v,
+  persistLists:()=>{},stageSetting:()=>{},
+  updateWatchlistButtons:()=>{buttonUpdates++},
+  hasUnsavedChanges:()=>state.pendingSettings.size>0,
+  suiteFeedback:message=>{lastFeedback=message},
+  localStorage:{
+   getItem:key=>db.has(key)?db.get(key):null,
+   setItem:(key,value)=>{if(key===failKey)throw Error('quota');db.set(key,value)},
+   removeItem:key=>db.delete(key)
+  },
+  saveWatchlistToAccount:async()=>{calls++;return allowRemote}
+ };
+ const commit=vm.runInNewContext(saveSource,state);
+ return {db,state,commit,calls:()=>calls,feedback:()=>lastFeedback,updates:()=>buttonUpdates,
+  allowRemote:value=>{allowRemote=value}};
+}
+async function testExplicitSave(){
+ const h=makeSaveHarness();
+ h.state.pendingSettings.set('mauri_stock_refresh_interval','30');
+ h.state.pendingSettings.set('mauristocks_columns_v1','{"hidden":["name"]}');
+ assert.equal(h.db.get('mauri_stock_refresh_interval'),'300');
+ assert.equal(h.calls(),0,'editing preferences must not trigger account storage');
+ await h.commit();
+ assert.equal(h.db.get('mauri_stock_refresh_interval'),'30');
+ assert.equal(h.db.get('mauristocks_columns_v1'),'{"hidden":["name"]}');
+ assert.equal(h.calls(),1,'one explicit save should start exactly one account attempt');
+ assert.equal(h.state.pendingSettings.size,0);
+ assert.equal(h.state.accountSyncNeeded,false);
+
+ const failure=makeSaveHarness({remoteOK:false});
+ failure.state.pendingSettings.set('mauri_stock_refresh_interval','60');
+ await failure.commit();
+ assert.equal(failure.db.get('mauri_stock_refresh_interval'),'60','remote failure must preserve browser save');
+ assert.equal(failure.state.accountSyncNeeded,true,'remote failure must enable retry');
+ assert.equal(failure.calls(),1);
+ failure.allowRemote(true);
+ await failure.commit();
+ assert.equal(failure.calls(),2,'retry needs a second explicit button action');
+ assert.equal(failure.state.accountSyncNeeded,false);
+
+ const local=makeSaveHarness({signedIn:false});
+ local.state.pendingSettings.set('mauri_stock_refresh_interval','5');
+ await local.commit();
+ assert.equal(local.db.get('mauri_stock_refresh_interval'),'5');
+ assert.equal(local.calls(),0,'browser-only save must not send account requests');
+ assert.match(local.feedback(),/Saved in this browser only/);
+
+ const protectedList=makeSaveHarness();
+ protectedList.state.watchlistChanged=()=>true;
+ protectedList.state.activeWatchlist='Default';
+ await protectedList.commit();
+ assert.equal(protectedList.calls(),0);
+ assert.match(protectedList.feedback(),/protected/);
+
+ const quota=makeSaveHarness({failKey:'mauristocks_columns_v1'});
+ quota.state.pendingSettings.set('mauri_stock_refresh_interval','30');
+ quota.state.pendingSettings.set('mauristocks_columns_v1','{"hidden":["exchange"]}');
+ await quota.commit();
+ assert.equal(quota.db.get('mauri_stock_refresh_interval'),'300','partial local write must roll back');
+ assert.equal(quota.state.pendingSettings.size,2);
+ assert.equal(quota.calls(),0,'browser storage failure must never trigger account sync');
+}
+testExplicitSave().then(()=>console.log('Explicit save, failed remote retry and browser rollback checks passed.'))
+ .catch(error=>{console.error(error);process.exitCode=1});
+
