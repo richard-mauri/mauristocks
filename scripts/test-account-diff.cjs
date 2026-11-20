@@ -43,28 +43,71 @@ const {suiteSymbolDelta,suiteSettingsDiff}=vm.runInNewContext(
  source.slice(helpersStart,helpersEnd)+'\n({suiteSymbolDelta,suiteSettingsDiff})',diffContext
 );
 const delta=suiteSymbolDelta('AAPL,GOOG,DRAM','AAPL,GOOG,TSLA');
-assert.equal(JSON.stringify(delta.changes),JSON.stringify([
- {label:'Added in this browser (1)',symbols:['DRAM']},
- {label:'Removed from this browser (1)',symbols:['TSLA']}
-]));
-const browserSettings={
- [activeKey]:'Default',[wlKey]:JSON.stringify({Default:'MU,AMAT',Candidates:'AAPL,GOOG'}),
- mauri_stock_symbols:'MU,AMAT'
-};
-const accountSettings={
- [activeKey]:'Candidates',[wlKey]:JSON.stringify({Default:'MU,AMAT',Candidates:'AAPL,GOOG'}),
- mauri_stock_symbols:'AAPL,GOOG'
-};
-const rows=suiteSettingsDiff(browserSettings,accountSettings);
-assert.equal(rows.length,1,'do not compare unrelated selected watchlists as added/removed symbols');
-assert.equal(rows[0].label,'Selected watchlist');
-const diffLists=suiteSettingsDiff({
- [activeKey]:'Candidates',[wlKey]:JSON.stringify({Candidates:'AAPL,GOOG,DRAM'}),mauri_stock_symbols:'AAPL,GOOG,DRAM'
-},{
- [activeKey]:'Candidates',[wlKey]:JSON.stringify({Candidates:'AAPL,GOOG'}),mauri_stock_symbols:'AAPL,GOOG'
+assert.equal(delta.browser,'Added here (1): DRAM\nMissing here (1): TSLA');
+assert.equal(delta.account,'Added here (1): TSLA\nMissing here (1): DRAM');
+assert.equal(suiteSymbolDelta('AAPL,GOOG','AAPL,GOOG'),null);
+assert.equal(suiteSymbolDelta('GOOG,AAPL','AAPL,GOOG').browser,'Order differs: GOOG, AAPL');
+const list=(watchlists,active,mirror)=>({
+ [activeKey]:active,[wlKey]:JSON.stringify(watchlists),
+ mauri_stock_symbols:mirror
 });
-assert.equal(diffLists.length,1,'do not repeat last-saved mirror of named watchlist difference');
-assert.equal(diffLists[0].label,'Watchlist: Candidates');
-assert.equal(diffLists[0].changes[0].symbols.join(','),'DRAM');
-
-console.log('Account difference, compact dialog and status regression checks passed.');
+// Selected Default versus selected Candidates is NOT a watchlist content change.
+const browserSettings=list({Candidates:'AAPL,GOOG'},'Default','MU,AMAT');
+const accountSettings=list({Candidates:'AAPL,GOOG'},'Candidates','AAPL,GOOG');
+const selected=suiteSettingsDiff(browserSettings,accountSettings);
+assert.equal(selected.length,1,'legacy selected-symbol mirrors must not create a false symbol delta');
+assert.equal(selected[0].label,'Selected watchlist');
+assert.equal(selected[0].browser,'Default');
+assert.equal(selected[0].account,'Candidates');
+// Default is built-in and cannot be changed, even if stale saved JSON includes it.
+const defaultOnly=suiteSettingsDiff(
+ list({Default:'MU,AMAT',Candidates:'AAPL,GOOG'},'Candidates','AAPL,GOOG'),
+ list({Default:'TSLA',Candidates:'AAPL,GOOG'},'Candidates','AAPL,GOOG')
+);
+assert.equal(defaultOnly.length,0,'Default never becomes a saved editable watchlist difference');
+// Each named list is compared with itself only, independent of selected list.
+const named=suiteSettingsDiff(
+ list({Candidates:'AAPL,GOOG,DRAM',Growth:'NVDA,TSLA'},'Default','MU,AMAT'),
+ list({Candidates:'AAPL,GOOG,TSLA',Growth:'NVDA,TSLA'},'Candidates','AAPL,GOOG,TSLA')
+);
+assert.equal(named.length,2);
+assert.equal(named[0].label,'Selected watchlist');
+assert.equal(named[1].label,'Watchlist: Candidates');
+assert.equal(named[1].browser,'Added here (1): DRAM\nMissing here (1): TSLA');
+assert.equal(named[1].account,'Added here (1): TSLA\nMissing here (1): DRAM');
+// An absent list can be newly created or deleted: show "Not present", never "Deleted".
+const missing=suiteSettingsDiff(
+ list({Candidates:'AAPL,GOOG',LocalOnly:'MU'},'Default','MU,AMAT'),
+ list({Candidates:'AAPL,GOOG',RemoteOnly:'NVDA,TSLA'},'Default','MU,AMAT')
+);
+assert.equal(missing.length,2);
+assert.equal(missing[0].label,'Watchlist: LocalOnly');
+assert.equal(missing[0].browser,'Present (1 symbol)');
+assert.equal(missing[0].account,null);
+assert.equal(missing[1].label,'Watchlist: RemoteOnly');
+assert.equal(missing[1].browser,null);
+assert.equal(missing[1].account,'Present (2 symbols)');
+// The legacy mirror must never appear, even if its stored copy is stale.
+const mirrorOnly=suiteSettingsDiff(
+ list({Candidates:'AAPL'},'Candidates','AAPL'),
+ list({Candidates:'AAPL'},'Candidates','AAPL,GOOG')
+);
+assert.equal(mirrorOnly.length,0);
+// Object key order is not meaningful and cannot trigger a spurious review.
+const order=suiteSettingsDiff(
+ list({Candidates:'AAPL',Growth:'NVDA'},'Candidates','AAPL'),
+ list({Growth:'NVDA',Candidates:'AAPL'},'Candidates','AAPL')
+);
+assert.equal(order.length,0);
+// Preserve readable, consistent side-by-side columns for visible column changes.
+const columnRows=suiteSettingsDiff(
+ {...browserSettings,'mauristocks_columns_v1':JSON.stringify({hidden:[]})},
+ {...browserSettings,'mauristocks_columns_v1':JSON.stringify({hidden:['exchange','name']})}
+);
+assert.equal(columnRows.length,1);
+assert.equal(columnRows[0].label,'Visible columns');
+assert.equal(columnRows[0].browser,'Exchange: shown\nName: shown');
+assert.equal(columnRows[0].account,'Exchange: hidden\nName: hidden');
+assert.ok(source.includes("if(!differences.length){suiteRevision=existing.revision;"),'semantically equal settings should not prompt');
+assert.ok(!source.includes("label:'Last saved symbols'"),'legacy mirror must not be shown as a card');
+console.log('Named-watchlist identity, two-column diff, compact dialog and sync feedback checks passed.');
