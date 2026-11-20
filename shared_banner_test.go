@@ -19,10 +19,10 @@ func TestSharedBannerUsesViewportLayoutOutsideStockContent(t *testing.T) {
   `class="suite-ambient suite-ambient-one"`,
   `class="suite-ambient suite-ambient-two"`,
   `</header>`,
-  `<main class="stocks-content">`,
+  `<main class="stocks-content suite-content">`,
   `class="suite-banner__home suite-type-control"`,
  } {if !strings.Contains(page,want) {t.Errorf("missing shared masthead %q",want)}}
- if !strings.Contains(page,`</header>`+"\n"+`<main class="stocks-content">`) {t.Error("banner should mount outside the stock content container")}
+ if !strings.Contains(page,`</header>`+"\n"+`<main class="stocks-content suite-content">`) {t.Error("banner and stock content should use the same shared width")}
  if strings.Contains(page,`class="page-header"`) || strings.Contains(page,`https://raw.githubusercontent.com/`) {t.Error("legacy header or remote Tanner fetch retained")}
  if strings.Count(page,`id="suite-auth-status"`)!=1 {t.Error("duplicate status fields")}
  if !strings.Contains(page,`getElementById('suite-auth-status')`) {t.Error("existing verified identity flow must target shared banner")}
