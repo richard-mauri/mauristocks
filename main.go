@@ -5,7 +5,9 @@ package main
 // Review provider terms before deploying. No quote is guaranteed real-time.
 
 import (
+	"bytes"
 	"context"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -25,9 +27,13 @@ import (
 	"time"
 
 	suiteui "github.com/richard-mauri/homepage/shared/ui"
+	"github.com/richard-mauri/homepage/shared/ui/banner"
 )
 
 var defaultSymbols = []string{"MU", "AMAT", "LRCX", "SPCX", "AVGO", "TSM", "TSLA", "NVDA", "JOBY", "PLTR", "LMT", "AMGN", "SNA", "FTEC", "JEPQ", "VOO", "IAU", "FSTA", "IBIT", "O"}
+
+//go:embed tanner.jpg
+var suiteTannerJPEG []byte
 var symbolRE = regexp.MustCompile(`^[A-Z0-9][A-Z0-9.^=-]{0,17}$`)
 var eastern, _ = time.LoadLocation("America/New_York")
 
@@ -806,11 +812,7 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
  box-shadow:inset 0 -3px 0 var(--accent);
 }
 #quotes-table tbody tr:hover{box-shadow:inset 3px 0 0 var(--accent)}
-.page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;margin-bottom:8px}
-.page-heading h1{margin-top:0}
-.tanner-brand{display:flex;flex-direction:column;align-items:center;gap:5px;flex:none;color:var(--accent);font-size:.85rem;font-weight:700;text-align:center}
-.tanner-brand img{width:82px;height:82px;object-fit:cover;border-radius:14px;border:1px solid var(--border)}
-@media(max-width:650px){.page-header{gap:12px}.tanner-brand img{width:64px;height:64px}.tablewrap{padding:7px;border-radius:16px}}
+@media(max-width:650px){.tablewrap{padding:7px;border-radius:16px}}
 /* Native Safari alerts ignore the dark palette; use an accessible in-page dialog. */
 .suite-dialog{border:1px solid var(--border);border-radius:18px;background:#17252e;color:#eef5f8;box-shadow:0 24px 75px #0009;padding:24px;max-width:min(520px,calc(100vw - 32px));width:100%;font:inherit}
 .suite-dialog:focus{outline:none}
@@ -821,7 +823,7 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .suite-dialog .suite-dialog-actions{display:flex;gap:10px;justify-content:flex-end}
 
 .suite-dialog input:focus-visible{outline:2px solid #69d7e5;outline-offset:2px}
-.suite-account-identity{display:inline-block;margin-top:5px;font-size:.9rem;color:var(--accent);font-weight:650}.suite-account-identity[hidden],.suite-sync-feedback[hidden]{display:none!important}.suite-sync-feedback{margin:8px 0 12px;color:var(--muted);font-size:.93rem;line-height:1.4}.suite-home-link{display:inline-block;margin:4px 0 10px;padding:3px 5px;border-radius:5px;color:var(--accent,#69c6d3);font:500 12px/1.4 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;text-decoration:none;opacity:.78;transition:background-color .15s,color .15s,opacity .15s}.suite-home-link:hover{background:rgba(96,151,172,.16);color:var(--accent,#69c6d3);text-decoration:underline;opacity:1}.suite-home-link:focus-visible{outline:2px solid var(--accent,#69c6d3);outline-offset:2px;opacity:1}
+.suite-sync-feedback[hidden]{display:none!important}.suite-sync-feedback{margin:8px 0 12px;color:var(--muted);font-size:.93rem;line-height:1.4}
 .suite-signin-dialog{max-width:min(440px,calc(100vw - 36px));padding:25px;border:1px solid var(--accent);border-radius:12px;background:var(--panel);color:var(--text);box-shadow:0 20px 60px #0009}.suite-signin-dialog::backdrop{background:#071421b8}.suite-signin-dialog h2{margin:0 0 12px;font-size:1.25rem}.suite-signin-dialog p{line-height:1.55}.suite-signin-dialog a{display:inline-block;margin-top:12px;padding:10px 14px;border:1px solid var(--accent);border-radius:7px;color:var(--accent);text-decoration:none}.suite-signin-dialog a:hover,.suite-signin-dialog a:focus-visible{background:rgba(96,151,172,.18)}
 
 .heat-switch{display:flex;align-items:center;gap:.55rem;margin:0;padding:0;color:var(--ink)}.heat-switch select{font:inherit;padding:.55rem .6rem;min-width:150px;border-radius:6px;background:var(--panel);color:var(--ink);border:1px solid var(--border);cursor:pointer}
@@ -832,16 +834,10 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .table-panel .tablewrap{border:0;border-radius:0;background:transparent;padding:0;margin:0;overflow-x:auto}
 @media(max-width:650px){.table-panel{padding:7px;border-radius:16px}}
 #heat-tablewrap{margin-top:0;margin-bottom:0}
-/* Homepage-inspired corner ambience on :root itself. The earlier :root
-   background shorthand otherwise wins over an html background-image rule. */
-:root{
- background:
-  radial-gradient(ellipse 660px 530px at calc(100% + 180px) -40px,light-dark(rgba(12,147,150,.16),rgba(48,200,184,.18)) 0%,transparent 84%),
-  radial-gradient(ellipse 530px 500px at -100px 100%,light-dark(rgba(12,147,150,.15),rgba(48,200,184,.16)) 0%,transparent 86%),
-  var(--bg);
- background-attachment:fixed;
-}
-body{background:transparent}
+/* The shared module provides Homepage's original fixed blurred ambient shapes. */
+body{max-width:none;margin:0;padding:0;min-height:100vh}
+.stocks-content{max-width:1200px;margin:0 auto;padding:0 1rem}
+.suite-banner{margin-top:24px}
 .heat-tip{position:fixed;z-index:1000;pointer-events:none;box-sizing:border-box;width:max-content;max-width:min(320px,calc(100vw - 24px));padding:12px 14px;background:var(--panel);color:var(--ink);border:1px solid var(--accent);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.36);font-size:13px;line-height:1.5}
 .heat-tip strong{display:block;color:var(--accent);font-size:15px}.heat-tip-row{display:flex;justify-content:space-between;gap:12px}.heat-tip-row span:last-child{font-variant-numeric:tabular-nums;text-align:right}.heat-tip-note{color:var(--muted);font-size:11px;margin-top:6px}
 .heat-panel{background:linear-gradient(146deg,color-mix(in srgb,var(--soft) 28%,transparent),transparent 58%),var(--panel);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:18px;padding:14px;box-shadow:0 12px 32px rgba(0,0,0,.10);margin:0 0 16px;box-sizing:border-box}
@@ -868,8 +864,9 @@ body{background:transparent}
 .heat-missing{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.heat-missing span{background:#64748b;color:#fff;padding:5px 8px;border-radius:4px;font-size:.85rem}
 @media(max-width:650px){.heat-area{height:310px}.heat-tile strong,.heat-tile span{font-size:10px}}
 __SUITE_BUTTON_CSS__
-</style></head><body><header class="page-header"><div class="page-heading"><h1>Mauri's Stock Quotes <span class="small">v1.0.0 · __BUILD_LABEL__</span></h1><a class="suite-home-link" href="https://home.themauris.org/">← Back to Homepage</a><span id="suite-account-identity" class="suite-account-identity" hidden></span><p class="muted">Optional timed refresh • No ads or live charts • Unofficial quote source</p></div><div class="tanner-brand"><img src="https://raw.githubusercontent.com/richard-mauri/scrapergo/main/tanner.jpg" alt="Tanner, a golden retriever puppy" width="82" height="82"><span>Tanner</span></div></header><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button class="ui-button" id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><button class="ui-button" id="watchlist-save" type="button">Save Changes</button><button class="ui-button" id="watchlist-new" type="button">Save As New</button><button class="ui-button" id="watchlist-restore" type="button">Restore Watchlist</button><button class="ui-button" id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><div id="suite-sync-status" class="suite-sync-feedback" role="status" aria-live="polite" hidden></div><p id="message" class="muted">Symbol edits require Save Changes or Save As New. Restore Watchlist discards unsaved edits. Quotes refresh on demand.</p><div class="table-toolbar"><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label><label class="market-control" for="market-select">Market <select id="market-select" aria-label="Market selection"><option value="sp500">S&amp;P 500 · Top 30</option><option value="nasdaq100">NASDAQ-100 · Top 30</option><option value="dow30">Dow Jones · 30</option></select></label><div class="heat-switch"><label for="heat-view">View</label><select id="heat-view" aria-label="Quote display"><option value="table">Table</option><option value="heatmap">Heatmap</option></select></div></div><section id="heat-panel" class="heat-panel" hidden aria-label="Watchlist heatmap"><header class="heat-panel-header"><div class="heat-panel-heading"><span class="heat-panel-kicker">Market overview</span><span id="heat-panel-title" class="heat-panel-title">Default Watchlist</span></div><p id="heat-status" class="muted" role="status"></p></header><div class="heat-weight-control"><label for="heat-weight">Tile weighting</label><span class="heat-weight-note">Balanced</span><input id="heat-weight" type="range" min="0.50" max="1.00" step="0.05" value="0.65" aria-label="Heatmap market capitalization weighting exponent"><output id="heat-weight-value" for="heat-weight" class="heat-weight-value">0.65</output><span class="heat-weight-note">Exact market cap (1.00)</span></div><div id="heat-area" class="heat-area" aria-label="Market-capitalization weighted tiles with adjustable size compression"></div><div id="heat-tip" class="heat-tip" role="tooltip" hidden></div><div class="heat-panel-foot"><p class="muted" id="heat-weight-description">Tile area: adjusted market cap (exponent 0.65) • Color: regular-session percent change from previous close</p></div><div id="heat-missing" class="heat-missing"></div></section><section class="table-panel" id="heat-table-panel" aria-label="Stock quotes table"><div class="table-panel-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details></div><div class="tablewrap" id="heat-tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div></section><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
-<dialog id="suite-dialog" class="suite-dialog" tabindex="-1" aria-labelledby="suite-dialog-title"><h2 id="suite-dialog-title"></h2><p id="suite-dialog-message"></p><input id="suite-dialog-input" type="text" maxlength="60" hidden aria-label="New watchlist name"><div class="suite-dialog-actions"><button class="ui-button" id="suite-dialog-cancel" type="button">Cancel</button><button class="ui-button" id="suite-dialog-ok" type="button">OK</button></div></dialog><script>
+__SUITE_BANNER_CSS__
+</style></head><body><div class="suite-ambient suite-ambient-one" aria-hidden="true"></div><div class="suite-ambient suite-ambient-two" aria-hidden="true"></div>__SUITE_BANNER_HTML__<main class="stocks-content"><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button class="ui-button" id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><button class="ui-button" id="watchlist-save" type="button">Save Changes</button><button class="ui-button" id="watchlist-new" type="button">Save As New</button><button class="ui-button" id="watchlist-restore" type="button">Restore Watchlist</button><button class="ui-button" id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><div id="suite-sync-status" class="suite-sync-feedback" role="status" aria-live="polite" hidden></div><p id="message" class="muted">Symbol edits require Save Changes or Save As New. Restore Watchlist discards unsaved edits. Quotes refresh on demand.</p><div class="table-toolbar"><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label><label class="market-control" for="market-select">Market <select id="market-select" aria-label="Market selection"><option value="sp500">S&amp;P 500 · Top 30</option><option value="nasdaq100">NASDAQ-100 · Top 30</option><option value="dow30">Dow Jones · 30</option></select></label><div class="heat-switch"><label for="heat-view">View</label><select id="heat-view" aria-label="Quote display"><option value="table">Table</option><option value="heatmap">Heatmap</option></select></div></div><section id="heat-panel" class="heat-panel" hidden aria-label="Watchlist heatmap"><header class="heat-panel-header"><div class="heat-panel-heading"><span class="heat-panel-kicker">Market overview</span><span id="heat-panel-title" class="heat-panel-title">Default Watchlist</span></div><p id="heat-status" class="muted" role="status"></p></header><div class="heat-weight-control"><label for="heat-weight">Tile weighting</label><span class="heat-weight-note">Balanced</span><input id="heat-weight" type="range" min="0.50" max="1.00" step="0.05" value="0.65" aria-label="Heatmap market capitalization weighting exponent"><output id="heat-weight-value" for="heat-weight" class="heat-weight-value">0.65</output><span class="heat-weight-note">Exact market cap (1.00)</span></div><div id="heat-area" class="heat-area" aria-label="Market-capitalization weighted tiles with adjustable size compression"></div><div id="heat-tip" class="heat-tip" role="tooltip" hidden></div><div class="heat-panel-foot"><p class="muted" id="heat-weight-description">Tile area: adjusted market cap (exponent 0.65) • Color: regular-session percent change from previous close</p></div><div id="heat-missing" class="heat-missing"></div></section><section class="table-panel" id="heat-table-panel" aria-label="Stock quotes table"><div class="table-panel-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details></div><div class="tablewrap" id="heat-tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div></section><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
+</main><dialog id="suite-dialog" class="suite-dialog" tabindex="-1" aria-labelledby="suite-dialog-title"><h2 id="suite-dialog-title"></h2><p id="suite-dialog-message"></p><input id="suite-dialog-input" type="text" maxlength="60" hidden aria-label="New watchlist name"><div class="suite-dialog-actions"><button class="ui-button" id="suite-dialog-cancel" type="button">Cancel</button><button class="ui-button" id="suite-dialog-ok" type="button">OK</button></div></dialog><script>
 // In-page modal uses the same dark palette as the dashboard.
 const suiteDialog=document.getElementById('suite-dialog');
 const suiteDialogTitle=document.getElementById('suite-dialog-title');
@@ -1552,7 +1549,7 @@ readSuiteHandoff();
 
 const suiteKeys=[wlKey,activeKey,flagStorageKey,'mauri_stock_symbols','mauri_stock_sort','mauri_stock_refresh_interval','mauri_research_site','mauristocks_columns_v1','mauristocks_market_v1','mauristocks_view_v1',heatWeightKey];
 const syncStatus=document.getElementById('suite-sync-status');
-const suiteIdentityEl=document.getElementById('suite-account-identity');
+const suiteIdentityEl=document.getElementById('suite-auth-status');
 let suiteExpiresAt=0;
 let expiryCheckPending=false,expiryRetryAfter=0;
 function updateSuiteAccountClock(){
@@ -1735,7 +1732,21 @@ setHeatView(heatView);
 refreshQuotes();
 </script></body></html>`
 
-var page = strings.ReplaceAll(strings.ReplaceAll(pageTemplate, "__SUITE_BUTTON_CSS__", string(suiteui.ButtonCSS)), "__BUILD_LABEL__", appBuild)
+func renderStocksPage() string {
+ var masthead bytes.Buffer
+ if err:=banner.Render(&masthead,banner.Config{
+  AppName:"Mauri's Stock Quotes",Version:appVersion,Build:appBuild,
+  Description:"Optional timed refresh · No ads or live charts · Unofficial quote source",
+  TannerURL:"/tanner.jpg",HomeURL:"https://home.themauris.org/",
+  AccountState:banner.BrowserOnly,
+ });err!=nil {panic(err)}
+ page:=strings.ReplaceAll(pageTemplate,"__SUITE_BUTTON_CSS__",string(suiteui.ButtonCSS))
+ page=strings.ReplaceAll(page,"__SUITE_BANNER_CSS__",string(banner.CSS(suiteui.DesignCSS)))
+ page=strings.ReplaceAll(page,"__SUITE_BANNER_HTML__",masthead.String())
+ return page
+}
+
+var page = renderStocksPage()
 
 // Corporate website lookup is deliberately separate from the quote refresh path.
 // Finnhub's API key never leaves the server. Results (including misses) are cached.
@@ -1867,6 +1878,12 @@ func main() {
   }
  	tmpl := template.Must(template.New("index").Parse(dashboardPage))
 	mux := http.NewServeMux()
+	mux.HandleFunc("/tanner.jpg",func(w http.ResponseWriter,r *http.Request){
+  if r.Method!=http.MethodGet {w.Header().Set("Allow","GET");http.Error(w,"GET only",http.StatusMethodNotAllowed);return}
+  w.Header().Set("Content-Type","image/jpeg")
+  w.Header().Set("Cache-Control","public, max-age=3600")
+  _,_=w.Write(suiteTannerJPEG)
+ })
   if activity!=nil {
    mux.HandleFunc("/api/activity/ping",activity.ping)
    mux.HandleFunc("/api/activity/identity",activity.identity)

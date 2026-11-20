@@ -1,5 +1,9 @@
 # MauriStocks architecture
 
+## Shared masthead migration (draft Issue #31)
+
+The Homepage-owned nested `shared/ui/banner` module renders the stock page's common masthead with semantic app title, executable version/build, native same-tab Homepage return, and existing verified identity hook. Its stylesheet and original two blurred Homepage ambient shapes are embedded in the no-store dashboard page at build time; its viewport-relative widths and responsive gutters are never copied into stock-specific selectors. The masthead is outside the centered `.stocks-content` region. The existing 12-hour Homepage bearer verification and browser-only fallback update `suite-auth-status`; the banner does not authorize users or synchronize accounts. Tanner's identical JPEG is embedded in the binary and served locally. No external runtime Homepage CSS or image request is introduced. Stock table, heatmap, dialogs and refresh remain application-owned.
+
 MauriStocks keeps its HTTP server, Yahoo Finance request/cache and quote transformation logic, and an embedded HTML/CSS/JavaScript dashboard in [main.go](main.go). [go.mod](go.mod) adds the pinned `github.com/richard-mauri/homepage/shared/ui` module to the standard library. This document describes current ownership, not a completed package refactor.
 
 ## Canonical suite buttons
