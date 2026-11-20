@@ -24,4 +24,47 @@ assert.equal(suiteColumnDelta('bad json',saved),null,'legacy malformed settings 
 assert.equal(suiteHiddenColumns(JSON.stringify({hidden:['symbol','name','name','obsolete']})).join(','),'name','symbol must remain visible and obsolete entries ignored');
 assert.ok(source.includes("suiteFeedback('Preference saved in this browser. Saving to your account…')"),'preference sync should expose pending feedback');
 assert.ok(!source.includes("suiteFeedback('');\n  void reconcileAccountOnSignIn(identity);"),'session check must not erase sync status');
-console.log('Account difference and status regression checks passed.');
+
+// The dialog must keep actions outside the scrollable comparison region.
+assert.match(source,/\.suite-dialog\[open\]\{display:flex\}/);
+assert.match(source,/#suite-dialog-diff\{flex:0 1 auto;min-height:0;overflow-y:auto;/);
+assert.match(source,/\.suite-dialog \.suite-dialog-actions\{padding-top:12px;/);
+const helpersStart=source.indexOf('function suiteListEntries(raw){');
+const helpersEnd=source.indexOf('function validSuiteSettings(data){',helpersStart);
+assert.ok(helpersStart>0&&helpersEnd>helpersStart);
+const wlKey='test_watchlists',activeKey='test_active';
+const keys=[wlKey,activeKey,'mauri_stock_symbols','mauri_stock_refresh_interval','mauristocks_columns_v1'];
+const diffContext={colSpecs,marketNames:{},flagStorageKey:'mauri_flags',
+ wlKey,activeKey,suiteKeys:keys,
+ suiteSettingLabels:{'mauri_stock_symbols':'Last saved symbols','mauri_stock_refresh_interval':'Auto refresh','mauristocks_columns_v1':'Visible columns'},
+ normalizeSymbols:v=>[...new Set(String(v).toUpperCase().split(',').map(x=>x.trim()).filter(Boolean))].join(',')
+};
+const {suiteSymbolDelta,suiteSettingsDiff}=vm.runInNewContext(
+ source.slice(helpersStart,helpersEnd)+'\n({suiteSymbolDelta,suiteSettingsDiff})',diffContext
+);
+const delta=suiteSymbolDelta('AAPL,GOOG,DRAM','AAPL,GOOG,TSLA');
+assert.equal(JSON.stringify(delta.changes),JSON.stringify([
+ {label:'Added in this browser (1)',symbols:['DRAM']},
+ {label:'Removed from this browser (1)',symbols:['TSLA']}
+]));
+const browserSettings={
+ [activeKey]:'Default',[wlKey]:JSON.stringify({Default:'MU,AMAT',Candidates:'AAPL,GOOG'}),
+ mauri_stock_symbols:'MU,AMAT'
+};
+const accountSettings={
+ [activeKey]:'Candidates',[wlKey]:JSON.stringify({Default:'MU,AMAT',Candidates:'AAPL,GOOG'}),
+ mauri_stock_symbols:'AAPL,GOOG'
+};
+const rows=suiteSettingsDiff(browserSettings,accountSettings);
+assert.equal(rows.length,1,'do not compare unrelated selected watchlists as added/removed symbols');
+assert.equal(rows[0].label,'Selected watchlist');
+const diffLists=suiteSettingsDiff({
+ [activeKey]:'Candidates',[wlKey]:JSON.stringify({Candidates:'AAPL,GOOG,DRAM'}),mauri_stock_symbols:'AAPL,GOOG,DRAM'
+},{
+ [activeKey]:'Candidates',[wlKey]:JSON.stringify({Candidates:'AAPL,GOOG'}),mauri_stock_symbols:'AAPL,GOOG'
+});
+assert.equal(diffLists.length,1,'do not repeat last-saved mirror of named watchlist difference');
+assert.equal(diffLists[0].label,'Watchlist: Candidates');
+assert.equal(diffLists[0].changes[0].symbols.join(','),'DRAM');
+
+console.log('Account difference, compact dialog and status regression checks passed.');
