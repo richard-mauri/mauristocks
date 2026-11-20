@@ -14,6 +14,10 @@ Homepage's `shared/ui` Go module embeds the suite's authoritative `buttons.css`.
 
 Confirmation dialogs focus the dialog container on opening instead of programmatically focusing OK, which previously showed Homepage's keyboard-focus ring before any user interaction. The container has no visual outline; Tab still enters the standard buttons and Enter confirms from the container. The text-entry dialog intentionally focuses its input. The shared button focus styling remains unchanged.
 
+## Account settings comparison (Issue #33)
+
+When Homepage verifies a named account, `reconcileAccountOnSignIn()` compares the schema-1 per-user record with the existing browser localStorage snapshot. A mismatch opens a read-only, scrollable comparison table showing only different keys, with friendly labels and per-list symbol additions/removals where parseable. The dialog uses `textContent` for every cell to avoid interpreting saved names or values as markup. A missing key is shown explicitly; invalid legacy serialized data is shown as-is rather than discarded. The two actions still retain the exact prior semantics: keep browser state without an account write, or replace all browser keys with the saved account snapshot and reload, with rollback on localStorage failure. No API, account revision, schema, authentication or server data changes; queued saves and server overwrite/revision guards remain separate.
+
 ## Responsibilities
 
 The server handles network retrieval, caching, validation, quote/session calculation and API routes. The embedded browser client handles watchlists, column show/hide preferences, sort selection, flags, refresh controls, symbol research links and DOM rendering. Browser state is localStorage, not a server-side database. The quote table sizes visible columns from content (small horizontal padding); range graphs have a minimum usable width and long names may be ellipsized. No draggable/manual width state is used. Regular-session conditions still suppress the extended-price column.

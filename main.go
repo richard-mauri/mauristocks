@@ -811,7 +811,7 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 #quotes-table tbody tr:hover{box-shadow:inset 3px 0 0 var(--accent)}
 @media(max-width:650px){.tablewrap{padding:7px;border-radius:16px}}
 /* Native Safari alerts ignore the dark palette; use an accessible in-page dialog. */
-.suite-dialog{border:1px solid var(--border);border-radius:18px;background:#17252e;color:#eef5f8;box-shadow:0 24px 75px #0009;padding:24px;max-width:min(520px,calc(100vw - 32px));width:100%;font:inherit}
+.suite-dialog{border:1px solid var(--border);border-radius:18px;background:#17252e;color:#eef5f8;box-shadow:0 24px 75px #0009;padding:24px;max-width:min(760px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow-y:auto;box-sizing:border-box;width:100%;font:inherit}
 .suite-dialog:focus{outline:none}
 .suite-dialog::backdrop{background:#000b}
 .suite-dialog h2{font-size:1.2rem;margin:0 0 12px}
@@ -820,6 +820,12 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .suite-dialog .suite-dialog-actions{display:flex;gap:10px;justify-content:flex-end}
 
 .suite-dialog input:focus-visible{outline:2px solid #69d7e5;outline-offset:2px}
+.suite-diff{width:100%;border-collapse:collapse;margin:0 0 20px;table-layout:fixed;font-size:.83rem}
+.suite-diff th,.suite-diff td{padding:9px;border:1px solid #50636e;text-align:left;vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap;color:#eef5f8;background:transparent}
+.suite-diff th{background:#253b46;font-weight:700}
+.suite-diff td:first-child{font-weight:650;width:25%}
+.suite-diff .suite-diff-missing{color:#aabdc6;font-style:italic}
+@media(max-width:550px){.suite-dialog{padding:16px}.suite-diff{font-size:.76rem}.suite-diff th,.suite-diff td{padding:6px}}
 .suite-sync-feedback[hidden]{display:none!important}.suite-sync-feedback{margin:8px 0 12px;color:var(--muted);font-size:.93rem;line-height:1.4}
 .suite-signin-dialog{max-width:min(440px,calc(100vw - 36px));padding:25px;border:1px solid var(--accent);border-radius:12px;background:var(--panel);color:var(--text);box-shadow:0 20px 60px #0009}.suite-signin-dialog::backdrop{background:#071421b8}.suite-signin-dialog h2{margin:0 0 12px;font-size:1.25rem}.suite-signin-dialog p{line-height:1.55}.suite-signin-dialog a{display:inline-block;margin-top:12px;padding:10px 14px;border:1px solid var(--accent);border-radius:7px;color:var(--accent);text-decoration:none}.suite-signin-dialog a:hover,.suite-signin-dialog a:focus-visible{background:rgba(96,151,172,.18)}
 
@@ -862,18 +868,38 @@ body{max-width:none;margin:0;padding:0;min-height:100vh}
 __SUITE_BUTTON_CSS__
 __SUITE_BANNER_CSS__
 </style></head><body><div class="suite-ambient suite-ambient-one" aria-hidden="true"></div><div class="suite-ambient suite-ambient-two" aria-hidden="true"></div>__SUITE_BANNER_HTML__<main class="stocks-content suite-content"><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button class="ui-button" id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><button class="ui-button" id="watchlist-save" type="button">Save Changes</button><button class="ui-button" id="watchlist-new" type="button">Save As New</button><button class="ui-button" id="watchlist-restore" type="button">Restore Watchlist</button><button class="ui-button" id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><div id="suite-sync-status" class="suite-sync-feedback" role="status" aria-live="polite" hidden></div><p id="message" class="muted">Symbol edits require Save Changes or Save As New. Restore Watchlist discards unsaved edits. Quotes refresh on demand.</p><div class="table-toolbar"><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label><label class="market-control" for="market-select">Market <select id="market-select" aria-label="Market selection"><option value="sp500">S&amp;P 500 · Top 30</option><option value="nasdaq100">NASDAQ-100 · Top 30</option><option value="dow30">Dow Jones · 30</option></select></label><div class="heat-switch"><label for="heat-view">View</label><select id="heat-view" aria-label="Quote display"><option value="table">Table</option><option value="heatmap">Heatmap</option></select></div></div><section id="heat-panel" class="heat-panel" hidden aria-label="Watchlist heatmap"><header class="heat-panel-header"><div class="heat-panel-heading"><span class="heat-panel-kicker">Market overview</span><span id="heat-panel-title" class="heat-panel-title">Default Watchlist</span></div><p id="heat-status" class="muted" role="status"></p></header><div class="heat-weight-control"><label for="heat-weight">Tile weighting</label><span class="heat-weight-note">Balanced</span><input id="heat-weight" type="range" min="0.50" max="1.00" step="0.05" value="0.65" aria-label="Heatmap market capitalization weighting exponent"><output id="heat-weight-value" for="heat-weight" class="heat-weight-value">0.65</output><span class="heat-weight-note">Exact market cap (1.00)</span></div><div id="heat-area" class="heat-area" aria-label="Market-capitalization weighted tiles with adjustable size compression"></div><div id="heat-tip" class="heat-tip" role="tooltip" hidden></div><div class="heat-panel-foot"><p class="muted" id="heat-weight-description">Tile area: adjusted market cap (exponent 0.65) • Color: regular-session percent change from previous close</p></div><div id="heat-missing" class="heat-missing"></div></section><section class="table-panel" id="heat-table-panel" aria-label="Stock quotes table"><div class="table-panel-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details></div><div class="tablewrap" id="heat-tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div></section><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
-</main><dialog id="suite-dialog" class="suite-dialog" tabindex="-1" aria-labelledby="suite-dialog-title"><h2 id="suite-dialog-title"></h2><p id="suite-dialog-message"></p><input id="suite-dialog-input" type="text" maxlength="60" hidden aria-label="New watchlist name"><div class="suite-dialog-actions"><button class="ui-button" id="suite-dialog-cancel" type="button">Cancel</button><button class="ui-button" id="suite-dialog-ok" type="button">OK</button></div></dialog><script>__SUITE_STATUS_JS__
+</main><dialog id="suite-dialog" class="suite-dialog" tabindex="-1" aria-labelledby="suite-dialog-title"><h2 id="suite-dialog-title"></h2><p id="suite-dialog-message"></p><div id="suite-dialog-diff" hidden></div><input id="suite-dialog-input" type="text" maxlength="60" hidden aria-label="New watchlist name"><div class="suite-dialog-actions"><button class="ui-button" id="suite-dialog-cancel" type="button">Cancel</button><button class="ui-button" id="suite-dialog-ok" type="button">OK</button></div></dialog><script>__SUITE_STATUS_JS__
 // In-page modal uses the same dark palette as the dashboard.
 const suiteDialog=document.getElementById('suite-dialog');
 const suiteDialogTitle=document.getElementById('suite-dialog-title');
 const suiteDialogMessage=document.getElementById('suite-dialog-message');
+const suiteDialogDiff=document.getElementById('suite-dialog-diff');
 const suiteDialogInput=document.getElementById('suite-dialog-input');
 const suiteDialogOK=document.getElementById('suite-dialog-ok');
 const suiteDialogCancel=document.getElementById('suite-dialog-cancel');
-function suiteAsk(message,kind='confirm'){
+function suiteAsk(message,kind='confirm',diffRows=null){
  return new Promise(resolve=>{
-  suiteDialogTitle.textContent=kind==='text'?'New watchlist':'Confirm changes';
+  suiteDialogTitle.textContent=kind==='text'?'New watchlist':diffRows?'Review account differences':'Confirm changes';
   suiteDialogMessage.textContent=message;
+  suiteDialogDiff.replaceChildren();suiteDialogDiff.hidden=!diffRows;
+  suiteDialogCancel.textContent=diffRows?'Keep Browser Settings':'Cancel';
+  suiteDialogOK.textContent=diffRows?'Restore Account Settings':'OK';
+  if(diffRows){
+   const table=document.createElement('table');table.className='suite-diff';
+   const head=document.createElement('thead'),header=document.createElement('tr');
+   for(const label of ['Setting','This browser','Saved account']){const th=document.createElement('th');th.scope='col';th.textContent=label;header.appendChild(th)}
+   head.appendChild(header);table.appendChild(head);
+   const body=document.createElement('tbody');
+   for(const row of diffRows){
+    const tr=document.createElement('tr');
+    for(const value of [row.label,row.browser,row.account]){
+     const td=document.createElement('td');td.textContent=value===null?'Not saved':value;
+     if(value===null)td.className='suite-diff-missing';tr.appendChild(td);
+    }
+    body.appendChild(tr);
+   }
+   table.appendChild(body);suiteDialogDiff.appendChild(table);
+  }
   suiteDialogInput.hidden=kind!=='text';
   suiteDialogInput.value='';
   let settled=false;
@@ -1604,6 +1630,78 @@ function snapshotBrowserSettings(){
  for(const key of suiteKeys){const value=localStorage.getItem(key);if(value!==null)settings[key]=value}
  return {schema:1,settings};
 }
+const suiteSettingLabels={
+ [activeKey]:'Selected watchlist',[flagStorageKey]:'Flagged symbols',
+ 'mauri_stock_symbols':'Last saved symbols','mauri_stock_sort':'Sort order',
+ 'mauri_stock_refresh_interval':'Auto refresh','mauri_research_site':'Symbol links',
+ 'mauristocks_columns_v1':'Visible columns','mauristocks_market_v1':'Market',
+ 'mauristocks_view_v1':'View',[heatWeightKey]:'Heatmap tile weighting'
+};
+function suiteListEntries(raw){
+ try{
+  const data=JSON.parse(raw);
+  if(!data||typeof data!=='object'||Array.isArray(data))return null;
+  if(!Object.entries(data).every(([key,value])=>key&&typeof value==='string'))return null;
+  return data;
+ }catch(_){return null}
+}
+function suiteSymbolDelta(browser,account){
+ if(browser===null||account===null)return null;
+ const tokenize=value=>String(value).split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
+ const b=new Set(tokenize(browser)),a=new Set(tokenize(account));
+ const onlyBrowser=[...b].filter(s=>!a.has(s));
+ const onlyAccount=[...a].filter(s=>!b.has(s));
+ // Distinguish reordered symbol lists as well as added or removed symbols.
+ if(!onlyBrowser.length&&!onlyAccount.length)return null;
+ return {browser:onlyBrowser.length?'Only here: '+onlyBrowser.join(', '):'No unique symbols',account:onlyAccount.length?'Only there: '+onlyAccount.join(', '):'No unique symbols'};
+}
+function suiteReadableSetting(key,value){
+ if(value===null)return null;
+ if(key==='mauri_stock_refresh_interval')return ({'0':'Never','5':'5 seconds','30':'30 seconds','60':'1 minute','300':'5 minutes'})[value]||value+' seconds';
+ if(key==='mauri_research_site')return ({google:'Google Finance',stockanalysis:'Stock Analysis',corporate:'Corporate Website',ir:'Investor Relations'})[value]||value;
+ if(key==='mauristocks_view_v1')return ({table:'Table',heatmap:'Heatmap'})[value]||value;
+ if(key==='mauristocks_market_v1')return ({watchlist:'Personal watchlists',...marketNames})[value]||value;
+ if(key==='mauri_stock_sort'||key==='mauristocks_columns_v1'||key===flagStorageKey){
+  try{
+   const parsed=JSON.parse(value);
+   if(key===flagStorageKey&&Array.isArray(parsed))return parsed.join(', ')||'(none)';
+   if(key==='mauri_stock_sort'&&parsed&&typeof parsed.key==='string')return parsed.key.replaceAll('_',' ')+' ('+(parsed.direction==='desc'?'descending':'ascending')+')';
+   if(key==='mauristocks_columns_v1'&&parsed&&typeof parsed==='object'&&!Array.isArray(parsed))return Object.entries(parsed).map(([k,v])=>k.replaceAll('_',' ')+': '+(v?'shown':'hidden')).join(', ')||'(default)';
+  }catch(_){}
+ }
+ return value;
+}
+function suiteSettingsDiff(browser,account){
+ const rows=[];
+ for(const key of suiteKeys){
+  const b=browser[key]??null,a=account[key]??null;
+  if(b===a)continue;
+  if(key===wlKey){
+   const browserLists=b===null?{}:suiteListEntries(b),accountLists=a===null?{}:suiteListEntries(a);
+   if(browserLists&&accountLists){
+    const start=rows.length;
+    for(const name of [...new Set([...Object.keys(browserLists),...Object.keys(accountLists)])].sort()){
+     const local=browserLists[name]??null,remote=accountLists[name]??null;
+     if(local===remote)continue;
+     const delta=suiteSymbolDelta(local,remote);
+     rows.push({label:'Watchlist: '+name,browser:delta?.browser??local,account:delta?.account??remote});
+    }
+    // Exact stored differences without a visible per-list difference (e.g. object order).
+    if(rows.length===start)rows.push({label:'Watchlists (stored format)',browser:b,account:a});
+   }else rows.push({label:'Watchlists (unrecognized format)',browser:b,account:a});
+   continue;
+  }
+  let delta=key==='mauri_stock_symbols'?suiteSymbolDelta(b,a):null;
+  if(key===flagStorageKey&&b!==null&&a!==null){
+   try{
+    const flagsB=JSON.parse(b),flagsA=JSON.parse(a);
+    if(Array.isArray(flagsB)&&Array.isArray(flagsA)&&flagsB.every(s=>typeof s==='string')&&flagsA.every(s=>typeof s==='string'))delta=suiteSymbolDelta(flagsB.join(','),flagsA.join(','));
+   }catch(_){}
+  }
+  rows.push({label:suiteSettingLabels[key]||key,browser:delta?.browser??suiteReadableSetting(key,b),account:delta?.account??suiteReadableSetting(key,a)});
+ }
+ return rows;
+}
 function validSuiteSettings(data){
  return data && data.schema===1 && data.settings && typeof data.settings==='object' &&
  !Array.isArray(data.settings) && Object.keys(data.settings).every(key=>
@@ -1706,7 +1804,7 @@ async function reconcileAccountOnSignIn(identity){
   const same=suiteKeys.every(key=>(browser[key]??null)===(account[key]??null));
   suiteCheckedIdentity=identity;
   if(same){suiteRevision=existing.revision;suiteInitialOverwriteApproved=true;return}
-  if(!(await suiteAsk('Saved account settings differ from this browser. Restore account watchlists and preferences here? Cancel preserves browser settings.')))return;
+  if(!(await suiteAsk('These settings differ. Review them before choosing which complete set to keep. Restoring replaces this browser’s saved settings; keeping the browser leaves your account unchanged.','confirm',suiteSettingsDiff(browser,account))))return;
   const backup={};for(const key of suiteKeys)backup[key]=localStorage.getItem(key);
   try{
    for(const key of suiteKeys)localStorage.removeItem(key);
