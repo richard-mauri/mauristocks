@@ -36,7 +36,7 @@ const wlKey='test_watchlists',activeKey='test_active';
 const keys=[wlKey,activeKey,'mauri_stock_symbols','mauri_stock_refresh_interval','mauristocks_columns_v1'];
 const diffContext={colSpecs,marketNames:{},flagStorageKey:'mauri_flags',
  wlKey,activeKey,suiteKeys:keys,
- suiteSettingLabels:{'mauri_stock_symbols':'Last saved symbols','mauri_stock_refresh_interval':'Auto refresh','mauristocks_columns_v1':'Visible columns'},
+ suiteSettingLabels:{[activeKey]:'Selected watchlist','mauri_stock_symbols':'Last saved symbols','mauri_stock_refresh_interval':'Auto refresh','mauristocks_columns_v1':'Visible columns'},
  normalizeSymbols:v=>[...new Set(String(v).toUpperCase().split(',').map(x=>x.trim()).filter(Boolean))].join(',')
 };
 const {suiteSymbolDelta,suiteSettingsDiff}=vm.runInNewContext(
