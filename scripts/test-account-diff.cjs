@@ -25,6 +25,19 @@ assert.equal(suiteHiddenColumns(JSON.stringify({hidden:['symbol','name','name','
 assert.ok(source.includes("suiteFeedback('Preference saved in this browser. Saving to your account…')"),'preference sync should expose pending feedback');
 assert.ok(!source.includes("suiteFeedback('');\n  void reconcileAccountOnSignIn(identity);"),'session check must not erase sync status');
 
+// One global comparison header replaces repeated cell labels on desktop.
+// Mobile retains labels in each stacked cell for unambiguous reading.
+assert.match(source,/id="suite-dialog-column-headings" class="suite-diff-column-headings" hidden/);
+assert.match(source,/<span>This browser<\/span><span>Saved account<\/span>/);
+assert.match(source,/suiteDialogColumnHeadings.hidden=!diffRows;/);
+assert.match(source,/\.suite-diff-column-headings\{display:grid;grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\);/);
+assert.match(source,/\.suite-diff-value strong\{display:none;/);
+assert.match(source,/@media\(max-width:550px\)\{[^\n]*\.suite-diff-column-headings\{display:none\}[^\n]*\.suite-diff-value strong\{display:block\}/);
+assert.ok(source.indexOf('id="suite-dialog-column-headings"') < source.indexOf('id="suite-dialog-diff"'), 'shared headings are outside scroll area');
+assert.ok(source.indexOf('id="suite-dialog-diff"') < source.indexOf('class="suite-dialog-actions"'), 'action buttons stay outside scroll area');
+const sides=(source.match(/\['This browser',row\.browser\],\['Saved account',row\.account\]/g)||[]);
+assert.equal(sides.length,1,'one consistent browser/account order for all diff cards');
+
 // The dialog must keep actions outside the scrollable comparison region.
 assert.match(source,/\.suite-dialog\[open\]\{display:flex\}/);
 assert.match(source,/#suite-dialog-diff\{flex:0 1 auto;min-height:0;overflow-y:auto;/);
