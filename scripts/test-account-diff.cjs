@@ -34,7 +34,7 @@ const helpersEnd=source.indexOf('function validSuiteSettings(data){',helpersStar
 assert.ok(helpersStart>0&&helpersEnd>helpersStart);
 const wlKey='test_watchlists',activeKey='test_active';
 const keys=[wlKey,activeKey,'mauri_stock_symbols','mauri_stock_refresh_interval','mauristocks_columns_v1'];
-const diffContext={colSpecs,marketNames:{},flagStorageKey:'mauri_flags',
+const diffContext={colSpecs,marketNames:{},flagStorageKey:'mauri_flags',dynamicName:'Most Active — Top 20 (Dynamic)',
  wlKey,activeKey,suiteKeys:keys,
  suiteSettingLabels:{[activeKey]:'Selected watchlist','mauri_stock_symbols':'Last saved symbols','mauri_stock_refresh_interval':'Auto refresh','mauristocks_columns_v1':'Visible columns'},
  normalizeSymbols:v=>[...new Set(String(v).toUpperCase().split(',').map(x=>x.trim()).filter(Boolean))].join(',')
