@@ -811,7 +811,13 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 #quotes-table tbody tr:hover{box-shadow:inset 3px 0 0 var(--accent)}
 @media(max-width:650px){.tablewrap{padding:7px;border-radius:16px}}
 /* Native Safari alerts ignore the dark palette; use an accessible in-page dialog. */
-.suite-dialog{border:1px solid var(--border);border-radius:18px;background:#17252e;color:#eef5f8;box-shadow:0 24px 75px #0009;padding:24px;max-width:min(760px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow-y:auto;box-sizing:border-box;width:100%;font:inherit}
+.suite-dialog{border:1px solid var(--border);border-radius:18px;background:#17252e;color:#eef5f8;box-shadow:0 24px 75px #0009;padding:20px 24px;max-width:min(760px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:hidden;box-sizing:border-box;width:100%;font:inherit;flex-direction:column}
+.suite-dialog[open]{display:flex}
+.suite-dialog:not([open]){display:none}
+.suite-dialog h2,.suite-dialog p,.suite-dialog .suite-dialog-actions{flex-shrink:0}
+#suite-dialog-diff{flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin-bottom:14px;padding-right:5px}
+#suite-dialog-diff[hidden]{display:none}
+.suite-dialog .suite-dialog-actions{padding-top:12px;border-top:1px solid #50636e;background:#17252e}
 .suite-dialog:focus{outline:none}
 .suite-dialog::backdrop{background:#000b}
 .suite-dialog h2{font-size:1.2rem;margin:0 0 12px}
@@ -821,7 +827,7 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .suite-dialog .suite-dialog-actions .ui-button{max-width:100%;white-space:normal}
 
 .suite-dialog input:focus-visible{outline:2px solid #69d7e5;outline-offset:2px}
-.suite-diff{display:grid;gap:12px;margin:0 0 20px;min-width:0}
+.suite-diff{display:grid;gap:10px;min-width:0}
 .suite-diff-item{border:1px solid #50636e;border-radius:10px;overflow:hidden;min-width:0}
 .suite-diff-item h3{font-size:.94rem;margin:0;padding:10px 12px;background:#253b46}
 .suite-diff-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-width:0}
@@ -829,6 +835,10 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .suite-diff-value+ .suite-diff-value{border-left:1px solid #50636e}
 .suite-diff-value strong{display:block;margin-bottom:5px;font-size:.79rem;color:#a9cbd4}
 .suite-diff-missing{color:#aabdc6;font-style:italic}
+.suite-diff-changes{display:grid;gap:8px;padding:12px}
+.suite-diff-change{display:grid;gap:3px;font-size:.86rem;overflow-wrap:anywhere}
+.suite-diff-change strong{color:#a9cbd4;font-size:.8rem}
+.suite-diff-change span{white-space:pre-wrap}
 @media(max-width:550px){.suite-dialog{padding:16px}.suite-diff-pair{grid-template-columns:minmax(0,1fr)}.suite-diff-value+.suite-diff-value{border-left:0;border-top:1px solid #50636e}}
 .suite-sync-feedback[hidden]{display:none!important}.suite-sync-feedback{margin:8px 0 12px;color:var(--muted);font-size:.93rem;line-height:1.4}
 .suite-signin-dialog{max-width:min(440px,calc(100vw - 36px));padding:25px;border:1px solid var(--accent);border-radius:12px;background:var(--panel);color:var(--text);box-shadow:0 20px 60px #0009}.suite-signin-dialog::backdrop{background:#071421b8}.suite-signin-dialog h2{margin:0 0 12px;font-size:1.25rem}.suite-signin-dialog p{line-height:1.55}.suite-signin-dialog a{display:inline-block;margin-top:12px;padding:10px 14px;border:1px solid var(--accent);border-radius:7px;color:var(--accent);text-decoration:none}.suite-signin-dialog a:hover,.suite-signin-dialog a:focus-visible{background:rgba(96,151,172,.18)}
@@ -893,15 +903,27 @@ function suiteAsk(message,kind='confirm',diffRows=null){
    for(const row of diffRows){
     const item=document.createElement('section');item.className='suite-diff-item';
     const heading=document.createElement('h3');heading.textContent=row.label;item.appendChild(heading);
-    const pair=document.createElement('div');pair.className='suite-diff-pair';
-    for(const [label,value] of [['This browser',row.browser],['Saved account',row.account]]){
-     const side=document.createElement('div');side.className='suite-diff-value';
-     const title=document.createElement('strong');title.textContent=label;side.appendChild(title);
-     const detail=document.createElement('span');detail.textContent=value===null?'Not saved':value;
-     if(value===null)detail.className='suite-diff-missing';side.appendChild(detail);
-     pair.appendChild(side);
+    if(row.changes){
+     const changes=document.createElement('div');changes.className='suite-diff-changes';
+     for(const change of row.changes){
+      const line=document.createElement('div');line.className='suite-diff-change';
+      const label=document.createElement('strong');label.textContent=change.label;
+      const symbols=document.createElement('span');symbols.textContent=change.symbols.join(', ');
+      line.append(label,symbols);changes.appendChild(line);
+     }
+     item.appendChild(changes);
+    }else{
+     const pair=document.createElement('div');pair.className='suite-diff-pair';
+     for(const [label,value] of [['This browser',row.browser],['Saved account',row.account]]){
+      const side=document.createElement('div');side.className='suite-diff-value';
+      const title=document.createElement('strong');title.textContent=label;side.appendChild(title);
+      const detail=document.createElement('span');detail.textContent=value===null?'Not saved':value;
+      if(value===null)detail.className='suite-diff-missing';side.appendChild(detail);
+      pair.appendChild(side);
+     }
+     item.appendChild(pair);
     }
-    item.appendChild(pair);list.appendChild(item);
+    list.appendChild(item);
    }
    suiteDialogDiff.appendChild(list);
   }
@@ -1654,13 +1676,13 @@ function suiteSymbolDelta(browser,account){
  if(browser===null||account===null)return null;
  const tokenize=value=>String(value).split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
  const b=new Set(tokenize(browser)),a=new Set(tokenize(account));
- const onlyBrowser=[...b].filter(s=>!a.has(s));
- const onlyAccount=[...a].filter(s=>!b.has(s));
- // Distinguish reordered symbol lists as well as added or removed symbols.
- if(!onlyBrowser.length&&!onlyAccount.length)return null;
- const browserNotes=[onlyBrowser.length?'Only in this browser: '+onlyBrowser.join(', '):'',onlyAccount.length?'Absent here: '+onlyAccount.join(', '):''].filter(Boolean);
- const accountNotes=[onlyAccount.length?'Only in saved account: '+onlyAccount.join(', '):'',onlyBrowser.length?'Absent here: '+onlyBrowser.join(', '):''].filter(Boolean);
- return {browser:browserNotes.join('\n'),account:accountNotes.join('\n')};
+ const added=[...b].filter(s=>!a.has(s));
+ const removed=[...a].filter(s=>!b.has(s));
+ if(!added.length&&!removed.length)return null;
+ return {changes:[
+  ...(added.length?[{label:'Added in this browser ('+added.length+')',symbols:added}]:[]),
+  ...(removed.length?[{label:'Removed from this browser ('+removed.length+')',symbols:removed}]:[])
+ ]};
 }
 // Column preferences contain an array of hidden column IDs, not booleans.
 function suiteHiddenColumns(raw){
@@ -1708,16 +1730,18 @@ function suiteReadableSetting(key,value){
 }
 function suiteSettingsDiff(browser,account){
  const rows=[];
- const active=browser[activeKey]===account[activeKey]?browser[activeKey]:null;
  const browserLists=suiteListEntries(browser[wlKey]??'{}'),accountLists=suiteListEntries(account[wlKey]??'{}');
  for(const key of suiteKeys){
   const b=browser[key]??null,a=account[key]??null;
   if(b===a)continue;
-  // The legacy selected-symbol mirror often duplicates the same named-list diff.
-  if(key==='mauri_stock_symbols'&&active&&browserLists&&accountLists&&
-     Object.hasOwn(browserLists,active)&&Object.hasOwn(accountLists,active)&&
-     normalizeSymbols(b??'')===normalizeSymbols(browserLists[active])&&
-     normalizeSymbols(a??'')===normalizeSymbols(accountLists[active]))continue;
+  // The legacy symbol mirror is redundant when each snapshot matches
+  // its own selected watchlist, even if the selected lists are different.
+  if(key==='mauri_stock_symbols'&&browserLists&&accountLists){
+   const browserActive=browser[activeKey],accountActive=account[activeKey];
+   if(Object.hasOwn(browserLists,browserActive)&&Object.hasOwn(accountLists,accountActive)&&
+      normalizeSymbols(b??'')===normalizeSymbols(browserLists[browserActive])&&
+      normalizeSymbols(a??'')===normalizeSymbols(accountLists[accountActive]))continue;
+  }
   if(key===wlKey){
    if(browserLists&&accountLists){
     const start=rows.length;
@@ -1725,18 +1749,25 @@ function suiteSettingsDiff(browser,account){
      const local=browserLists[name]??null,remote=accountLists[name]??null;
      if(local===remote)continue;
      const delta=suiteSymbolDelta(local,remote);
-     rows.push({label:'Watchlist: '+name,browser:delta?.browser??local,account:delta?.account??remote});
+     rows.push(delta?{label:'Watchlist: '+name,changes:delta.changes}:{label:'Watchlist: '+name,browser:local,account:remote});
     }
     // Exact stored differences without a visible per-list difference (e.g. object order).
     if(rows.length===start)rows.push({label:'Watchlists (stored format)',browser:b,account:a});
    }else rows.push({label:'Watchlists (unrecognized format)',browser:b,account:a});
    continue;
   }
-  let delta=key==='mauri_stock_symbols'?suiteSymbolDelta(b,a):key==='mauristocks_columns_v1'?suiteColumnDelta(b,a):null;
+  let delta=key==='mauristocks_columns_v1'?suiteColumnDelta(b,a):null;
+  if(key==='mauri_stock_symbols'){
+   const symbolDelta=suiteSymbolDelta(b,a);
+   if(symbolDelta){rows.push({label:'Last saved symbols',changes:symbolDelta.changes});continue}
+  }
   if(key===flagStorageKey&&b!==null&&a!==null){
    try{
     const flagsB=JSON.parse(b),flagsA=JSON.parse(a);
-    if(Array.isArray(flagsB)&&Array.isArray(flagsA)&&flagsB.every(s=>typeof s==='string')&&flagsA.every(s=>typeof s==='string'))delta=suiteSymbolDelta(flagsB.join(','),flagsA.join(','));
+    if(Array.isArray(flagsB)&&Array.isArray(flagsA)&&flagsB.every(s=>typeof s==='string')&&flagsA.every(s=>typeof s==='string')){
+     const symbolDelta=suiteSymbolDelta(flagsB.join(','),flagsA.join(','));
+     if(symbolDelta){rows.push({label:'Flagged symbols',changes:symbolDelta.changes});continue}
+    }
    }catch(_){}
   }
   rows.push({label:suiteSettingLabels[key]||key,browser:delta?.browser??suiteReadableSetting(key,b),account:delta?.account??suiteReadableSetting(key,a)});
