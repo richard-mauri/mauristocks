@@ -957,25 +957,53 @@ let marketMode=Object.hasOwn(marketNames,localStorage.getItem('mauristocks_marke
 const dynamicName="Most Active — Top 20 (Dynamic)";
 const wlKey='mauri_stock_watchlists_v1', activeKey='mauri_stock_active_watchlist';
 const flagStorageKey='mauri_stock_flagged_symbols_v1';
+ // In-memory pending preferences. Browser storage changes ONLY on explicit save.
+ const pendingSettings=new Map();
+ let accountSyncNeeded=false,settingsSaveBusy=false;
+ function stageSetting(key,value){
+  const text=String(value);
+  if(localStorage.getItem(key)===text)pendingSettings.delete(key);
+  else pendingSettings.set(key,text);
+  updateWatchlistButtons();
+  suiteFeedback(hasUnsavedChanges()?'Unsaved changes · Click Save Changes.':'');
+ }
+ function hasUnsavedChanges(){return pendingSettings.size>0||watchlistChanged()}
+ window.addEventListener('beforeunload',event=>{
+  if(!hasUnsavedChanges())return;
+  event.preventDefault();event.returnValue='';
+ });
 function loadFlags(){try{const x=JSON.parse(localStorage.getItem(flagStorageKey));if(Array.isArray(x))return new Set(x.filter(s=>typeof s==='string'&&/^[A-Z0-9][A-Z0-9.^=-]{0,17}$/.test(s)));}catch(e){}return new Set()}
 const flaggedSymbols=loadFlags();
-function toggleFlag(symbol){if(flaggedSymbols.has(symbol))flaggedSymbols.delete(symbol);else flaggedSymbols.add(symbol);try{localStorage.setItem(flagStorageKey,JSON.stringify([...flaggedSymbols].sort()));}catch(e){}renderQuotes();queueSuiteSave()}
+function toggleFlag(symbol){if(flaggedSymbols.has(symbol))flaggedSymbols.delete(symbol);else flaggedSymbols.add(symbol);stageSetting(flagStorageKey,JSON.stringify([...flaggedSymbols].sort()));renderQuotes()}
 
 function normalizeSymbols(value){return [...new Set(String(value).toUpperCase().split(',').map(x=>x.trim()).filter(Boolean))].join(',')}
 function loadLists(){try{const value=JSON.parse(localStorage.getItem(wlKey));if(value&&typeof value==='object'&&!Array.isArray(value))return Object.fromEntries(Object.entries(value).filter(([k,v])=>k&&k!=='Default'&&typeof v==='string'));}catch(e){}return {}}
 let watchlists=loadLists();
 // Migrate the v16 custom watchlist, preserving its symbols on first launch.
-if(localStorage.getItem(wlKey)===null){const legacy=localStorage.getItem('mauri_stock_symbols');if(legacy&&normalizeSymbols(legacy)!==defaults){watchlists['My Watchlist']=normalizeSymbols(legacy)}localStorage.setItem(wlKey,JSON.stringify(watchlists))}
+if(localStorage.getItem(wlKey)===null){const legacy=localStorage.getItem('mauri_stock_symbols');if(legacy&&normalizeSymbols(legacy)!==defaults){watchlists['My Watchlist']=normalizeSymbols(legacy)}stageSetting(wlKey,JSON.stringify(watchlists))}
 let activeWatchlist=localStorage.getItem(activeKey)|| (watchlists['My Watchlist']?'My Watchlist':'Default');
 if(activeWatchlist!=='Default'&&activeWatchlist!==dynamicName&&!Object.hasOwn(watchlists,activeWatchlist))activeWatchlist='Default';
-function persistLists(){localStorage.setItem(wlKey,JSON.stringify(watchlists))}
+function persistLists(){stageSetting(wlKey,JSON.stringify(watchlists))}
 function savedSymbols(){return activeWatchlist==='Default'?defaults:activeWatchlist===dynamicName?'':watchlists[activeWatchlist]||''}
 function watchlistChanged(){return marketMode==='watchlist'&&activeWatchlist!==dynamicName&&normalizeSymbols(input.value)!==normalizeSymbols(savedSymbols())}
-function updateWatchlistButtons(){const indexed=marketMode!=='watchlist',readOnly=activeWatchlist==='Default'||activeWatchlist===dynamicName,changed=watchlistChanged();wlSave.disabled=indexed||readOnly||!changed;wlNew.disabled=indexed||!changed;wlRestore.disabled=indexed||!changed;wlDelete.disabled=indexed||readOnly;input.readOnly=indexed||activeWatchlist===dynamicName}
+function updateWatchlistButtons(){
+ const indexed=marketMode!=='watchlist',readOnly=activeWatchlist==='Default'||activeWatchlist===dynamicName,changed=watchlistChanged();
+ const committableSymbols=changed&&!indexed&&!readOnly;
+ wlSave.disabled=settingsSaveBusy||!(committableSymbols||pendingSettings.size>0||accountSyncNeeded);
+ wlNew.disabled=settingsSaveBusy||indexed||!changed;
+ wlRestore.disabled=indexed||!changed;
+ wlDelete.disabled=settingsSaveBusy||indexed||readOnly;
+ input.readOnly=indexed||activeWatchlist===dynamicName;
+}
 function marketChoice(){return marketMode==='watchlist'?'list:'+activeWatchlist:marketMode}
 function updateMarketMenu(){marketSelect.replaceChildren();for(const n of ['Default',...Object.keys(watchlists).sort((a,b)=>a.localeCompare(b)),dynamicName]){const op=document.createElement('option');op.value='list:'+n;op.textContent=n==='Default'?'Default (20 symbols)':n;marketSelect.appendChild(op)}for(const [key,label] of Object.entries(marketNames)){const op=document.createElement('option');op.value=key;op.textContent=label;marketSelect.appendChild(op)}marketSelect.value=marketChoice();updateWatchlistButtons()}
-function selectWatchlist(name,fetchNow=true){if(name!=='Default'&&name!==dynamicName&&!Object.hasOwn(watchlists,name))return;activeWatchlist=name;input.value=savedSymbols();localStorage.setItem(activeKey,name);localStorage.setItem('mauri_stock_symbols',input.value);updateMarketMenu();wlStatus.textContent='';if(fetchNow)refreshQuotes()}
-selectWatchlist(activeWatchlist,false);
+function selectWatchlist(name,fetchNow=true,markPending=true){
+ if(name!=='Default'&&name!==dynamicName&&!Object.hasOwn(watchlists,name))return;
+ activeWatchlist=name;input.value=savedSymbols();
+ if(markPending){stageSetting(activeKey,name);stageSetting('mauri_stock_symbols',input.value)}
+ updateMarketMenu();wlStatus.textContent='';if(fetchNow)refreshQuotes()
+}
+selectWatchlist(activeWatchlist,false,false);
 marketSelect.addEventListener('change',async()=>{
  const next=marketSelect.value;
  if(button.disabled){marketSelect.value=marketChoice();return}
@@ -987,19 +1015,19 @@ marketSelect.addEventListener('change',async()=>{
  }else if(Object.hasOwn(marketNames,next)){
   marketMode=next;input.value='';
  }else{marketSelect.value=marketChoice();return}
- localStorage.setItem('mauristocks_market_v1',marketMode);
- updateMarketMenu();queueSuiteSave();
+ stageSetting('mauristocks_market_v1',marketMode);
+ updateMarketMenu();
  quotes=[];renderQuotes();capKey='';layoutKey='';paintHeatmap();
  message.textContent='Loading '+(marketMode==='watchlist'?activeWatchlist:marketNames[marketMode])+'…';
  refreshQuotes();
 });
 // Only explicit Save Changes / Save As New persist edits to watchlist symbols.
-input.addEventListener('input',updateWatchlistButtons);
-input.addEventListener('change',updateWatchlistButtons);
-wlSave.addEventListener('click',()=>{if(wlSave.disabled)return;const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter at least one symbol before saving.';return}watchlists[activeWatchlist]=symbols;input.value=symbols;persistLists();localStorage.setItem('mauri_stock_symbols',symbols);updateWatchlistButtons();wlStatus.textContent='Saved '+activeWatchlist+' in this browser.';queueWatchlistAccountSave()});
+input.addEventListener('input',()=>{updateWatchlistButtons();suiteFeedback(hasUnsavedChanges()?'Unsaved changes · Click Save Changes.':'')});
+input.addEventListener('change',()=>{updateWatchlistButtons();suiteFeedback(hasUnsavedChanges()?'Unsaved changes · Click Save Changes.':'')});
+wlSave.addEventListener('click',()=>{void commitSettings()});
 wlRestore.addEventListener('click',()=>{if(wlRestore.disabled)return;input.value=savedSymbols();updateWatchlistButtons();wlStatus.textContent='Restored saved symbols.';refreshQuotes()});
-wlNew.addEventListener('click',async()=>{if(wlNew.disabled)return;const name=await suiteAsk('Name the new watchlist:','text');if(name===null)return;const n=name.trim();if(!n||n.length>60||(n.toLowerCase()==='default'||n.toLowerCase()===dynamicName.toLowerCase())||Object.hasOwn(marketNames,n.toLowerCase())){wlStatus.textContent='Choose a valid name (up to 60 characters).';return}if(Object.keys(watchlists).some(k=>k.toLowerCase()===n.toLowerCase())){wlStatus.textContent='That watchlist already exists.';return}const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[n]=symbols;persistLists();selectWatchlist(n,false);wlStatus.textContent='Saved '+n+' in this browser.';queueWatchlistAccountSave()});
-wlDelete.addEventListener('click',async()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName||button.disabled)return;if(!(await suiteAsk('Delete watchlist "'+activeWatchlist+'"?')))return;delete watchlists[activeWatchlist];persistLists();selectWatchlist('Default');wlStatus.textContent='Deleted watchlist in this browser.';queueWatchlistAccountSave()});
+wlNew.addEventListener('click',async()=>{if(wlNew.disabled)return;const name=await suiteAsk('Name the new watchlist:','text');if(name===null)return;const n=name.trim();if(!n||n.length>60||(n.toLowerCase()==='default'||n.toLowerCase()===dynamicName.toLowerCase())||Object.hasOwn(marketNames,n.toLowerCase())){wlStatus.textContent='Choose a valid name (up to 60 characters).';return}if(Object.keys(watchlists).some(k=>k.toLowerCase()===n.toLowerCase())){wlStatus.textContent='That watchlist already exists.';return}const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[n]=symbols;persistLists();selectWatchlist(n,false);wlStatus.textContent='New watchlist ready to save.';await commitSettings()});
+wlDelete.addEventListener('click',async()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName||button.disabled)return;if(!(await suiteAsk('Delete watchlist "'+activeWatchlist+'"?')))return;delete watchlists[activeWatchlist];persistLists();selectWatchlist('Default');wlStatus.textContent='Watchlist deletion ready to save.';await commitSettings()});
 function money(n,currency){return n==null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:currency||'USD',maximumFractionDigits:2}).format(n)}
 function cell(tr,value,cls){let td=document.createElement('td');td.textContent=value; if(cls)td.className=cls;tr.appendChild(td);return td}
 function rangeCell(tr,low,high,price,currency){
