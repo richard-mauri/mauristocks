@@ -28,7 +28,7 @@ func TestHomepageAccountHeaderOmitsMinuteCountdown(t *testing.T) {
  code,err:=os.ReadFile("main.go")
  if err!=nil{t.Fatal(err)}
  source:=string(code)
- if !strings.Contains(source,"suiteIdentityEl.textContent='Signed in as '+suiteAccountIdentity;") {
+ if !strings.Contains(source,"SuiteBannerStatus.signedIn(suiteAccountIdentity);") {
   t.Fatal("signed-in header must show identity without a minute countdown")
  }
  if !strings.Contains(source,"if(left===0 && suiteSignedIn)") {
