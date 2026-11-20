@@ -1654,8 +1654,6 @@ let suiteRevision=null;
 let suiteInitialOverwriteApproved=false;
 let suiteAccountIdentity=null;
 let suiteSavePending=false;
-let suiteSaveQueued=false;
-let suiteSaveTimer=null;
 let suiteCheckedIdentity=null;
 let suiteAccountCheckPending=false;
 const syncEndpoint=suiteBase+'/api/storage/mauristocks';
@@ -1851,30 +1849,52 @@ async function refreshSuiteSession(){
   void reconcileAccountOnSignIn(identity);
  }catch(e){suiteFeedback('Account connection unavailable; browser settings remain local.')}
 }
-function queueSuiteSave(){
- if(!suiteSignedIn){suiteFeedback('Preference saved in this browser only; account synchronization unavailable.');return}
- suiteFeedback('Preference saved in this browser. Saving to your account…');
- suiteSaveQueued=true;
- if(suiteSaveTimer!==null)clearTimeout(suiteSaveTimer);
- suiteSaveTimer=setTimeout(()=>{suiteSaveTimer=null;void flushSuiteSave()},400);
-}
-function queueWatchlistAccountSave(){
- if(!suiteSignedIn){suiteFeedback('Watchlist saved in this browser only. Sign in through Homepage to synchronize it.');return}
- suiteFeedback('Watchlist saved in this browser. Saving to your account…');
- // An explicit Save Changes should start account persistence immediately.
- // The ordinary 400 ms debounce remains for automatically saved preferences.
- suiteSaveQueued=true;
- if(suiteSaveTimer!==null){clearTimeout(suiteSaveTimer);suiteSaveTimer=null}
- void flushSuiteSave();
-}
-async function flushSuiteSave(){
- if(!suiteSignedIn || suiteSavePending || !suiteSaveQueued)return;
- suiteSaveQueued=false;
- await saveWatchlistToAccount();
- if(suiteSaveQueued)queueSuiteSave();
+// Save Changes is the single commit point for all settings. User events
+// only update pendingSettings and the live UI; they do not write storage.
+async function commitSettings(){
+ if(settingsSaveBusy)return;
+ const changedSymbols=watchlistChanged();
+ if(changedSymbols){
+  if(marketMode!=='watchlist'||activeWatchlist==='Default'||activeWatchlist===dynamicName){
+   suiteFeedback('Default symbols are protected; use Save As New for a new list.');return;
+  }
+  const symbols=normalizeSymbols(input.value);
+  if(!symbols){wlStatus.textContent='Enter at least one symbol before saving.';return}
+  watchlists[activeWatchlist]=symbols;input.value=symbols;
+  persistLists();stageSetting('mauri_stock_symbols',symbols);
+ }
+ if(!pendingSettings.size&&!accountSyncNeeded)return;
+ settingsSaveBusy=true;updateWatchlistButtons();
+ const changes=new Map(pendingSettings);
+ const backup=new Map();
+ try{
+  for(const [key,value] of changes){
+   backup.set(key,localStorage.getItem(key));
+   localStorage.setItem(key,value);
+  }
+ }catch(error){
+  // Restore every key if a browser storage write fails mid-commit.
+  for(const [key,old] of backup)try{
+   if(old===null)localStorage.removeItem(key);else localStorage.setItem(key,old);
+  }catch(_){}
+  suiteFeedback('Browser save failed; your pending changes are still here.');
+  settingsSaveBusy=false;updateWatchlistButtons();return;
+ }
+ for(const [key,value] of changes)if(pendingSettings.get(key)===value)pendingSettings.delete(key);
+ wlStatus.textContent='Settings saved in this browser.';
+ if(!suiteSignedIn){
+  accountSyncNeeded=false;
+  suiteFeedback('Saved in this browser only · Sign in to save to Homepage.');
+ }else{
+  accountSyncNeeded=true;
+  const saved=await saveWatchlistToAccount();
+  accountSyncNeeded=!saved;
+  if(saved&&hasUnsavedChanges())suiteFeedback('Saved to account; newer edits are still unsaved.');
+ }
+ settingsSaveBusy=false;updateWatchlistButtons();
 }
 async function saveWatchlistToAccount(){
- if(!suiteSignedIn || suiteSavePending)return;
+ if(!suiteSignedIn||suiteSavePending)return false;
  suiteSavePending=true;
  try{
   suiteFeedback('Saving settings to your account…');
@@ -1882,23 +1902,28 @@ async function saveWatchlistToAccount(){
    const existing=await suiteRecord();
    if(existing && !validSuiteSettings(existing.data))throw Error('Account data has an unsupported format; no server change made.');
    if(existing && !suiteInitialOverwriteApproved){
-    if(!(await suiteAsk('Replace saved account settings with this browser’s current watchlists and preferences? This approval enables subsequent watchlist saves.'))){
-     suiteFeedback('Settings saved in browser only; account remains unchanged.');return;
+    if(!(await suiteAsk('Replace saved account settings with this browser’s current watchlists and preferences? This approval enables subsequent saves.'))){
+     suiteFeedback('Saved in browser only; account unchanged. Click Save Changes to retry.');return false;
     }
     suiteInitialOverwriteApproved=true;
    }
    suiteRevision=existing?existing.revision:0;
   }
   const response=await suiteRequest('/api/storage/mauristocks',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:suiteRevision,data:snapshotBrowserSettings()})});
-  if(response.status===409){suiteRevision=null;suiteInitialOverwriteApproved=false;throw Error('Account changed on another device. Browser change retained; review account data before retrying.')}
-  if(!response.ok)throw Error('Account save failed (HTTP '+response.status+'); browser change retained.');
+  if(response.status===409){suiteRevision=null;suiteInitialOverwriteApproved=false;throw Error('Account changed on another device (409). Browser settings retained; review account before retrying.')}
+  if(!response.ok)throw Error('Account save failed (HTTP '+response.status+'); browser settings retained.');
   const saved=await response.json();suiteRevision=saved.revision;
   suiteFeedback('Settings saved to your account.');
- }catch(e){suiteFeedback(e.message)}finally{suiteSavePending=false}
+  return true;
+ }catch(e){
+  suiteFeedback(e.message+' Click Save Changes to retry.');
+  return false;
+ }finally{suiteSavePending=false}
 }
 // Reconcile account settings once per identity. Conflicts require consent.
 async function reconcileAccountOnSignIn(identity){
  if(!suiteSignedIn||suiteCheckedIdentity===identity||suiteAccountCheckPending)return;
+ if(hasUnsavedChanges()){suiteFeedback('Unsaved edits · Save Changes before reviewing account settings.');return}
  suiteAccountCheckPending=true;
  try{
   const existing=await suiteRecord();
@@ -1914,7 +1939,7 @@ async function reconcileAccountOnSignIn(identity){
   // Legacy mirrors or JSON formatting can diverge without a user-visible change.
   if(!differences.length){suiteRevision=existing.revision;suiteInitialOverwriteApproved=true;return}
   if(!(await suiteAsk('These settings differ. Review them before choosing which complete set to keep. Restoring replaces this browser’s saved settings; keeping the browser leaves your account unchanged.','confirm',differences))){
-   suiteFeedback('Browser settings kept. Saved account unchanged.');return;
+   accountSyncNeeded=true;updateWatchlistButtons();suiteFeedback('Browser settings kept; account unchanged. Click Save Changes to save to account.');return;
   }
   const backup={};for(const key of suiteKeys)backup[key]=localStorage.getItem(key);
   try{
