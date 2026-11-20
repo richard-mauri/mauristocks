@@ -137,33 +137,37 @@ func TestAccountSettingsIncludeEveryDisplayPreference(t *testing.T) {
   t.Fatal("legacy account settings schema compatibility lost")
  }
 }
-func TestDisplayPreferenceEventsQueueAccountSave(t *testing.T) {
- checks:=[]struct{start,end string}{
-  {"marketSelect.addEventListener('change',async()=>{","// Only explicit Save Changes / Save As New"},
-  {"heatWeightSlider.addEventListener('input',()=>{","let heatView="},
-  {"heatSelector.addEventListener('change',()=>{","new ResizeObserver"},
+// User preferences remain pending until an explicit button action. No event
+// handler may directly write account settings or start an automatic PUT.
+func TestDisplayPreferenceEventsAreStagedUntilSaveChanges(t *testing.T) {
+ required:=[]string{
+  "const pendingSettings=new Map()",
+  "function stageSetting(key,value)",
+  "stageSetting('mauri_stock_refresh_interval',String(seconds))",
+  "stageSetting('mauristocks_columns_v1',JSON.stringify(colPrefs))",
+  "stageSetting('mauri_research_site',researchSelect.value)",
+  "stageSetting('mauristocks_market_v1',marketMode)",
+  "stageSetting('mauri_stock_sort',JSON.stringify({key:sortKey,direction:sortDirection}))",
+  "stageSetting('mauristocks_view_v1',v)",
+  "stageSetting(heatWeightKey,next)",
+  "stageSetting(flagStorageKey,JSON.stringify([...flaggedSymbols].sort()))",
+  "wlSave.addEventListener('click',()=>{void commitSettings()})",
+  "async function commitSettings()",
+  "async function saveWatchlistToAccount()",
+  "accountSyncNeeded=!saved",
+  "if(response.status===409)",
+  "window.addEventListener('beforeunload'",
  }
- for _,check:=range checks{
-  start:=strings.Index(page,check.start)
-  if start<0{t.Errorf("missing preference listener: %s",check.start);continue}
-  end:=strings.Index(page[start:],check.end)
-  if end<0{t.Errorf("missing listener boundary: %s",check.end);continue}
-  body:=page[start:start+end]
-  if !strings.Contains(body,"queueSuiteSave()"){
-   t.Errorf("preference listener does not request account synchronization: %s",check.start)
-  }
+ for _,fragment:=range required{
+  if !strings.Contains(page,fragment){t.Errorf("explicit save workflow missing: %s",fragment)}
  }
- if !strings.Contains(page,"if(!suiteSignedIn){suiteFeedback('Preference saved in this browser only; account synchronization unavailable.');return}"){
-  t.Fatal("browser-only preferences must remain local without queuing account writes")
- }
- if !strings.Contains(page,"if(response.status===409)"){
-  t.Fatal("account revision-conflict protection missing")
+ for _,forbidden:=range []string{"function queueSuiteSave()","async function commitSettings()","function flushSuiteSave()","setTimeout(()=>{suiteSaveTimer","void commitSettings()"}{
+  if strings.Contains(page,forbidden){t.Errorf("automatic account save path remains: %s",forbidden)}
  }
 }
-
-// Symbol edits are no longer autosaved: the owner explicitly requested
-// Save Changes / Save As New / Restore with changed-state gating. Other
-// preferences must continue their guarded Homepage account autosave.
+ 
+// Symbol edits still need explicit Save Changes; all other preferences now
+// participate in the same transaction and localStorage commit.
 func TestWatchlistExplicitSaveAndRestoreControls(t *testing.T) {
  for _,id:=range []string{`id="watchlist-save"`,`id="watchlist-new"`,`id="watchlist-restore"`,`id="watchlist-delete"`}{
   if !strings.Contains(page,id){t.Errorf("missing watchlist control: %s",id)}
@@ -174,8 +178,8 @@ func TestWatchlistExplicitSaveAndRestoreControls(t *testing.T) {
  required:=[]string{
   "function watchlistChanged()",
   "normalizeSymbols(input.value)!==normalizeSymbols(savedSymbols())",
-  "wlSave.disabled=indexed||readOnly||!changed",
-  "wlNew.disabled=indexed||!changed",
+  "wlSave.disabled=settingsSaveBusy||!(committableSymbols||pendingSettings.size>0||accountSyncNeeded)",
+  "wlNew.disabled=settingsSaveBusy||indexed||!changed",
   "wlRestore.disabled=indexed||!changed",
   "input.readOnly=indexed||activeWatchlist===dynamicName",
   "marketSelect.replaceChildren()",
@@ -215,8 +219,8 @@ func TestAccountDiffReviewIsReadOnlyAndPreservesSaveGuards(t *testing.T) {
   "const backup={};for(const key of suiteKeys)backup[key]=localStorage.getItem(key)",
   "if(response.status===409)",
   "function queueWatchlistAccountSave()",
-  "void flushSuiteSave()",
-  "Watchlist saved in this browser. Saving to your account",
+  "const saved=await saveWatchlistToAccount()",
+  "Settings saved in this browser.",
   "Settings saved to your account.",
  }
  for _,check:=range required {
