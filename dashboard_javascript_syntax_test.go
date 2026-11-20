@@ -220,8 +220,8 @@ func TestAccountDiffReviewIsReadOnlyAndPreservesSaveGuards(t *testing.T) {
   "if(response.status===409)",
   "async function commitSettings()",
   "const saved=await saveWatchlistToAccount()",
-  "Settings saved in this browser.",
-  "Settings saved to your account.",
+  "function suiteFeedback(text){wlStatus.textContent=text;wlStatus.hidden=!text}",
+  "Settings saved to browser and account.",
  }
  for _,check:=range required {
   if !strings.Contains(page,check){t.Errorf("missing guarded account comparison behavior: %s",check)}
