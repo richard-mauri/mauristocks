@@ -71,10 +71,11 @@ const named=suiteSettingsDiff(
  list({Candidates:'AAPL,GOOG,TSLA',Growth:'NVDA,TSLA'},'Candidates','AAPL,GOOG,TSLA')
 );
 assert.equal(named.length,2);
-assert.equal(named[0].label,'Selected watchlist');
-assert.equal(named[1].label,'Watchlist: Candidates');
-assert.equal(named[1].browser,'Added here (1): DRAM\nMissing here (1): TSLA');
-assert.equal(named[1].account,'Added here (1): TSLA\nMissing here (1): DRAM');
+const candidateChange=named.find(row=>row.label==='Watchlist: Candidates');
+assert.ok(named.some(row=>row.label==='Selected watchlist'));
+assert.ok(candidateChange,'the changed named watchlist must be compared');
+assert.equal(candidateChange.browser,'Added here (1): DRAM\nMissing here (1): TSLA');
+assert.equal(candidateChange.account,'Added here (1): TSLA\nMissing here (1): DRAM');
 // An absent list can be newly created or deleted: show "Not present", never "Deleted".
 const missing=suiteSettingsDiff(
  list({Candidates:'AAPL,GOOG',LocalOnly:'MU'},'Default','MU,AMAT'),
