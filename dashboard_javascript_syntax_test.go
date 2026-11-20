@@ -198,13 +198,22 @@ func TestAccountDiffReviewIsReadOnlyAndPreservesSaveGuards(t *testing.T) {
  required:=[]string{
   `id="suite-dialog-diff"`,
   "suiteDialogDiff.replaceChildren()",
-  "td.textContent=value===null?'Not saved':value",
+  "detail.textContent=value===null?'Not saved':value",
+  "suite-diff-pair",
+  "grid-template-columns:minmax(0,1fr)",
+  "normalizeSymbols(b??'')===normalizeSymbols(browserLists[active])",
+  "Only in saved account:",
+  "Absent here:",
   "suiteDialogCancel.textContent=diffRows?'Keep Browser Settings':'Cancel'",
   "suiteDialogOK.textContent=diffRows?'Restore Account Settings':'OK'",
   "function suiteSettingsDiff(browser,account)",
   "function suiteSymbolDelta(browser,account)",
   "const backup={};for(const key of suiteKeys)backup[key]=localStorage.getItem(key)",
   "if(response.status===409)",
+  "function queueWatchlistAccountSave()",
+  "void flushSuiteSave()",
+  "Watchlist saved in this browser. Saving to your account",
+  "Settings saved to your account.",
  }
  for _,check:=range required {
   if !strings.Contains(page,check){t.Errorf("missing guarded account comparison behavior: %s",check)}

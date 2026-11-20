@@ -817,15 +817,19 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 .suite-dialog h2{font-size:1.2rem;margin:0 0 12px}
 .suite-dialog p{line-height:1.5;margin:0 0 18px}
 .suite-dialog input{box-sizing:border-box;width:100%;padding:12px;background:#101b23;color:#eef5f8;border:1px solid #617681;border-radius:8px;margin-bottom:16px;font:inherit}
-.suite-dialog .suite-dialog-actions{display:flex;gap:10px;justify-content:flex-end}
+.suite-dialog .suite-dialog-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.suite-dialog .suite-dialog-actions .ui-button{max-width:100%;white-space:normal}
 
 .suite-dialog input:focus-visible{outline:2px solid #69d7e5;outline-offset:2px}
-.suite-diff{width:100%;border-collapse:collapse;margin:0 0 20px;table-layout:fixed;font-size:.83rem}
-.suite-diff th,.suite-diff td{padding:9px;border:1px solid #50636e;text-align:left;vertical-align:top;overflow-wrap:anywhere;white-space:pre-wrap;color:#eef5f8;background:transparent}
-.suite-diff th{background:#253b46;font-weight:700}
-.suite-diff td:first-child{font-weight:650;width:25%}
-.suite-diff .suite-diff-missing{color:#aabdc6;font-style:italic}
-@media(max-width:550px){.suite-dialog{padding:16px}.suite-diff{font-size:.76rem}.suite-diff th,.suite-diff td{padding:6px}}
+.suite-diff{display:grid;gap:12px;margin:0 0 20px;min-width:0}
+.suite-diff-item{border:1px solid #50636e;border-radius:10px;overflow:hidden;min-width:0}
+.suite-diff-item h3{font-size:.94rem;margin:0;padding:10px 12px;background:#253b46}
+.suite-diff-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-width:0}
+.suite-diff-value{padding:12px;min-width:0;overflow-wrap:anywhere;white-space:pre-wrap;font-size:.85rem}
+.suite-diff-value+ .suite-diff-value{border-left:1px solid #50636e}
+.suite-diff-value strong{display:block;margin-bottom:5px;font-size:.79rem;color:#a9cbd4}
+.suite-diff-missing{color:#aabdc6;font-style:italic}
+@media(max-width:550px){.suite-dialog{padding:16px}.suite-diff-pair{grid-template-columns:minmax(0,1fr)}.suite-diff-value+.suite-diff-value{border-left:0;border-top:1px solid #50636e}}
 .suite-sync-feedback[hidden]{display:none!important}.suite-sync-feedback{margin:8px 0 12px;color:var(--muted);font-size:.93rem;line-height:1.4}
 .suite-signin-dialog{max-width:min(440px,calc(100vw - 36px));padding:25px;border:1px solid var(--accent);border-radius:12px;background:var(--panel);color:var(--text);box-shadow:0 20px 60px #0009}.suite-signin-dialog::backdrop{background:#071421b8}.suite-signin-dialog h2{margin:0 0 12px;font-size:1.25rem}.suite-signin-dialog p{line-height:1.55}.suite-signin-dialog a{display:inline-block;margin-top:12px;padding:10px 14px;border:1px solid var(--accent);border-radius:7px;color:var(--accent);text-decoration:none}.suite-signin-dialog a:hover,.suite-signin-dialog a:focus-visible{background:rgba(96,151,172,.18)}
 
@@ -885,20 +889,21 @@ function suiteAsk(message,kind='confirm',diffRows=null){
   suiteDialogCancel.textContent=diffRows?'Keep Browser Settings':'Cancel';
   suiteDialogOK.textContent=diffRows?'Restore Account Settings':'OK';
   if(diffRows){
-   const table=document.createElement('table');table.className='suite-diff';
-   const head=document.createElement('thead'),header=document.createElement('tr');
-   for(const label of ['Setting','This browser','Saved account']){const th=document.createElement('th');th.scope='col';th.textContent=label;header.appendChild(th)}
-   head.appendChild(header);table.appendChild(head);
-   const body=document.createElement('tbody');
+   const list=document.createElement('div');list.className='suite-diff';
    for(const row of diffRows){
-    const tr=document.createElement('tr');
-    for(const value of [row.label,row.browser,row.account]){
-     const td=document.createElement('td');td.textContent=value===null?'Not saved':value;
-     if(value===null)td.className='suite-diff-missing';tr.appendChild(td);
+    const item=document.createElement('section');item.className='suite-diff-item';
+    const heading=document.createElement('h3');heading.textContent=row.label;item.appendChild(heading);
+    const pair=document.createElement('div');pair.className='suite-diff-pair';
+    for(const [label,value] of [['This browser',row.browser],['Saved account',row.account]]){
+     const side=document.createElement('div');side.className='suite-diff-value';
+     const title=document.createElement('strong');title.textContent=label;side.appendChild(title);
+     const detail=document.createElement('span');detail.textContent=value===null?'Not saved':value;
+     if(value===null)detail.className='suite-diff-missing';side.appendChild(detail);
+     pair.appendChild(side);
     }
-    body.appendChild(tr);
+    item.appendChild(pair);list.appendChild(item);
    }
-   table.appendChild(body);suiteDialogDiff.appendChild(table);
+   suiteDialogDiff.appendChild(list);
   }
   suiteDialogInput.hidden=kind!=='text';
   suiteDialogInput.value='';
@@ -974,10 +979,10 @@ marketSelect.addEventListener('change',async()=>{
 // Only explicit Save Changes / Save As New persist edits to watchlist symbols.
 input.addEventListener('input',updateWatchlistButtons);
 input.addEventListener('change',updateWatchlistButtons);
-wlSave.addEventListener('click',()=>{if(wlSave.disabled)return;const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter at least one symbol before saving.';return}watchlists[activeWatchlist]=symbols;input.value=symbols;persistLists();localStorage.setItem('mauri_stock_symbols',symbols);updateWatchlistButtons();wlStatus.textContent='Saved changes to '+activeWatchlist+'.';queueSuiteSave()});
+wlSave.addEventListener('click',()=>{if(wlSave.disabled)return;const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter at least one symbol before saving.';return}watchlists[activeWatchlist]=symbols;input.value=symbols;persistLists();localStorage.setItem('mauri_stock_symbols',symbols);updateWatchlistButtons();wlStatus.textContent='Saved '+activeWatchlist+' in this browser.';queueWatchlistAccountSave()});
 wlRestore.addEventListener('click',()=>{if(wlRestore.disabled)return;input.value=savedSymbols();updateWatchlistButtons();wlStatus.textContent='Restored saved symbols.';refreshQuotes()});
-wlNew.addEventListener('click',async()=>{if(wlNew.disabled)return;const name=await suiteAsk('Name the new watchlist:','text');if(name===null)return;const n=name.trim();if(!n||n.length>60||(n.toLowerCase()==='default'||n.toLowerCase()===dynamicName.toLowerCase())||Object.hasOwn(marketNames,n.toLowerCase())){wlStatus.textContent='Choose a valid name (up to 60 characters).';return}if(Object.keys(watchlists).some(k=>k.toLowerCase()===n.toLowerCase())){wlStatus.textContent='That watchlist already exists.';return}const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[n]=symbols;persistLists();selectWatchlist(n,false);wlStatus.textContent='Saved '+n+'.';queueSuiteSave()});
-wlDelete.addEventListener('click',async()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName||button.disabled)return;if(!(await suiteAsk('Delete watchlist "'+activeWatchlist+'"?')))return;delete watchlists[activeWatchlist];persistLists();selectWatchlist('Default');wlStatus.textContent='Deleted watchlist.';queueSuiteSave()});
+wlNew.addEventListener('click',async()=>{if(wlNew.disabled)return;const name=await suiteAsk('Name the new watchlist:','text');if(name===null)return;const n=name.trim();if(!n||n.length>60||(n.toLowerCase()==='default'||n.toLowerCase()===dynamicName.toLowerCase())||Object.hasOwn(marketNames,n.toLowerCase())){wlStatus.textContent='Choose a valid name (up to 60 characters).';return}if(Object.keys(watchlists).some(k=>k.toLowerCase()===n.toLowerCase())){wlStatus.textContent='That watchlist already exists.';return}const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[n]=symbols;persistLists();selectWatchlist(n,false);wlStatus.textContent='Saved '+n+' in this browser.';queueWatchlistAccountSave()});
+wlDelete.addEventListener('click',async()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName||button.disabled)return;if(!(await suiteAsk('Delete watchlist "'+activeWatchlist+'"?')))return;delete watchlists[activeWatchlist];persistLists();selectWatchlist('Default');wlStatus.textContent='Deleted watchlist in this browser.';queueWatchlistAccountSave()});
 function money(n,currency){return n==null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:currency||'USD',maximumFractionDigits:2}).format(n)}
 function cell(tr,value,cls){let td=document.createElement('td');td.textContent=value; if(cls)td.className=cls;tr.appendChild(td);return td}
 function rangeCell(tr,low,high,price,currency){
@@ -1653,7 +1658,9 @@ function suiteSymbolDelta(browser,account){
  const onlyAccount=[...a].filter(s=>!b.has(s));
  // Distinguish reordered symbol lists as well as added or removed symbols.
  if(!onlyBrowser.length&&!onlyAccount.length)return null;
- return {browser:onlyBrowser.length?'Only here: '+onlyBrowser.join(', '):'No unique symbols',account:onlyAccount.length?'Only there: '+onlyAccount.join(', '):'No unique symbols'};
+ const browserNotes=[onlyBrowser.length?'Only in this browser: '+onlyBrowser.join(', '):'',onlyAccount.length?'Absent here: '+onlyAccount.join(', '):''].filter(Boolean);
+ const accountNotes=[onlyAccount.length?'Only in saved account: '+onlyAccount.join(', '):'',onlyBrowser.length?'Absent here: '+onlyBrowser.join(', '):''].filter(Boolean);
+ return {browser:browserNotes.join('\n'),account:accountNotes.join('\n')};
 }
 function suiteReadableSetting(key,value){
  if(value===null)return null;
@@ -1673,11 +1680,17 @@ function suiteReadableSetting(key,value){
 }
 function suiteSettingsDiff(browser,account){
  const rows=[];
+ const active=browser[activeKey]===account[activeKey]?browser[activeKey]:null;
+ const browserLists=suiteListEntries(browser[wlKey]??'{}'),accountLists=suiteListEntries(account[wlKey]??'{}');
  for(const key of suiteKeys){
   const b=browser[key]??null,a=account[key]??null;
   if(b===a)continue;
+  // The legacy selected-symbol mirror often duplicates the same named-list diff.
+  if(key==='mauri_stock_symbols'&&active&&browserLists&&accountLists&&
+     Object.hasOwn(browserLists,active)&&Object.hasOwn(accountLists,active)&&
+     normalizeSymbols(b??'')===normalizeSymbols(browserLists[active])&&
+     normalizeSymbols(a??'')===normalizeSymbols(accountLists[active]))continue;
   if(key===wlKey){
-   const browserLists=b===null?{}:suiteListEntries(b),accountLists=a===null?{}:suiteListEntries(a);
    if(browserLists&&accountLists){
     const start=rows.length;
     for(const name of [...new Set([...Object.keys(browserLists),...Object.keys(accountLists)])].sort()){
@@ -1760,6 +1773,15 @@ function queueSuiteSave(){
  if(suiteSaveTimer!==null)clearTimeout(suiteSaveTimer);
  suiteSaveTimer=setTimeout(()=>{suiteSaveTimer=null;void flushSuiteSave()},400);
 }
+function queueWatchlistAccountSave(){
+ if(!suiteSignedIn){suiteFeedback('Watchlist saved in this browser only. Sign in through Homepage to synchronize it.');return}
+ suiteFeedback('Watchlist saved in this browser. Saving to your account…');
+ // An explicit Save Changes should start account persistence immediately.
+ // The ordinary 400 ms debounce remains for automatically saved preferences.
+ suiteSaveQueued=true;
+ if(suiteSaveTimer!==null){clearTimeout(suiteSaveTimer);suiteSaveTimer=null}
+ void flushSuiteSave();
+}
 async function flushSuiteSave(){
  if(!suiteSignedIn || suiteSavePending || !suiteSaveQueued)return;
  suiteSaveQueued=false;
@@ -1770,6 +1792,7 @@ async function saveWatchlistToAccount(){
  if(!suiteSignedIn || suiteSavePending)return;
  suiteSavePending=true;
  try{
+  suiteFeedback('Saving settings to your account…');
   if(suiteRevision===null){
    const existing=await suiteRecord();
    if(existing && !validSuiteSettings(existing.data))throw Error('Account data has an unsupported format; no server change made.');
