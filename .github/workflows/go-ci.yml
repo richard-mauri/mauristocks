@@ -21,6 +21,8 @@ jobs:
         run: git ls-files '*.go' | xargs gofmt -l
       - name: Run tests
         run: go test -count=1 ./...
+      - name: Account comparison UI regressions
+        run: node scripts/test-account-diff.cjs
       - name: Build with injected identifier
         run: |
           go build -ldflags="-X 'main.appBuild=Build CI'" -o /tmp/mauristocks .

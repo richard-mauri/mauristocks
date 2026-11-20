@@ -811,15 +811,39 @@ tbody tr.flagged-row,tbody tr.flagged-row:nth-child(even),tbody tr.flagged-row:h
 #quotes-table tbody tr:hover{box-shadow:inset 3px 0 0 var(--accent)}
 @media(max-width:650px){.tablewrap{padding:7px;border-radius:16px}}
 /* Native Safari alerts ignore the dark palette; use an accessible in-page dialog. */
-.suite-dialog{border:1px solid var(--border);border-radius:18px;background:#17252e;color:#eef5f8;box-shadow:0 24px 75px #0009;padding:24px;max-width:min(520px,calc(100vw - 32px));width:100%;font:inherit}
+.suite-dialog{border:1px solid var(--border);border-radius:18px;background:#17252e;color:#eef5f8;box-shadow:0 24px 75px #0009;padding:20px 24px;max-width:min(760px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:hidden;box-sizing:border-box;width:100%;font:inherit;flex-direction:column}
+.suite-dialog[open]{display:flex}
+.suite-dialog:not([open]){display:none}
+.suite-dialog h2,.suite-dialog p,.suite-dialog .suite-dialog-actions,.suite-diff-column-headings{flex-shrink:0}
+#suite-dialog-diff{flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;margin-bottom:14px;padding-right:5px}
+#suite-dialog-diff[hidden]{display:none}
+.suite-dialog .suite-dialog-actions{padding-top:12px;border-top:1px solid #50636e;background:#17252e}
 .suite-dialog:focus{outline:none}
 .suite-dialog::backdrop{background:#000b}
 .suite-dialog h2{font-size:1.2rem;margin:0 0 12px}
 .suite-dialog p{line-height:1.5;margin:0 0 18px}
 .suite-dialog input{box-sizing:border-box;width:100%;padding:12px;background:#101b23;color:#eef5f8;border:1px solid #617681;border-radius:8px;margin-bottom:16px;font:inherit}
-.suite-dialog .suite-dialog-actions{display:flex;gap:10px;justify-content:flex-end}
+.suite-dialog .suite-dialog-actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.suite-dialog .suite-dialog-actions .ui-button{max-width:100%;white-space:normal}
 
 .suite-dialog input:focus-visible{outline:2px solid #69d7e5;outline-offset:2px}
+.suite-diff-column-headings{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);background:#253b46;border:1px solid #50636e;border-radius:10px 10px 0 0;margin:0 5px 10px 0;font-size:.84rem;font-weight:700;color:#d2e8ee}
+.suite-diff-column-headings[hidden]{display:none}
+.suite-diff-column-headings span{padding:10px 12px;min-width:0}
+.suite-diff-column-headings span+span{border-left:1px solid #50636e}
+.suite-diff{display:grid;gap:10px;min-width:0}
+.suite-diff-item{border:1px solid #50636e;border-radius:10px;overflow:hidden;min-width:0}
+.suite-diff-item h3{font-size:.94rem;margin:0;padding:10px 12px;background:#253b46}
+.suite-diff-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);min-width:0}
+.suite-diff-value{padding:12px;min-width:0;overflow-wrap:anywhere;white-space:pre-wrap;font-size:.85rem}
+.suite-diff-value+ .suite-diff-value{border-left:1px solid #50636e}
+.suite-diff-value strong{display:none;margin-bottom:5px;font-size:.79rem;color:#a9cbd4}
+.suite-diff-missing{color:#aabdc6;font-style:italic}
+.suite-diff-changes{display:grid;gap:8px;padding:12px}
+.suite-diff-change{display:grid;gap:3px;font-size:.86rem;overflow-wrap:anywhere}
+.suite-diff-change strong{color:#a9cbd4;font-size:.8rem}
+.suite-diff-change span{white-space:pre-wrap}
+@media(max-width:550px){.suite-dialog{padding:16px}.suite-diff-column-headings{display:none}.suite-diff-pair{grid-template-columns:minmax(0,1fr)}.suite-diff-value strong{display:block}.suite-diff-value+.suite-diff-value{border-left:0;border-top:1px solid #50636e}}
 .suite-sync-feedback[hidden]{display:none!important}.suite-sync-feedback{margin:8px 0 12px;color:var(--muted);font-size:.93rem;line-height:1.4}
 .suite-signin-dialog{max-width:min(440px,calc(100vw - 36px));padding:25px;border:1px solid var(--accent);border-radius:12px;background:var(--panel);color:var(--text);box-shadow:0 20px 60px #0009}.suite-signin-dialog::backdrop{background:#071421b8}.suite-signin-dialog h2{margin:0 0 12px;font-size:1.25rem}.suite-signin-dialog p{line-height:1.55}.suite-signin-dialog a{display:inline-block;margin-top:12px;padding:10px 14px;border:1px solid var(--accent);border-radius:7px;color:var(--accent);text-decoration:none}.suite-signin-dialog a:hover,.suite-signin-dialog a:focus-visible{background:rgba(96,151,172,.18)}
 
@@ -861,19 +885,43 @@ body{max-width:none;margin:0;padding:0;min-height:100vh}
 @media(max-width:650px){.heat-area{height:310px}.heat-tile strong,.heat-tile span{font-size:10px}}
 __SUITE_BUTTON_CSS__
 __SUITE_BANNER_CSS__
-</style></head><body><div class="suite-ambient suite-ambient-one" aria-hidden="true"></div><div class="suite-ambient suite-ambient-two" aria-hidden="true"></div>__SUITE_BANNER_HTML__<main class="stocks-content suite-content"><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button class="ui-button" id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><button class="ui-button" id="watchlist-save" type="button">Save Changes</button><button class="ui-button" id="watchlist-new" type="button">Save As New</button><button class="ui-button" id="watchlist-restore" type="button">Restore Watchlist</button><button class="ui-button" id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><div id="suite-sync-status" class="suite-sync-feedback" role="status" aria-live="polite" hidden></div><p id="message" class="muted">Symbol edits require Save Changes or Save As New. Restore Watchlist discards unsaved edits. Quotes refresh on demand.</p><div class="table-toolbar"><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label><label class="market-control" for="market-select">Market <select id="market-select" aria-label="Market selection"><option value="sp500">S&amp;P 500 · Top 30</option><option value="nasdaq100">NASDAQ-100 · Top 30</option><option value="dow30">Dow Jones · 30</option></select></label><div class="heat-switch"><label for="heat-view">View</label><select id="heat-view" aria-label="Quote display"><option value="table">Table</option><option value="heatmap">Heatmap</option></select></div></div><section id="heat-panel" class="heat-panel" hidden aria-label="Watchlist heatmap"><header class="heat-panel-header"><div class="heat-panel-heading"><span class="heat-panel-kicker">Market overview</span><span id="heat-panel-title" class="heat-panel-title">Default Watchlist</span></div><p id="heat-status" class="muted" role="status"></p></header><div class="heat-weight-control"><label for="heat-weight">Tile weighting</label><span class="heat-weight-note">Balanced</span><input id="heat-weight" type="range" min="0.50" max="1.00" step="0.05" value="0.65" aria-label="Heatmap market capitalization weighting exponent"><output id="heat-weight-value" for="heat-weight" class="heat-weight-value">0.65</output><span class="heat-weight-note">Exact market cap (1.00)</span></div><div id="heat-area" class="heat-area" aria-label="Market-capitalization weighted tiles with adjustable size compression"></div><div id="heat-tip" class="heat-tip" role="tooltip" hidden></div><div class="heat-panel-foot"><p class="muted" id="heat-weight-description">Tile area: adjusted market cap (exponent 0.65) • Color: regular-session percent change from previous close</p></div><div id="heat-missing" class="heat-missing"></div></section><section class="table-panel" id="heat-table-panel" aria-label="Stock quotes table"><div class="table-panel-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details></div><div class="tablewrap" id="heat-tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div></section><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
-</main><dialog id="suite-dialog" class="suite-dialog" tabindex="-1" aria-labelledby="suite-dialog-title"><h2 id="suite-dialog-title"></h2><p id="suite-dialog-message"></p><input id="suite-dialog-input" type="text" maxlength="60" hidden aria-label="New watchlist name"><div class="suite-dialog-actions"><button class="ui-button" id="suite-dialog-cancel" type="button">Cancel</button><button class="ui-button" id="suite-dialog-ok" type="button">OK</button></div></dialog><script>__SUITE_STATUS_JS__
+</style></head><body><div class="suite-ambient suite-ambient-one" aria-hidden="true"></div><div class="suite-ambient suite-ambient-two" aria-hidden="true"></div>__SUITE_BANNER_HTML__<main class="stocks-content suite-content"><div class="controls"><input id="symbols" aria-label="Comma-separated symbols" spellcheck="false"><button class="ui-button" id="refresh">Refresh quotes</button><span id="fetch-status" class="fetch-status" role="status" aria-live="polite"></span><label class="refresh-label" for="refresh-interval">Auto refresh</label><select id="refresh-interval" aria-label="Automatic refresh interval"><option value="0">Never</option><option value="5">5 seconds</option><option value="30">30 seconds</option><option value="60">1 minute</option><option value="300">5 minutes</option></select></div><div class="watchlist-controls"><button class="ui-button" id="watchlist-save" type="button">Save Changes</button><button class="ui-button" id="watchlist-new" type="button">Save As New</button><button class="ui-button" id="watchlist-restore" type="button">Restore Watchlist</button><button class="ui-button" id="watchlist-delete" type="button">Delete List</button><span id="watchlist-status" role="status" aria-live="polite"></span></div><p id="message" class="muted">Symbol edits require Save Changes or Save As New. Restore Watchlist discards unsaved edits. Quotes refresh on demand.</p><div class="table-toolbar"><label class="research-control" for="research-site">Symbol links <select id="research-site" aria-label="Stock symbol link destination"><option value="google">Google Finance</option><option value="stockanalysis">Stock Analysis</option><option value="corporate">Corporate Website</option><option value="ir">Investor Relations</option></select></label><label class="market-control" for="market-select">Market <select id="market-select" aria-label="Market selection"><option value="sp500">S&amp;P 500 · Top 30</option><option value="nasdaq100">NASDAQ-100 · Top 30</option><option value="dow30">Dow Jones · 30</option></select></label><div class="heat-switch"><label for="heat-view">View</label><select id="heat-view" aria-label="Quote display"><option value="table">Table</option><option value="heatmap">Heatmap</option></select></div></div><section id="heat-panel" class="heat-panel" hidden aria-label="Watchlist heatmap"><header class="heat-panel-header"><div class="heat-panel-heading"><span class="heat-panel-kicker">Market overview</span><span id="heat-panel-title" class="heat-panel-title">Default Watchlist</span></div><p id="heat-status" class="muted" role="status"></p></header><div class="heat-weight-control"><label for="heat-weight">Tile weighting</label><span class="heat-weight-note">Balanced</span><input id="heat-weight" type="range" min="0.50" max="1.00" step="0.05" value="0.65" aria-label="Heatmap market capitalization weighting exponent"><output id="heat-weight-value" for="heat-weight" class="heat-weight-value">0.65</output><span class="heat-weight-note">Exact market cap (1.00)</span></div><div id="heat-area" class="heat-area" aria-label="Market-capitalization weighted tiles with adjustable size compression"></div><div id="heat-tip" class="heat-tip" role="tooltip" hidden></div><div class="heat-panel-foot"><p class="muted" id="heat-weight-description">Tile area: adjusted market cap (exponent 0.65) • Color: regular-session percent change from previous close</p></div><div id="heat-missing" class="heat-missing"></div></section><section class="table-panel" id="heat-table-panel" aria-label="Stock quotes table"><div class="table-panel-toolbar"><details class="column-settings"><summary>Columns</summary><div class="column-menu" id="column-menu"></div></details></div><div class="tablewrap" id="heat-tablewrap"><table id="quotes-table"><thead><tr><th data-sort="symbol" tabindex="0" role="button" aria-sort="none">Symbol</th><th data-sort="exchange" tabindex="0" role="button" aria-sort="none">Exchange</th><th class="optional" data-sort="name" tabindex="0" role="button" aria-sort="none">Name</th><th class="num" data-sort="display_price" tabindex="0" role="button" aria-sort="none">Price</th><th class="num extended-column" data-sort="extended_price" tabindex="0" role="button" aria-sort="none" id="extended-heading">After-hours Price</th><th class="num" data-sort="change" tabindex="0" role="button" aria-sort="none" id="change-heading">Change $</th><th class="num" data-sort="change_percent" tabindex="0" role="button" aria-sort="none" id="change-percent-heading">Change %</th><th class="num" data-sort="day_position" tabindex="0" role="button" aria-sort="none">Day Range</th><th class="num" data-sort="week_52_position" tabindex="0" role="button" aria-sort="none">52-Week Range</th></tr></thead><tbody id="rows"></tbody></table></div></section><footer class="muted"><details><summary>About / Data Notes</summary><div class="notes-content">Click the star beside a symbol to toggle persistent pale-yellow highlighting across watchlists and sorting; price momentum colors remain visible. Price text color reflects short-term momentum between distinct quotes. After-hours text color reflects the percentage difference from the regular close (premarket from the previous close). Green indicates above the close; red indicates below. Neutral text color when an extended quote is unavailable or matches the close to the displayed cent. Range bars show the low-to-high span, with a diamond marking the displayed price (clamped to the bar if outside the range). Day Range uses the latest regular-session high/low (previous session before market opens); 52-Week Range uses available daily bars over the past year. Price always shows the regular-session value; the separate After-hours Price (or Premarket Price) column shows an extended-hours 1-minute bar close only when available, <strong>not guaranteed live trade quotes</strong>. Change $ and Change % follow the active session: extended price versus the regular Price column before/after market hours, and regular price versus the previous close during normal hours. If extended prices are unavailable, the session changes are blank. Blank means no applicable session price was returned. Data may be delayed, incomplete, or unavailable. Quotes are for personal informational use. Endpoint: <code>/api/quotes?symbols=MU,NVDA</code>.</div></details></footer>
+</main><dialog id="suite-dialog" class="suite-dialog" tabindex="-1" aria-labelledby="suite-dialog-title"><h2 id="suite-dialog-title"></h2><p id="suite-dialog-message"></p><div id="suite-dialog-column-headings" class="suite-diff-column-headings" hidden><span>This browser</span><span>Saved account</span></div><div id="suite-dialog-diff" hidden></div><input id="suite-dialog-input" type="text" maxlength="60" hidden aria-label="New watchlist name"><div class="suite-dialog-actions"><button class="ui-button" id="suite-dialog-cancel" type="button">Cancel</button><button class="ui-button" id="suite-dialog-ok" type="button">OK</button></div></dialog><script>__SUITE_STATUS_JS__
 // In-page modal uses the same dark palette as the dashboard.
 const suiteDialog=document.getElementById('suite-dialog');
 const suiteDialogTitle=document.getElementById('suite-dialog-title');
 const suiteDialogMessage=document.getElementById('suite-dialog-message');
+const suiteDialogDiff=document.getElementById('suite-dialog-diff');
+const suiteDialogColumnHeadings=document.getElementById('suite-dialog-column-headings');
 const suiteDialogInput=document.getElementById('suite-dialog-input');
 const suiteDialogOK=document.getElementById('suite-dialog-ok');
 const suiteDialogCancel=document.getElementById('suite-dialog-cancel');
-function suiteAsk(message,kind='confirm'){
+function suiteAsk(message,kind='confirm',diffRows=null){
  return new Promise(resolve=>{
-  suiteDialogTitle.textContent=kind==='text'?'New watchlist':'Confirm changes';
+  suiteDialogTitle.textContent=kind==='text'?'New watchlist':diffRows?'Review account differences':'Confirm changes';
   suiteDialogMessage.textContent=message;
+  suiteDialogDiff.replaceChildren();suiteDialogDiff.hidden=!diffRows;
+  suiteDialogColumnHeadings.hidden=!diffRows;
+  suiteDialogCancel.textContent=diffRows?'Keep Browser Settings':'Cancel';
+  suiteDialogOK.textContent=diffRows?'Restore Account Settings':'OK';
+  if(diffRows){
+   const list=document.createElement('div');list.className='suite-diff';
+   for(const row of diffRows){
+    const item=document.createElement('section');item.className='suite-diff-item';
+    const heading=document.createElement('h3');heading.textContent=row.label;item.appendChild(heading);
+    const pair=document.createElement('div');pair.className='suite-diff-pair';
+    for(const [label,value] of [['This browser',row.browser],['Saved account',row.account]]){
+     const side=document.createElement('div');side.className='suite-diff-value';
+     const title=document.createElement('strong');title.textContent=label;side.appendChild(title);
+     const detail=document.createElement('span');detail.textContent=value===null?'Not present':value;
+     if(value===null)detail.className='suite-diff-missing';side.appendChild(detail);
+     pair.appendChild(side);
+    }
+    item.appendChild(pair);
+    list.appendChild(item);
+   }
+   suiteDialogDiff.appendChild(list);
+  }
   suiteDialogInput.hidden=kind!=='text';
   suiteDialogInput.value='';
   let settled=false;
@@ -909,25 +957,53 @@ let marketMode=Object.hasOwn(marketNames,localStorage.getItem('mauristocks_marke
 const dynamicName="Most Active — Top 20 (Dynamic)";
 const wlKey='mauri_stock_watchlists_v1', activeKey='mauri_stock_active_watchlist';
 const flagStorageKey='mauri_stock_flagged_symbols_v1';
+ // In-memory pending preferences. Browser storage changes ONLY on explicit save.
+ const pendingSettings=new Map();
+ let accountSyncNeeded=false,settingsSaveBusy=false;
+ function stageSetting(key,value){
+  const text=String(value);
+  if(localStorage.getItem(key)===text)pendingSettings.delete(key);
+  else pendingSettings.set(key,text);
+  updateWatchlistButtons();
+  suiteFeedback(hasUnsavedChanges()?'Unsaved changes · Click Save Changes.':'');
+ }
+ function hasUnsavedChanges(){return pendingSettings.size>0||watchlistChanged()}
+ window.addEventListener('beforeunload',event=>{
+  if(!hasUnsavedChanges())return;
+  event.preventDefault();event.returnValue='';
+ });
 function loadFlags(){try{const x=JSON.parse(localStorage.getItem(flagStorageKey));if(Array.isArray(x))return new Set(x.filter(s=>typeof s==='string'&&/^[A-Z0-9][A-Z0-9.^=-]{0,17}$/.test(s)));}catch(e){}return new Set()}
 const flaggedSymbols=loadFlags();
-function toggleFlag(symbol){if(flaggedSymbols.has(symbol))flaggedSymbols.delete(symbol);else flaggedSymbols.add(symbol);try{localStorage.setItem(flagStorageKey,JSON.stringify([...flaggedSymbols].sort()));}catch(e){}renderQuotes();queueSuiteSave()}
+function toggleFlag(symbol){if(flaggedSymbols.has(symbol))flaggedSymbols.delete(symbol);else flaggedSymbols.add(symbol);stageSetting(flagStorageKey,JSON.stringify([...flaggedSymbols].sort()));renderQuotes()}
 
 function normalizeSymbols(value){return [...new Set(String(value).toUpperCase().split(',').map(x=>x.trim()).filter(Boolean))].join(',')}
 function loadLists(){try{const value=JSON.parse(localStorage.getItem(wlKey));if(value&&typeof value==='object'&&!Array.isArray(value))return Object.fromEntries(Object.entries(value).filter(([k,v])=>k&&k!=='Default'&&typeof v==='string'));}catch(e){}return {}}
 let watchlists=loadLists();
 // Migrate the v16 custom watchlist, preserving its symbols on first launch.
-if(localStorage.getItem(wlKey)===null){const legacy=localStorage.getItem('mauri_stock_symbols');if(legacy&&normalizeSymbols(legacy)!==defaults){watchlists['My Watchlist']=normalizeSymbols(legacy)}localStorage.setItem(wlKey,JSON.stringify(watchlists))}
+if(localStorage.getItem(wlKey)===null){const legacy=localStorage.getItem('mauri_stock_symbols');if(legacy&&normalizeSymbols(legacy)!==defaults){watchlists['My Watchlist']=normalizeSymbols(legacy)}pendingSettings.set(wlKey,JSON.stringify(watchlists))}
 let activeWatchlist=localStorage.getItem(activeKey)|| (watchlists['My Watchlist']?'My Watchlist':'Default');
 if(activeWatchlist!=='Default'&&activeWatchlist!==dynamicName&&!Object.hasOwn(watchlists,activeWatchlist))activeWatchlist='Default';
-function persistLists(){localStorage.setItem(wlKey,JSON.stringify(watchlists))}
+function persistLists(){stageSetting(wlKey,JSON.stringify(watchlists))}
 function savedSymbols(){return activeWatchlist==='Default'?defaults:activeWatchlist===dynamicName?'':watchlists[activeWatchlist]||''}
 function watchlistChanged(){return marketMode==='watchlist'&&activeWatchlist!==dynamicName&&normalizeSymbols(input.value)!==normalizeSymbols(savedSymbols())}
-function updateWatchlistButtons(){const indexed=marketMode!=='watchlist',readOnly=activeWatchlist==='Default'||activeWatchlist===dynamicName,changed=watchlistChanged();wlSave.disabled=indexed||readOnly||!changed;wlNew.disabled=indexed||!changed;wlRestore.disabled=indexed||!changed;wlDelete.disabled=indexed||readOnly;input.readOnly=indexed||activeWatchlist===dynamicName}
+function updateWatchlistButtons(){
+ const indexed=marketMode!=='watchlist',readOnly=activeWatchlist==='Default'||activeWatchlist===dynamicName,changed=watchlistChanged();
+ const committableSymbols=changed&&!indexed&&!readOnly;
+ wlSave.disabled=settingsSaveBusy||!(committableSymbols||pendingSettings.size>0||accountSyncNeeded);
+ wlNew.disabled=settingsSaveBusy||indexed||!changed;
+ wlRestore.disabled=indexed||!changed;
+ wlDelete.disabled=settingsSaveBusy||indexed||readOnly;
+ input.readOnly=indexed||activeWatchlist===dynamicName;
+}
 function marketChoice(){return marketMode==='watchlist'?'list:'+activeWatchlist:marketMode}
 function updateMarketMenu(){marketSelect.replaceChildren();for(const n of ['Default',...Object.keys(watchlists).sort((a,b)=>a.localeCompare(b)),dynamicName]){const op=document.createElement('option');op.value='list:'+n;op.textContent=n==='Default'?'Default (20 symbols)':n;marketSelect.appendChild(op)}for(const [key,label] of Object.entries(marketNames)){const op=document.createElement('option');op.value=key;op.textContent=label;marketSelect.appendChild(op)}marketSelect.value=marketChoice();updateWatchlistButtons()}
-function selectWatchlist(name,fetchNow=true){if(name!=='Default'&&name!==dynamicName&&!Object.hasOwn(watchlists,name))return;activeWatchlist=name;input.value=savedSymbols();localStorage.setItem(activeKey,name);localStorage.setItem('mauri_stock_symbols',input.value);updateMarketMenu();wlStatus.textContent='';if(fetchNow)refreshQuotes()}
-selectWatchlist(activeWatchlist,false);
+function selectWatchlist(name,fetchNow=true,markPending=true){
+ if(name!=='Default'&&name!==dynamicName&&!Object.hasOwn(watchlists,name))return;
+ activeWatchlist=name;input.value=savedSymbols();
+ if(markPending){stageSetting(activeKey,name);stageSetting('mauri_stock_symbols',input.value)}
+ updateMarketMenu();if(fetchNow)refreshQuotes()
+}
+selectWatchlist(activeWatchlist,false,false);
 marketSelect.addEventListener('change',async()=>{
  const next=marketSelect.value;
  if(button.disabled){marketSelect.value=marketChoice();return}
@@ -939,19 +1015,19 @@ marketSelect.addEventListener('change',async()=>{
  }else if(Object.hasOwn(marketNames,next)){
   marketMode=next;input.value='';
  }else{marketSelect.value=marketChoice();return}
- localStorage.setItem('mauristocks_market_v1',marketMode);
- updateMarketMenu();queueSuiteSave();
+ stageSetting('mauristocks_market_v1',marketMode);
+ updateMarketMenu();
  quotes=[];renderQuotes();capKey='';layoutKey='';paintHeatmap();
  message.textContent='Loading '+(marketMode==='watchlist'?activeWatchlist:marketNames[marketMode])+'…';
  refreshQuotes();
 });
 // Only explicit Save Changes / Save As New persist edits to watchlist symbols.
-input.addEventListener('input',updateWatchlistButtons);
-input.addEventListener('change',updateWatchlistButtons);
-wlSave.addEventListener('click',()=>{if(wlSave.disabled)return;const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter at least one symbol before saving.';return}watchlists[activeWatchlist]=symbols;input.value=symbols;persistLists();localStorage.setItem('mauri_stock_symbols',symbols);updateWatchlistButtons();wlStatus.textContent='Saved changes to '+activeWatchlist+'.';queueSuiteSave()});
-wlRestore.addEventListener('click',()=>{if(wlRestore.disabled)return;input.value=savedSymbols();updateWatchlistButtons();wlStatus.textContent='Restored saved symbols.';refreshQuotes()});
-wlNew.addEventListener('click',async()=>{if(wlNew.disabled)return;const name=await suiteAsk('Name the new watchlist:','text');if(name===null)return;const n=name.trim();if(!n||n.length>60||(n.toLowerCase()==='default'||n.toLowerCase()===dynamicName.toLowerCase())||Object.hasOwn(marketNames,n.toLowerCase())){wlStatus.textContent='Choose a valid name (up to 60 characters).';return}if(Object.keys(watchlists).some(k=>k.toLowerCase()===n.toLowerCase())){wlStatus.textContent='That watchlist already exists.';return}const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[n]=symbols;persistLists();selectWatchlist(n,false);wlStatus.textContent='Saved '+n+'.';queueSuiteSave()});
-wlDelete.addEventListener('click',async()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName||button.disabled)return;if(!(await suiteAsk('Delete watchlist "'+activeWatchlist+'"?')))return;delete watchlists[activeWatchlist];persistLists();selectWatchlist('Default');wlStatus.textContent='Deleted watchlist.';queueSuiteSave()});
+input.addEventListener('input',()=>{updateWatchlistButtons();suiteFeedback(hasUnsavedChanges()?'Unsaved changes · Click Save Changes.':'')});
+input.addEventListener('change',()=>{updateWatchlistButtons();suiteFeedback(hasUnsavedChanges()?'Unsaved changes · Click Save Changes.':'')});
+wlSave.addEventListener('click',()=>{void commitSettings()});
+wlRestore.addEventListener('click',()=>{if(wlRestore.disabled)return;input.value=savedSymbols();updateWatchlistButtons();suiteFeedback(hasUnsavedChanges()?'Unsaved changes · Click Save Changes.':'Watchlist symbols restored.');refreshQuotes()});
+wlNew.addEventListener('click',async()=>{if(wlNew.disabled)return;const name=await suiteAsk('Name the new watchlist:','text');if(name===null)return;const n=name.trim();if(!n||n.length>60||(n.toLowerCase()==='default'||n.toLowerCase()===dynamicName.toLowerCase())||Object.hasOwn(marketNames,n.toLowerCase())){wlStatus.textContent='Choose a valid name (up to 60 characters).';return}if(Object.keys(watchlists).some(k=>k.toLowerCase()===n.toLowerCase())){wlStatus.textContent='That watchlist already exists.';return}const symbols=normalizeSymbols(input.value);if(!symbols){wlStatus.textContent='Enter symbols before saving.';return}watchlists[n]=symbols;persistLists();selectWatchlist(n,false);suiteFeedback('New watchlist ready to save.');await commitSettings()});
+wlDelete.addEventListener('click',async()=>{if(activeWatchlist==='Default'||activeWatchlist===dynamicName||button.disabled)return;if(!(await suiteAsk('Delete watchlist "'+activeWatchlist+'"?')))return;delete watchlists[activeWatchlist];persistLists();selectWatchlist('Default');suiteFeedback('Watchlist deletion ready to save.');await commitSettings()});
 function money(n,currency){return n==null?'—':new Intl.NumberFormat('en-US',{style:'currency',currency:currency||'USD',maximumFractionDigits:2}).format(n)}
 function cell(tr,value,cls){let td=document.createElement('td');td.textContent=value; if(cls)td.className=cls;tr.appendChild(td);return td}
 function rangeCell(tr,low,high,price,currency){
@@ -1074,7 +1150,7 @@ const researchSelect=document.getElementById('research-site');
 const researchSites=new Set(['google','stockanalysis','corporate','ir']);
 const savedResearchSite=localStorage.getItem('mauri_research_site');
 if(researchSites.has(savedResearchSite))researchSelect.value=savedResearchSite;
-researchSelect.addEventListener('change',()=>{localStorage.setItem('mauri_research_site',researchSelect.value);renderQuotes();paintHeatmap();queueSuiteSave()});
+researchSelect.addEventListener('change',()=>{stageSetting('mauri_research_site',researchSelect.value);renderQuotes();paintHeatmap()});
 const irURLs={
  MU:'https://investors.micron.com', AMAT:'https://ir.appliedmaterials.com',
  LRCX:'https://investor.lamresearch.com', SPCX:'https://ir.spacex.com/',
@@ -1119,7 +1195,7 @@ try{
  if(p&&Array.isArray(p.hidden))colPrefs.hidden=p.hidden.filter(x=>typeof x==='string'&&x!=='symbol');
 }catch(e){}
 function saveColPrefs(){
- try{localStorage.setItem('mauristocks_columns_v1',JSON.stringify(colPrefs));queueSuiteSave()}catch(e){}
+ stageSetting('mauristocks_columns_v1',JSON.stringify(colPrefs))
 }
 function isColShown(i){return !colPrefs.hidden.includes(colSpecs[i][0])&&!(i===4&&colTable.classList.contains('regular-session'))}
 function applyColumns(){
@@ -1158,21 +1234,20 @@ heatWeightSlider.addEventListener('input',()=>{
  const next=heatWeightSlider.value;
  if(!validHeatExponent(next))return;
  heatExponent=Number(next);
- try{localStorage.setItem(heatWeightKey,next)}catch(_){}
+ stageSetting(heatWeightKey,next)
  updateHeatWeightLabels();
  paintHeatmap();
- queueSuiteSave();
 });
 let heatView=localStorage.getItem('mauristocks_view_v1')==='heatmap'?'heatmap':'table';
 let caps=new Map(),capKey='',capBusy=false,layoutKey='',tiles=new Map(),capCompleted=new Set(),capError='',capState='idle';
 const heatTip=document.getElementById('heat-tip');let heatTipTarget=null,heatTapTarget=null;
-function setHeatView(v){
+function setHeatView(v,markPending=false){
  heatView=v;hp.hidden=v!=='heatmap';tw.hidden=v!=='table';
  heatSelector.value=v;
- try{localStorage.setItem('mauristocks_view_v1',v)}catch(_){}
+ if(markPending)stageSetting('mauristocks_view_v1',v)
  if(v==='heatmap'){paintHeatmap();loadCaps()}else hideHeatTip()
 }
-heatSelector.addEventListener('change',()=>{setHeatView(heatSelector.value);queueSuiteSave()});
+heatSelector.addEventListener('change',()=>{setHeatView(heatSelector.value,true)});
 new ResizeObserver(()=>{if(heatView==='heatmap')for(const tile of tiles.values())fitHeatTileLabels(tile)}).observe(ha);
 function hideHeatTip(){heatTip.hidden=true;heatTipTarget=null;heatTapTarget=null}
 function showHeatTip(node,q,cap){
@@ -1422,8 +1497,8 @@ for(const h of sortHeaders){
  const activate=()=>{
   if(sortKey===h.dataset.sort)sortDirection=sortDirection==='asc'?'desc':'asc';
   else{sortKey=h.dataset.sort;sortDirection=numericKeys.has(sortKey)?'desc':'asc'}
-  localStorage.setItem('mauri_stock_sort',JSON.stringify({key:sortKey,direction:sortDirection}));
-  renderQuotes();queueSuiteSave();
+  stageSetting('mauri_stock_sort',JSON.stringify({key:sortKey,direction:sortDirection}));
+  renderQuotes();
  };
  h.querySelector('button').addEventListener('click',activate);
 }
@@ -1481,7 +1556,7 @@ async function refreshQuotes(){
   if(regularOnly && sortKey==='extended_price'){
    // Hidden columns should not control the visible ordering.
    sortKey='display_price';sortDirection='desc';
-   localStorage.setItem('mauri_stock_sort',JSON.stringify({key:sortKey,direction:sortDirection}));
+   stageSetting('mauri_stock_sort',JSON.stringify({key:sortKey,direction:sortDirection}));
   }
 
   // Session context is shown in the extended price header; changes have concise, consistent labels.
@@ -1504,15 +1579,15 @@ async function refreshQuotes(){
 }
 button.addEventListener('click',refreshQuotes);
 let refreshTimer=null;
-function setRefreshInterval(){
+function setRefreshInterval(markPending=false){
  if(refreshTimer!==null){clearInterval(refreshTimer);refreshTimer=null}
  const seconds=Number(intervalSelect.value);
- localStorage.setItem('mauri_stock_refresh_interval',String(seconds));
+ if(markPending)stageSetting('mauri_stock_refresh_interval',String(seconds));
  if(seconds>0)refreshTimer=setInterval(()=>{if(!document.hidden)refreshQuotes()},seconds*1000);
 }
 const savedInterval=localStorage.getItem('mauri_stock_refresh_interval');
 if(['0','5','30','60','300'].includes(savedInterval))intervalSelect.value=savedInterval;
-intervalSelect.addEventListener('change',()=>{setRefreshInterval();queueSuiteSave()});
+intervalSelect.addEventListener('change',()=>{setRefreshInterval(true)});
 setRefreshInterval();
 // Optional cross-subdomain persistence. Browser localStorage remains authoritative
 // until the user explicitly saves or loads; no background synchronization occurs.
@@ -1544,7 +1619,7 @@ function readSuiteHandoff(){
 readSuiteHandoff();
 
 const suiteKeys=[wlKey,activeKey,flagStorageKey,'mauri_stock_symbols','mauri_stock_sort','mauri_stock_refresh_interval','mauri_research_site','mauristocks_columns_v1','mauristocks_market_v1','mauristocks_view_v1',heatWeightKey];
-const syncStatus=document.getElementById('suite-sync-status');
+// Account/save feedback shares the status beside Save Changes.
 const suiteIdentityEl=document.getElementById('suite-auth-status');
 let suiteExpiresAt=0;
 let expiryCheckPending=false,expiryRetryAfter=0;
@@ -1572,15 +1647,13 @@ function updateSuiteAccountClock(){
  }
 }
 setInterval(updateSuiteAccountClock,1000);
-function suiteFeedback(text){syncStatus.textContent=text;syncStatus.hidden=!text}
+function suiteFeedback(text){wlStatus.textContent=text;wlStatus.hidden=!text}
 let suiteSignedIn=false;
 let suiteGuest='';
 let suiteRevision=null;
 let suiteInitialOverwriteApproved=false;
 let suiteAccountIdentity=null;
 let suiteSavePending=false;
-let suiteSaveQueued=false;
-let suiteSaveTimer=null;
 let suiteCheckedIdentity=null;
 let suiteAccountCheckPending=false;
 const syncEndpoint=suiteBase+'/api/storage/mauristocks';
@@ -1603,6 +1676,126 @@ function snapshotBrowserSettings(){
  const settings={};
  for(const key of suiteKeys){const value=localStorage.getItem(key);if(value!==null)settings[key]=value}
  return {schema:1,settings};
+}
+const suiteSettingLabels={
+ [activeKey]:'Selected watchlist',[flagStorageKey]:'Flagged symbols',
+ 'mauri_stock_symbols':'Last saved symbols','mauri_stock_sort':'Sort order',
+ 'mauri_stock_refresh_interval':'Auto refresh','mauri_research_site':'Symbol links',
+ 'mauristocks_columns_v1':'Visible columns','mauristocks_market_v1':'Market',
+ 'mauristocks_view_v1':'View',[heatWeightKey]:'Heatmap tile weighting'
+};
+function suiteListEntries(raw){
+ try{
+  const data=JSON.parse(raw);
+  if(!data||typeof data!=='object'||Array.isArray(data))return null;
+  if(!Object.entries(data).every(([key,value])=>key&&typeof value==='string'))return null;
+  return data;
+ }catch(_){return null}
+}
+// Compare symbols only within the same named watchlist.
+function suiteSymbolDelta(browser,account){
+ if(browser===null||account===null)return null;
+ const tokenize=value=>[...new Set(String(value).split(',').map(s=>s.trim().toUpperCase()).filter(Boolean))];
+ const b=tokenize(browser),a=tokenize(account);
+ const added=b.filter(symbol=>!a.includes(symbol)),removed=a.filter(symbol=>!b.includes(symbol));
+ if(!added.length&&!removed.length){
+  if(b.join(',')===a.join(','))return null;
+  return {browser:'Order differs: '+b.join(', '),account:'Order differs: '+a.join(', ')};
+ }
+ const count=(label,symbols)=>label+' ('+symbols.length+'): '+symbols.join(', ');
+ return {
+  browser:[...(added.length?[count('Added here',added)]:[]),...(removed.length?[count('Missing here',removed)]:[])].join('\n'),
+  account:[...(removed.length?[count('Added here',removed)]:[]),...(added.length?[count('Missing here',added)]:[])].join('\n')
+ };
+}
+function suiteListPresence(symbols){
+ if(symbols===null)return null;
+ const count=normalizeSymbols(symbols).split(',').filter(Boolean).length;
+ return 'Present ('+count+' symbol'+(count===1?'':'s')+')';
+}
+// Column preferences contain an array of hidden column IDs, not booleans.
+function suiteHiddenColumns(raw){
+ if(raw===null)return null;
+ try{
+  const parsed=JSON.parse(raw);
+  if(!parsed||typeof parsed!=='object'||Array.isArray(parsed)||!Array.isArray(parsed.hidden)||
+     !parsed.hidden.every(id=>typeof id==='string'))return null;
+  const known=new Set(colSpecs.map(spec=>spec[0]));
+  return [...new Set(parsed.hidden.filter(id=>id!=='symbol'&&known.has(id)))];
+ }catch(_){return null}
+}
+function suiteColumnDelta(browser,account){
+ const b=suiteHiddenColumns(browser),a=suiteHiddenColumns(account);
+ if(b===null||a===null)return null;
+ const browserNotes=[],accountNotes=[];
+ for(const [id,name] of colSpecs){
+  if(id==='symbol')continue;
+  const bh=b.includes(id),ah=a.includes(id);
+  if(bh===ah)continue;
+  browserNotes.push(name+': '+(bh?'hidden':'shown'));
+  accountNotes.push(name+': '+(ah?'hidden':'shown'));
+ }
+ if(!browserNotes.length)return null;
+ return {browser:browserNotes.join('\n'),account:accountNotes.join('\n')};
+}
+function suiteReadableSetting(key,value){
+ if(value===null)return null;
+ if(key==='mauri_stock_refresh_interval')return ({'0':'Never','5':'5 seconds','30':'30 seconds','60':'1 minute','300':'5 minutes'})[value]||value+' seconds';
+ if(key==='mauri_research_site')return ({google:'Google Finance',stockanalysis:'Stock Analysis',corporate:'Corporate Website',ir:'Investor Relations'})[value]||value;
+ if(key==='mauristocks_view_v1')return ({table:'Table',heatmap:'Heatmap'})[value]||value;
+ if(key==='mauristocks_market_v1')return ({watchlist:'Personal watchlists',...marketNames})[value]||value;
+ if(key==='mauri_stock_sort'||key==='mauristocks_columns_v1'||key===flagStorageKey){
+  try{
+   const parsed=JSON.parse(value);
+   if(key===flagStorageKey&&Array.isArray(parsed))return parsed.join(', ')||'(none)';
+   if(key==='mauri_stock_sort'&&parsed&&typeof parsed.key==='string')return parsed.key.replaceAll('_',' ')+' ('+(parsed.direction==='desc'?'descending':'ascending')+')';
+   if(key==='mauristocks_columns_v1'){
+    const hidden=suiteHiddenColumns(value);
+    if(hidden!==null)return hidden.length?'Hidden: '+hidden.map(id=>colSpecs.find(spec=>spec[0]===id)?.[1]||id).join(', '):'All columns shown';
+   }
+  }catch(_){}
+ }
+ return value;
+}
+function suiteSettingsDiff(browser,account){
+ const rows=[];
+ const browserLists=suiteListEntries(browser[wlKey]??'{}'),accountLists=suiteListEntries(account[wlKey]??'{}');
+ for(const key of suiteKeys){
+  const b=browser[key]??null,a=account[key]??null;
+  // Last saved symbols is a legacy mirror, never an independent watchlist.
+  if(key==='mauri_stock_symbols')continue;
+  if(key===wlKey){
+   if(browserLists&&accountLists){
+    for(const name of [...new Set([...Object.keys(browserLists),...Object.keys(accountLists)])].sort()){
+     if(name==='Default'||name===dynamicName)continue;
+     const local=Object.hasOwn(browserLists,name)?browserLists[name]:null;
+     const remote=Object.hasOwn(accountLists,name)?accountLists[name]:null;
+     if(local===null&&remote===null)continue;
+     if(local===null||remote===null){
+      rows.push({label:'Watchlist: '+name,browser:suiteListPresence(local),account:suiteListPresence(remote)});
+      continue;
+     }
+     const delta=suiteSymbolDelta(local,remote);
+     if(delta)rows.push({label:'Watchlist: '+name,browser:delta.browser,account:delta.account});
+    }
+   }else if(b!==a){
+    rows.push({label:'Watchlists (unrecognized format)',browser:b,account:a});
+   }
+   continue;
+  }
+  if(b===a)continue;
+  let delta=key==='mauristocks_columns_v1'?suiteColumnDelta(b,a):null;
+  if(key===flagStorageKey&&b!==null&&a!==null){
+   try{
+    const flagsB=JSON.parse(b),flagsA=JSON.parse(a);
+    if(Array.isArray(flagsB)&&Array.isArray(flagsA)&&flagsB.every(s=>typeof s==='string')&&flagsA.every(s=>typeof s==='string')){
+     delta=suiteSymbolDelta(flagsB.join(','),flagsA.join(','));
+    }
+   }catch(_){}
+  }
+  rows.push({label:suiteSettingLabels[key]||key,browser:delta?.browser??suiteReadableSetting(key,b),account:delta?.account??suiteReadableSetting(key,a)});
+ }
+ return rows;
 }
 function validSuiteSettings(data){
  return data && data.schema===1 && data.settings && typeof data.settings==='object' &&
@@ -1652,47 +1845,85 @@ async function refreshSuiteSession(){
   if(suiteAccountIdentity!==identity){suiteRevision=null;suiteInitialOverwriteApproved=false;suiteAccountIdentity=identity}
   suiteSignedIn=true;
   updateSuiteAccountClock();
-  suiteFeedback('');
+  // Revalidating the session must not erase pending or confirmed save feedback.
   void reconcileAccountOnSignIn(identity);
  }catch(e){suiteFeedback('Account connection unavailable; browser settings remain local.')}
 }
-function queueSuiteSave(){
- if(!suiteSignedIn)return;
- suiteSaveQueued=true;
- if(suiteSaveTimer!==null)clearTimeout(suiteSaveTimer);
- suiteSaveTimer=setTimeout(()=>{suiteSaveTimer=null;void flushSuiteSave()},400);
-}
-async function flushSuiteSave(){
- if(!suiteSignedIn || suiteSavePending || !suiteSaveQueued)return;
- suiteSaveQueued=false;
- await saveWatchlistToAccount();
- if(suiteSaveQueued)queueSuiteSave();
+// Save Changes is the single commit point for all settings. User events
+// only update pendingSettings and the live UI; they do not write storage.
+async function commitSettings(){
+ if(settingsSaveBusy)return;
+ const changedSymbols=watchlistChanged();
+ if(changedSymbols){
+  if(marketMode!=='watchlist'||activeWatchlist==='Default'||activeWatchlist===dynamicName){
+   suiteFeedback('Default symbols are protected; use Save As New for a new list.');return;
+  }
+  const symbols=normalizeSymbols(input.value);
+  if(!symbols){suiteFeedback('Enter at least one symbol before saving.');return}
+  watchlists[activeWatchlist]=symbols;input.value=symbols;
+  persistLists();stageSetting('mauri_stock_symbols',symbols);
+ }
+ if(!pendingSettings.size&&!accountSyncNeeded)return;
+ settingsSaveBusy=true;updateWatchlistButtons();
+ const changes=new Map(pendingSettings);
+ const backup=new Map();
+ try{
+  for(const [key,value] of changes){
+   backup.set(key,localStorage.getItem(key));
+   localStorage.setItem(key,value);
+  }
+ }catch(error){
+  // Restore every key if a browser storage write fails mid-commit.
+  for(const [key,old] of backup)try{
+   if(old===null)localStorage.removeItem(key);else localStorage.setItem(key,old);
+  }catch(_){}
+  suiteFeedback('Browser save failed; your pending changes are still here.');
+  settingsSaveBusy=false;updateWatchlistButtons();return;
+ }
+ for(const [key,value] of changes)if(pendingSettings.get(key)===value)pendingSettings.delete(key);
+ suiteFeedback('Settings saved in this browser.');
+ if(!suiteSignedIn){
+  accountSyncNeeded=false;
+  suiteFeedback('Settings saved to browser only. Sign in to save to Homepage.');
+ }else{
+  accountSyncNeeded=true;
+  const saved=await saveWatchlistToAccount();
+  accountSyncNeeded=!saved;
+  if(saved&&hasUnsavedChanges())suiteFeedback('Saved to browser and account; newer edits are still unsaved.');
+ }
+ settingsSaveBusy=false;updateWatchlistButtons();
 }
 async function saveWatchlistToAccount(){
- if(!suiteSignedIn || suiteSavePending)return;
+ if(!suiteSignedIn||suiteSavePending)return false;
  suiteSavePending=true;
  try{
+  suiteFeedback('Saving settings to your account…');
   if(suiteRevision===null){
    const existing=await suiteRecord();
    if(existing && !validSuiteSettings(existing.data))throw Error('Account data has an unsupported format; no server change made.');
    if(existing && !suiteInitialOverwriteApproved){
-    if(!(await suiteAsk('Replace saved account settings with this browser’s current watchlists and preferences? This approval enables subsequent watchlist saves.'))){
-     suiteFeedback('Settings saved in browser only; account remains unchanged.');return;
+    if(!(await suiteAsk('Replace saved account settings with this browser’s current watchlists and preferences? This approval enables subsequent saves.'))){
+     suiteFeedback('Browser saved; account unchanged. Click Save Changes to retry.');return false;
     }
     suiteInitialOverwriteApproved=true;
    }
    suiteRevision=existing?existing.revision:0;
   }
   const response=await suiteRequest('/api/storage/mauristocks',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({revision:suiteRevision,data:snapshotBrowserSettings()})});
-  if(response.status===409){suiteRevision=null;suiteInitialOverwriteApproved=false;throw Error('Account changed on another device. Browser change retained; review account data before retrying.')}
-  if(!response.ok)throw Error('Account save failed (HTTP '+response.status+'); browser change retained.');
+  if(response.status===409){suiteRevision=null;suiteInitialOverwriteApproved=false;throw Error('Account changed on another device (409). Browser settings retained; review account before retrying.')}
+  if(!response.ok)throw Error('Browser saved; account save failed (HTTP '+response.status+').');
   const saved=await response.json();suiteRevision=saved.revision;
-  suiteFeedback('Settings saved to your account.');
- }catch(e){suiteFeedback(e.message)}finally{suiteSavePending=false}
+  suiteFeedback('Settings saved to browser and account.');
+  return true;
+ }catch(e){
+  suiteFeedback(e.message+' Click Save Changes to retry.');
+  return false;
+ }finally{suiteSavePending=false}
 }
 // Reconcile account settings once per identity. Conflicts require consent.
 async function reconcileAccountOnSignIn(identity){
  if(!suiteSignedIn||suiteCheckedIdentity===identity||suiteAccountCheckPending)return;
+ if(hasUnsavedChanges()){suiteFeedback('Unsaved edits · Save Changes before reviewing account settings.');return}
  suiteAccountCheckPending=true;
  try{
   const existing=await suiteRecord();
@@ -1703,10 +1934,13 @@ async function reconcileAccountOnSignIn(identity){
    suiteCheckedIdentity=identity;return;
   }
   const browser=snapshotBrowserSettings().settings,account=existing.data.settings;
-  const same=suiteKeys.every(key=>(browser[key]??null)===(account[key]??null));
+  const differences=suiteSettingsDiff(browser,account);
   suiteCheckedIdentity=identity;
-  if(same){suiteRevision=existing.revision;suiteInitialOverwriteApproved=true;return}
-  if(!(await suiteAsk('Saved account settings differ from this browser. Restore account watchlists and preferences here? Cancel preserves browser settings.')))return;
+  // Legacy mirrors or JSON formatting can diverge without a user-visible change.
+  if(!differences.length){suiteRevision=existing.revision;suiteInitialOverwriteApproved=true;return}
+  if(!(await suiteAsk('These settings differ. Review them before choosing which complete set to keep. Restoring replaces this browser’s saved settings; keeping the browser leaves your account unchanged.','confirm',differences))){
+   accountSyncNeeded=true;updateWatchlistButtons();suiteFeedback('Browser settings kept; account unchanged. Click Save Changes to save to account.');return;
+  }
   const backup={};for(const key of suiteKeys)backup[key]=localStorage.getItem(key);
   try{
    for(const key of suiteKeys)localStorage.removeItem(key);
