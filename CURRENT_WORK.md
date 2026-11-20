@@ -1,5 +1,7 @@
 # Current work — MauriStocks
 
+**Ambient correction:** Initial owner Safari screenshot revealed a flat background: the old opaque `:root`/`html` canvas obscured shared fixed teal shapes with `z-index:-1`. This draft now leaves the document root transparent while preserving `body`'s semantic `--bg` color, so the unchanged shared Homepage glow can be visible. Regression assertions guard against reintroducing opaque root paint. Awaiting owner Safari confirmation.
+
 **Active:** [Issue #31](https://github.com/richard-mauri/mauristocks/issues/31), branch `ui/31-shared-banner`, [draft PR #32](https://github.com/richard-mauri/mauristocks/pull/32) targeting merged `main` `bf7be70b06203fe1bbbe7aceb5927e5e074e9feb`. Homepage shared foundation draft PR #55 remains open; MauriStocks pins immutable module `v0.0.0-20261120172629-80deb3b13f6a`.
 
 **Candidate:** Replace only the custom masthead with the common, viewport-aligned suite banner and Homepage's exact original two blurred teal ambient shapes. Preserve the app title and executable version/build, same-tab Homepage link, and verified Homepage identity via the existing `suite-auth-status` JavaScript hook. Tanner JPEG is embedded and served locally. The shared button contract and the stock content inside `.stocks-content` remain independent; quote retrieval, sorting, watchlists, heatmap, dialogs, persistence and session recovery are unchanged.
