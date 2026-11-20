@@ -153,8 +153,8 @@ func TestDisplayPreferenceEventsQueueAccountSave(t *testing.T) {
    t.Errorf("preference listener does not request account synchronization: %s",check.start)
   }
  }
- if !strings.Contains(page,"if(!suiteSignedIn)return;"){
-  t.Fatal("browser-only users must not send account writes")
+ if !strings.Contains(page,"if(!suiteSignedIn){suiteFeedback('Preference saved in this browser only; account synchronization unavailable.');return}"){
+  t.Fatal("browser-only preferences must remain local without queuing account writes")
  }
  if !strings.Contains(page,"if(response.status===409)"){
   t.Fatal("account revision-conflict protection missing")
