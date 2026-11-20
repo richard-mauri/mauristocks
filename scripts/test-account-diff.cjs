@@ -22,7 +22,32 @@ assert.equal(suiteReadableSetting('mauristocks_columns_v1',JSON.stringify({hidde
 assert.equal(suiteColumnDelta(JSON.stringify({hidden:['name','exchange']}),browser),null,'hidden-array order does not affect visibility');
 assert.equal(suiteColumnDelta('bad json',saved),null,'legacy malformed settings do not crash diff');
 assert.equal(suiteHiddenColumns(JSON.stringify({hidden:['symbol','name','name','obsolete']})).join(','),'name','symbol must remain visible and obsolete entries ignored');
-assert.ok(source.includes("suiteFeedback('Preference saved in this browser. Saving to your account…')"),'preference sync should expose pending feedback');
+assert.ok(source.includes("suiteFeedback(hasUnsavedChanges()?'Unsaved changes · Click Save Changes.':'')"),'preference edits should show unsaved status');
+assert.ok(source.includes("wlSave.disabled=settingsSaveBusy||!(committableSymbols||pendingSettings.size>0||accountSyncNeeded)"),'preference edits or failed account writes should enable Save Changes');
+assert.ok(source.includes("await saveWatchlistToAccount()"),'explicit commit initiates account persistence');
+assert.ok(!source.includes('function queueSuiteSave()'),'background autosave queue must be removed');
+assert.ok(!source.includes('function queueWatchlistAccountSave()'),'old immediate watchlist background save must be removed');
+assert.ok(!source.includes('function flushSuiteSave()'),'automatic save dispatcher must be removed');
+assert.ok(source.includes('window.addEventListener(\'beforeunload\''),'unsaved changes should be protected on navigation');
+// Extract the real stageSetting function and verify it never mutates persistent
+// storage or starts a PUT. This is deliberately distinct from testing the UI.
+const stageStart=source.indexOf('function stageSetting(key,value){');
+const stageEnd=source.indexOf('function hasUnsavedChanges()',stageStart);
+assert.ok(stageStart>=0&&stageEnd>stageStart);
+const storage=new Map([['mauri_stock_refresh_interval','300']]);
+const pendingSettings=new Map();
+let feedback='',saveButtonUpdates=0;
+const stageContext={localStorage:{getItem:key=>storage.has(key)?storage.get(key):null},
+ pendingSettings,updateWatchlistButtons:()=>{saveButtonUpdates++},
+ suiteFeedback:text=>{feedback=text},hasUnsavedChanges:()=>pendingSettings.size>0};
+const stage=vm.runInNewContext(source.slice(stageStart,stageEnd)+'\n({stageSetting})',stageContext).stageSetting;
+stage('mauri_stock_refresh_interval','30');
+assert.equal(storage.get('mauri_stock_refresh_interval'),'300','frequency edit must not write browser storage');
+assert.equal(pendingSettings.get('mauri_stock_refresh_interval'),'30');
+assert.match(feedback,/Unsaved changes/);
+stage('mauri_stock_refresh_interval','300');
+assert.equal(pendingSettings.size,0,'reverting a change should disable Save Changes');
+assert.equal(saveButtonUpdates,2);
 assert.ok(!source.includes("suiteFeedback('');\n  void reconcileAccountOnSignIn(identity);"),'session check must not erase sync status');
 
 // One global comparison header replaces repeated cell labels on desktop.
