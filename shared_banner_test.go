@@ -35,6 +35,7 @@ func TestSharedBannerCSSAndTannerRemainLocal(t *testing.T) {
   "width:min(720px,calc(100vw - 48px))",
   "width:calc(100vw - 36px)",
   "blur(70px)",
+  "margin:24px auto 0",
  } {if !strings.Contains(page,want) || !strings.Contains(css,want) {t.Errorf("missing exact shared design %q",want)}}
  if strings.Contains(page,"radial-gradient(ellipse 660px") {t.Error("obsolete locally approximated glow retained")}
  if !strings.Contains(page,":root{background:transparent;color:var(--ink)}") || !strings.Contains(page,"html{background:transparent}") {t.Error("opaque root canvas hides the shared negative-z-index ambient shapes")}
