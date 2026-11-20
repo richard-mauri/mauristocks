@@ -50,6 +50,15 @@ assert.equal(pendingSettings.size,0,'reverting a change should disable Save Chan
 assert.equal(saveButtonUpdates,2);
 assert.ok(!source.includes("suiteFeedback('');\n  void reconcileAccountOnSignIn(identity);"),'session check must not erase sync status');
 
+// Only one visible save status appears, beside the Save Changes button.
+assert.match(source,/<span id="watchlist-status" role="status" aria-live="polite"><\/span><\/div><p id="message"/);
+assert.ok(!source.includes('id="suite-sync-status"'),'second account status must not exist');
+assert.ok(!source.includes("getElementById('suite-sync-status')"),'account messages must use the shared status');
+assert.ok(source.includes("function suiteFeedback(text){wlStatus.textContent=text;wlStatus.hidden=!text}"),'account and local save messages share one status line');
+assert.ok(source.includes("suiteFeedback('Settings saved to browser and account.')"),'successful PUT must show combined confirmation');
+assert.ok(source.includes("suiteFeedback('Settings saved to browser only. Sign in to save to Homepage.')"),'browser-only confirmation remains explicit');
+assert.ok(source.includes("throw Error('Browser saved; account save failed (HTTP '+response.status+').')"),'failure distinguishes browser commit from failed account save');
+
 // One global comparison header replaces repeated cell labels on desktop.
 // Mobile retains labels in each stacked cell for unambiguous reading.
 assert.match(source,/id="suite-dialog-column-headings" class="suite-diff-column-headings" hidden/);
@@ -209,7 +218,7 @@ async function testExplicitSave(){
  await local.commit();
  assert.equal(local.db.get('mauri_stock_refresh_interval'),'5');
  assert.equal(local.calls(),0,'browser-only save must not send account requests');
- assert.match(local.feedback(),/Saved in this browser only/);
+ assert.match(local.feedback(),/Settings saved to browser only/);
 
  const protectedList=makeSaveHarness();
  protectedList.state.watchlistChanged=()=>true;
