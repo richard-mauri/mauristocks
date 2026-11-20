@@ -1662,6 +1662,31 @@ function suiteSymbolDelta(browser,account){
  const accountNotes=[onlyAccount.length?'Only in saved account: '+onlyAccount.join(', '):'',onlyBrowser.length?'Absent here: '+onlyBrowser.join(', '):''].filter(Boolean);
  return {browser:browserNotes.join('\n'),account:accountNotes.join('\n')};
 }
+// Column preferences contain an array of hidden column IDs, not booleans.
+function suiteHiddenColumns(raw){
+ if(raw===null)return null;
+ try{
+  const parsed=JSON.parse(raw);
+  if(!parsed||typeof parsed!=='object'||Array.isArray(parsed)||!Array.isArray(parsed.hidden)||
+     !parsed.hidden.every(id=>typeof id==='string'))return null;
+  const known=new Set(colSpecs.map(spec=>spec[0]));
+  return [...new Set(parsed.hidden.filter(id=>id!=='symbol'&&known.has(id)))];
+ }catch(_){return null}
+}
+function suiteColumnDelta(browser,account){
+ const b=suiteHiddenColumns(browser),a=suiteHiddenColumns(account);
+ if(b===null||a===null)return null;
+ const browserNotes=[],accountNotes=[];
+ for(const [id,name] of colSpecs){
+  if(id==='symbol')continue;
+  const bh=b.includes(id),ah=a.includes(id);
+  if(bh===ah)continue;
+  browserNotes.push(name+': '+(bh?'hidden':'shown'));
+  accountNotes.push(name+': '+(ah?'hidden':'shown'));
+ }
+ if(!browserNotes.length)return null;
+ return {browser:browserNotes.join('\n'),account:accountNotes.join('\n')};
+}
 function suiteReadableSetting(key,value){
  if(value===null)return null;
  if(key==='mauri_stock_refresh_interval')return ({'0':'Never','5':'5 seconds','30':'30 seconds','60':'1 minute','300':'5 minutes'})[value]||value+' seconds';
@@ -1673,7 +1698,10 @@ function suiteReadableSetting(key,value){
    const parsed=JSON.parse(value);
    if(key===flagStorageKey&&Array.isArray(parsed))return parsed.join(', ')||'(none)';
    if(key==='mauri_stock_sort'&&parsed&&typeof parsed.key==='string')return parsed.key.replaceAll('_',' ')+' ('+(parsed.direction==='desc'?'descending':'ascending')+')';
-   if(key==='mauristocks_columns_v1'&&parsed&&typeof parsed==='object'&&!Array.isArray(parsed))return Object.entries(parsed).map(([k,v])=>k.replaceAll('_',' ')+': '+(v?'shown':'hidden')).join(', ')||'(default)';
+   if(key==='mauristocks_columns_v1'){
+    const hidden=suiteHiddenColumns(value);
+    if(hidden!==null)return hidden.length?'Hidden: '+hidden.map(id=>colSpecs.find(spec=>spec[0]===id)?.[1]||id).join(', '):'All columns shown';
+   }
   }catch(_){}
  }
  return value;
@@ -1704,7 +1732,7 @@ function suiteSettingsDiff(browser,account){
    }else rows.push({label:'Watchlists (unrecognized format)',browser:b,account:a});
    continue;
   }
-  let delta=key==='mauri_stock_symbols'?suiteSymbolDelta(b,a):null;
+  let delta=key==='mauri_stock_symbols'?suiteSymbolDelta(b,a):key==='mauristocks_columns_v1'?suiteColumnDelta(b,a):null;
   if(key===flagStorageKey&&b!==null&&a!==null){
    try{
     const flagsB=JSON.parse(b),flagsA=JSON.parse(a);
@@ -1763,12 +1791,13 @@ async function refreshSuiteSession(){
   if(suiteAccountIdentity!==identity){suiteRevision=null;suiteInitialOverwriteApproved=false;suiteAccountIdentity=identity}
   suiteSignedIn=true;
   updateSuiteAccountClock();
-  suiteFeedback('');
+  // Revalidating the session must not erase pending or confirmed save feedback.
   void reconcileAccountOnSignIn(identity);
  }catch(e){suiteFeedback('Account connection unavailable; browser settings remain local.')}
 }
 function queueSuiteSave(){
- if(!suiteSignedIn)return;
+ if(!suiteSignedIn){suiteFeedback('Preference saved in this browser only; account synchronization unavailable.');return}
+ suiteFeedback('Preference saved in this browser. Saving to your account…');
  suiteSaveQueued=true;
  if(suiteSaveTimer!==null)clearTimeout(suiteSaveTimer);
  suiteSaveTimer=setTimeout(()=>{suiteSaveTimer=null;void flushSuiteSave()},400);
@@ -1827,7 +1856,9 @@ async function reconcileAccountOnSignIn(identity){
   const same=suiteKeys.every(key=>(browser[key]??null)===(account[key]??null));
   suiteCheckedIdentity=identity;
   if(same){suiteRevision=existing.revision;suiteInitialOverwriteApproved=true;return}
-  if(!(await suiteAsk('These settings differ. Review them before choosing which complete set to keep. Restoring replaces this browser’s saved settings; keeping the browser leaves your account unchanged.','confirm',suiteSettingsDiff(browser,account))))return;
+  if(!(await suiteAsk('These settings differ. Review them before choosing which complete set to keep. Restoring replaces this browser’s saved settings; keeping the browser leaves your account unchanged.','confirm',suiteSettingsDiff(browser,account)))){
+   suiteFeedback('Browser settings kept. Saved account unchanged.');return;
+  }
   const backup={};for(const key of suiteKeys)backup[key]=localStorage.getItem(key);
   try{
    for(const key of suiteKeys)localStorage.removeItem(key);
