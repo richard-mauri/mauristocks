@@ -980,7 +980,7 @@ function normalizeSymbols(value){return [...new Set(String(value).toUpperCase().
 function loadLists(){try{const value=JSON.parse(localStorage.getItem(wlKey));if(value&&typeof value==='object'&&!Array.isArray(value))return Object.fromEntries(Object.entries(value).filter(([k,v])=>k&&k!=='Default'&&typeof v==='string'));}catch(e){}return {}}
 let watchlists=loadLists();
 // Migrate the v16 custom watchlist, preserving its symbols on first launch.
-if(localStorage.getItem(wlKey)===null){const legacy=localStorage.getItem('mauri_stock_symbols');if(legacy&&normalizeSymbols(legacy)!==defaults){watchlists['My Watchlist']=normalizeSymbols(legacy)}stageSetting(wlKey,JSON.stringify(watchlists))}
+if(localStorage.getItem(wlKey)===null){const legacy=localStorage.getItem('mauri_stock_symbols');if(legacy&&normalizeSymbols(legacy)!==defaults){watchlists['My Watchlist']=normalizeSymbols(legacy)}pendingSettings.set(wlKey,JSON.stringify(watchlists))}
 let activeWatchlist=localStorage.getItem(activeKey)|| (watchlists['My Watchlist']?'My Watchlist':'Default');
 if(activeWatchlist!=='Default'&&activeWatchlist!==dynamicName&&!Object.hasOwn(watchlists,activeWatchlist))activeWatchlist='Default';
 function persistLists(){stageSetting(wlKey,JSON.stringify(watchlists))}
@@ -1150,7 +1150,7 @@ const researchSelect=document.getElementById('research-site');
 const researchSites=new Set(['google','stockanalysis','corporate','ir']);
 const savedResearchSite=localStorage.getItem('mauri_research_site');
 if(researchSites.has(savedResearchSite))researchSelect.value=savedResearchSite;
-researchSelect.addEventListener('change',()=>{localStorage.setItem('mauri_research_site',researchSelect.value);renderQuotes();paintHeatmap();queueSuiteSave()});
+researchSelect.addEventListener('change',()=>{stageSetting('mauri_research_site',researchSelect.value);renderQuotes();paintHeatmap()});
 const irURLs={
  MU:'https://investors.micron.com', AMAT:'https://ir.appliedmaterials.com',
  LRCX:'https://investor.lamresearch.com', SPCX:'https://ir.spacex.com/',
@@ -1195,7 +1195,7 @@ try{
  if(p&&Array.isArray(p.hidden))colPrefs.hidden=p.hidden.filter(x=>typeof x==='string'&&x!=='symbol');
 }catch(e){}
 function saveColPrefs(){
- try{localStorage.setItem('mauristocks_columns_v1',JSON.stringify(colPrefs));queueSuiteSave()}catch(e){}
+ stageSetting('mauristocks_columns_v1',JSON.stringify(colPrefs))
 }
 function isColShown(i){return !colPrefs.hidden.includes(colSpecs[i][0])&&!(i===4&&colTable.classList.contains('regular-session'))}
 function applyColumns(){
@@ -1234,21 +1234,20 @@ heatWeightSlider.addEventListener('input',()=>{
  const next=heatWeightSlider.value;
  if(!validHeatExponent(next))return;
  heatExponent=Number(next);
- try{localStorage.setItem(heatWeightKey,next)}catch(_){}
+ stageSetting(heatWeightKey,next)
  updateHeatWeightLabels();
  paintHeatmap();
- queueSuiteSave();
 });
 let heatView=localStorage.getItem('mauristocks_view_v1')==='heatmap'?'heatmap':'table';
 let caps=new Map(),capKey='',capBusy=false,layoutKey='',tiles=new Map(),capCompleted=new Set(),capError='',capState='idle';
 const heatTip=document.getElementById('heat-tip');let heatTipTarget=null,heatTapTarget=null;
-function setHeatView(v){
+function setHeatView(v,markPending=false){
  heatView=v;hp.hidden=v!=='heatmap';tw.hidden=v!=='table';
  heatSelector.value=v;
- try{localStorage.setItem('mauristocks_view_v1',v)}catch(_){}
+ if(markPending)stageSetting('mauristocks_view_v1',v)
  if(v==='heatmap'){paintHeatmap();loadCaps()}else hideHeatTip()
 }
-heatSelector.addEventListener('change',()=>{setHeatView(heatSelector.value);queueSuiteSave()});
+heatSelector.addEventListener('change',()=>{setHeatView(heatSelector.value,true)});
 new ResizeObserver(()=>{if(heatView==='heatmap')for(const tile of tiles.values())fitHeatTileLabels(tile)}).observe(ha);
 function hideHeatTip(){heatTip.hidden=true;heatTipTarget=null;heatTapTarget=null}
 function showHeatTip(node,q,cap){
@@ -1498,8 +1497,8 @@ for(const h of sortHeaders){
  const activate=()=>{
   if(sortKey===h.dataset.sort)sortDirection=sortDirection==='asc'?'desc':'asc';
   else{sortKey=h.dataset.sort;sortDirection=numericKeys.has(sortKey)?'desc':'asc'}
-  localStorage.setItem('mauri_stock_sort',JSON.stringify({key:sortKey,direction:sortDirection}));
-  renderQuotes();queueSuiteSave();
+  stageSetting('mauri_stock_sort',JSON.stringify({key:sortKey,direction:sortDirection}));
+  renderQuotes();
  };
  h.querySelector('button').addEventListener('click',activate);
 }
@@ -1557,7 +1556,7 @@ async function refreshQuotes(){
   if(regularOnly && sortKey==='extended_price'){
    // Hidden columns should not control the visible ordering.
    sortKey='display_price';sortDirection='desc';
-   localStorage.setItem('mauri_stock_sort',JSON.stringify({key:sortKey,direction:sortDirection}));
+   stageSetting('mauri_stock_sort',JSON.stringify({key:sortKey,direction:sortDirection}));
   }
 
   // Session context is shown in the extended price header; changes have concise, consistent labels.
@@ -1580,15 +1579,15 @@ async function refreshQuotes(){
 }
 button.addEventListener('click',refreshQuotes);
 let refreshTimer=null;
-function setRefreshInterval(){
+function setRefreshInterval(markPending=false){
  if(refreshTimer!==null){clearInterval(refreshTimer);refreshTimer=null}
  const seconds=Number(intervalSelect.value);
- localStorage.setItem('mauri_stock_refresh_interval',String(seconds));
+ if(markPending)stageSetting('mauri_stock_refresh_interval',String(seconds));
  if(seconds>0)refreshTimer=setInterval(()=>{if(!document.hidden)refreshQuotes()},seconds*1000);
 }
 const savedInterval=localStorage.getItem('mauri_stock_refresh_interval');
 if(['0','5','30','60','300'].includes(savedInterval))intervalSelect.value=savedInterval;
-intervalSelect.addEventListener('change',()=>{setRefreshInterval();queueSuiteSave()});
+intervalSelect.addEventListener('change',()=>{setRefreshInterval(true)});
 setRefreshInterval();
 // Optional cross-subdomain persistence. Browser localStorage remains authoritative
 // until the user explicitly saves or loads; no background synchronization occurs.
