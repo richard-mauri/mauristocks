@@ -4,6 +4,8 @@ Read [AGENTS.md](AGENTS.md) and [Homepage's authoritative suite development poli
 
 ## CI and local validation
 
+For Issue #31, compare the stock masthead against Homepage, NewsGo and ScraperGo at identical desktop, tablet and mobile viewport widths. The shared banner owns all horizontal dimensions; Stock content below uses `.stocks-content` independently. Confirm Tanner is served by `/tanner.jpg`, shared CSS is inline in the no-store dashboard (no Safari stale CSS URL), and `suite-auth-status` follows verified Homepage identity or browser-only state. Confirm the original two blurred Homepage ambient shapes without the previous radial approximation. Keep quote sorting, columns, heatmap, watchlists, dialogs and red/green financial data semantics unchanged.
+
 [Go CI](.github/workflows/go-ci.yml) follows the ScraperGo workflow: pushes to `dev`, PRs targeting `main`, and manual dispatch; non-blocking gofmt report, then `go test -count=1 ./...` and `go build ./...`. Check the latest PR-head SHA and its actual workflow outcome. Formatting debt output is informational; tests and build are required gates. For documentation-only changes review Markdown links/path/commands plus PR CI; Mac restart/Safari testing is unnecessary.
 
 For code/UI changes, first inspect the owner's local tree and stop if dirty. Use the following with the **actual scoped PR branch**, not the historical example. `./devbuild.sh` is the only required build/test command; do not separately request `go test` or `go build`:
