@@ -19,6 +19,10 @@ jobs:
           cache: true
       - name: Report formatting debt (non-blocking)
         run: git ls-files '*.go' | xargs gofmt -l
+      - name: Resolve shared authentication dependency checksum
+        run: |
+          go mod download github.com/richard-mauri/homepage/shared/auth
+          grep 'homepage/shared/auth' go.sum
       - name: Run tests
         run: go test -count=1 ./...
       - name: Account comparison UI regressions
