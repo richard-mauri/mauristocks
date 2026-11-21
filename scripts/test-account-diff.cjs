@@ -170,7 +170,7 @@ function makeSaveHarness({signedIn=true,remoteOK=true,failKey=null}={}){
  let calls=0,lastFeedback='',buttonUpdates=0,allowRemote=remoteOK;
  const state={
   pendingSettings:new Map(),accountSyncNeeded:false,settingsSaveBusy:false,
-  suiteSignedIn:signedIn,marketMode:'watchlist',activeWatchlist:'Candidates',
+  suiteSignedIn:signedIn,suiteGuest:'',marketMode:'watchlist',activeWatchlist:'Candidates',
   dynamicName:'Most Active — Top 20 (Dynamic)',input:{value:'AAPL'},
   watchlists:{Candidates:'AAPL'},wlStatus:{textContent:''},
   watchlistChanged:()=>false,normalizeSymbols:v=>v,
