@@ -1596,6 +1596,7 @@ const suiteBase='https://home.themauris.org';
 const suiteHandoffKey='mauristocks.homepage.handoff.v1';
 // A Homepage-verified personal user or guest is required before displaying data.
 let suiteAccessVerified=false;
+let suiteBlockedLocalMode=false;
 let suiteFirstRefreshPending=true;
 function activateVerifiedStocks(){
  suiteAccessVerified=true;
@@ -1620,6 +1621,7 @@ function readSuiteHandoff(){
   if(browserOnly){
    try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
    rejectStocksAccess();
+   suiteBlockedLocalMode=true;
    location.replace(suiteBase+'/#suite_signin=required');
    return;
   }else if(/^[a-f0-9]{64}$/.test(delivered)){
@@ -1824,6 +1826,7 @@ async function suiteRecord(){
  return response.json();
 }
 async function refreshSuiteSession(){
+ if(suiteBlockedLocalMode)return;
  // Preserve the visible identity and countdown during verification.
  if(!suiteHandoff){
   rejectStocksAccess();
@@ -1891,12 +1894,12 @@ async function commitSettings(){
  suiteFeedback('Settings saved in this browser.');
  if(!suiteSignedIn){
   accountSyncNeeded=false;
-  suiteFeedback('Settings saved to browser only. Sign in to save to Homepage.');
+  suiteFeedback(suiteGuest?'Settings saved.':'Homepage sign-in required.');
  }else{
   accountSyncNeeded=true;
   const saved=await saveWatchlistToAccount();
   accountSyncNeeded=!saved;
-  if(saved&&hasUnsavedChanges())suiteFeedback('Saved to browser and account; newer edits are still unsaved.');
+  if(saved&&hasUnsavedChanges())suiteFeedback('Settings saved; newer edits are still unsaved.');
  }
  settingsSaveBusy=false;updateWatchlistButtons();
 }
@@ -1920,7 +1923,7 @@ async function saveWatchlistToAccount(){
   if(response.status===409){suiteRevision=null;suiteInitialOverwriteApproved=false;throw Error('Account changed on another device (409). Browser settings retained; review account before retrying.')}
   if(!response.ok)throw Error('Browser saved; account save failed (HTTP '+response.status+').');
   const saved=await response.json();suiteRevision=saved.revision;
-  suiteFeedback('Settings saved to browser and account.');
+  suiteFeedback('Settings saved.');
   return true;
  }catch(e){
   suiteFeedback(e.message+' Click Save Changes to retry.');
