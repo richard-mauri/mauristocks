@@ -1968,7 +1968,7 @@ func renderStocksPage() string {
   AppName:"Mauri's Stock Quotes",Version:appVersion,Build:appBuild,
   Description:"Optional timed refresh · No ads or live charts · Unofficial quote source",
   TannerURL:"/tanner.jpg",HomeURL:"https://home.themauris.org/",
-  AccountState:banner.BrowserOnly,
+  AccountState:banner.Unavailable,
  });err!=nil {panic(err)}
  page:=strings.ReplaceAll(pageTemplate,"__SUITE_BUTTON_CSS__",string(suiteui.ButtonCSS))
  page=strings.ReplaceAll(page,"__SUITE_BANNER_CSS__",string(banner.CSS(suiteui.DesignCSS)))
@@ -2133,12 +2133,12 @@ func main() {
     next(w,r)
    }
   }
- 	mux.HandleFunc("/api/quotes",track(quotesHandler))
- mux.HandleFunc("/api/market-caps",track(marketCapsHandler))
- mux.HandleFunc("/api/market-top",track(topMarketHandler))
- mux.HandleFunc("/api/company", track(companyHandler))
- mux.HandleFunc("/company", track(companyRedirectHandler))
- mux.HandleFunc("/api/most-active", track(mostActiveHandler))
+ 	mux.HandleFunc("/api/quotes",track(guardStocksAPI(quotesHandler)))
+ mux.HandleFunc("/api/market-caps",track(guardStocksAPI(marketCapsHandler)))
+ mux.HandleFunc("/api/market-top",track(guardStocksAPI(topMarketHandler)))
+ mux.HandleFunc("/api/company", track(guardStocksAPI(companyHandler)))
+ mux.HandleFunc("/company", track(guardStocksAPI(companyRedirectHandler)))
+ mux.HandleFunc("/api/most-active", track(guardStocksAPI(mostActiveHandler)))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("ok")) })
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
