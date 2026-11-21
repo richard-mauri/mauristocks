@@ -669,6 +669,7 @@ func marketCapsHandler(w http.ResponseWriter,r *http.Request){
 
 const pageTemplate = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mauri's Stock Quotes</title>
 <style>
+html:not(.suite-auth-ready) .stocks-content{visibility:hidden}
 :root{color-scheme:light dark;font-family:system-ui,-apple-system,sans-serif}h1{margin-bottom:.25rem}.muted{opacity:.68;font-size:.88rem}.controls{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.4rem 0}input{flex:1;min-width:260px;padding:.7rem;border:1px solid #888;border-radius:6px;font:inherit}#refresh{min-width:148px;white-space:nowrap}table{width:1180px;min-width:1180px;table-layout:fixed;border-collapse:collapse;font-variant-numeric:tabular-nums}th,td{padding:.65rem .45rem;text-align:left;border-bottom:1px solid #8885}th{font-size:.85rem}th[data-sort]{cursor:pointer;user-select:none} .sort-button{border:0;background:transparent;color:inherit;padding:.25rem .1rem;font:inherit;font-weight:700;cursor:pointer;width:100%;text-align:left}th.num .sort-button{text-align:right}.sort-button:hover{text-decoration:underline}.sort-button:focus-visible{outline:2px solid #2868bd;outline-offset:2px}.sort-indicator{display:inline-block;margin-left:.2em;color:#8795a4;font-weight:500}.sort-indicator.active{font-size:1.15em;font-weight:900}th[data-sort]:hover{text-decoration:underline}th[data-sort][aria-sort="ascending"],th[data-sort][aria-sort="descending"]{text-decoration:underline}td.num,th.num{text-align:right}.tablewrap{overflow-x:auto}.small{font-size:.8rem;opacity:.75}#message{margin:1rem 0}footer{margin:1.5rem 0;line-height:1.5}footer details summary{cursor:pointer;display:list-item;font-weight:600;width:max-content;max-width:100%;padding:.35rem 0}footer details .notes-content{padding:.45rem 0;max-width:1100px}tr.error td{opacity:.7}a{color:inherit} @media(max-width:650px){th,td{font-size:.8rem;padding:.55rem .25rem}}
  .controls{align-items:center}.refresh-label{align-self:center;font-size:.88rem;white-space:nowrap}.controls select{font:inherit;padding:.65rem .5rem;border-radius:6px;border:1px solid #888;background:Canvas;color:CanvasText;cursor:pointer}
 .fetch-status{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}.range-cell{padding:.35rem .5rem!important}.range-labels{display:flex;justify-content:space-between;gap:.3rem;font-size:.68rem;line-height:1.25;font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.85}.range-track{position:relative;height:5px;background:color-mix(in srgb,CanvasText 17%,transparent);border-radius:5px;margin:9px 6px 5px}.range-fill{position:absolute;inset:0;border-radius:inherit;background:color-mix(in srgb,CanvasText 35%,transparent)}.price-momentum{font-weight:700}.range-marker{position:absolute;top:50%;border:1px solid var(--panel);transform:translate(-50%,-50%) rotate(45deg);z-index:1}
@@ -1171,6 +1172,29 @@ function researchURL(q){
  default:return '';
  }
 }
+// Corporate links need an authenticated lookup. A top-level navigation to
+// /company cannot attach the child bearer; do not put it in a query string.
+document.addEventListener('click',async event=>{
+ const anchor=event.target.closest?.('a[href^="/company?symbol="]');
+ if(!anchor)return;
+ event.preventDefault();
+ const symbol=new URL(anchor.href,location.href).searchParams.get('symbol')||'';
+ if(!/^[A-Z0-9][A-Z0-9.^=-]{0,17}$/.test(symbol))return;
+ const popup=window.open('about:blank','_blank');
+ if(popup)popup.opener=null;
+ try{
+  const response=await stockFetch('/api/company?symbol='+encodeURIComponent(symbol),{cache:'no-store'});
+  if(!response.ok)throw Error('No verified corporate website');
+  const data=await response.json();
+  const destination=new URL(data.website);
+  if(!['https:','http:'].includes(destination.protocol)||destination.username||destination.password)throw Error('Invalid website URL');
+  if(popup)popup.location.replace(destination.href);
+  else window.open(destination.href,'_blank','noopener,noreferrer');
+ }catch(_){
+  if(popup)popup.close();
+  suiteFeedback('Corporate website unavailable for '+symbol+'.');
+ }
+});
 function symbolCell(tr,q){
  const td=document.createElement('td');td.className='symbol-cell';
  const symbol=String(q.symbol||'').toUpperCase();
@@ -1420,7 +1444,7 @@ async function loadCaps(){
  try{
   for(let i=0;i<needed.length;i+=3){
    const batch=needed.slice(i,i+3);
-   const response=await fetch('/api/market-caps?symbols='+encodeURIComponent(batch.join(',')),{cache:'no-store'});
+   const response=await stockFetch('/api/market-caps?symbols='+encodeURIComponent(batch.join(',')),{cache:'no-store'});
    if(!response.ok)throw Error('HTTP '+response.status);
    const payload=await response.json();
    if(!Array.isArray(payload.items))throw Error('Invalid capitalization response');
@@ -1511,7 +1535,7 @@ async function refreshQuotes(){
  button.disabled=true;button.classList.add('fetching');button.setAttribute('aria-busy','true');fetchStatus.textContent='Fetching quotes';
  try{
   if(marketMode!=='watchlist'){
-   const ranked=await fetch('/api/market-top?market='+encodeURIComponent(marketMode),{cache:'no-store'});
+   const ranked=await stockFetch('/api/market-top?market='+encodeURIComponent(marketMode),{cache:'no-store'});
    if(!ranked.ok)throw new Error('Market selection unavailable: '+(await ranked.text()).trim());
    const listing=await ranked.json();
    if(listing.market!==marketMode||!Array.isArray(listing.symbols)||listing.symbols.length!==30||!Array.isArray(listing.items))throw Error('Invalid market ranking');
@@ -1537,13 +1561,13 @@ async function refreshQuotes(){
     if(sameUniverse)paintHeatmap();
    }
   }else if(activeWatchlist===dynamicName){
-   const ranked=await fetch('/api/most-active',{cache:'no-store'});
+   const ranked=await stockFetch('/api/most-active',{cache:'no-store'});
    if(!ranked.ok)throw new Error('Most Active ranking unavailable: '+(await ranked.text()).trim());
    const listing=await ranked.json();
    if(!Array.isArray(listing.symbols)||listing.symbols.length!==20)throw new Error('Invalid Most Active ranking');
    symbols=listing.symbols;input.value=symbols.join(',');
   }
-  let response=await fetch('/api/quotes?symbols='+encodeURIComponent(symbols.join(',')),{cache:'no-store'});
+  let response=await stockFetch('/api/quotes?symbols='+encodeURIComponent(symbols.join(',')),{cache:'no-store'});
   if(!response.ok)throw new Error(await response.text());
   let data=await response.json();quotes=data.quotes||[];updateMomentum(quotes);
   const activeSession=quotes.find(q=>q.session==='premarket'||q.session==='after-hours')?.session;
@@ -1593,9 +1617,36 @@ setRefreshInterval();
 // until the user explicitly saves or loads; no background synchronization occurs.
 const suiteBase='https://home.themauris.org';
 const suiteHandoffKey='mauristocks.homepage.handoff.v1';
-// An explicit #suite_mode=local suppresses recovery for this visit, but
-// later fresh visits recheck Homepage for a newly valid persistent login.
-let explicitBrowserOnly=false;
+// A Homepage-verified personal user or guest is required before displaying data.
+let suiteAccessVerified=false;
+let suiteBlockedLocalMode=false;
+let suiteFirstRefreshPending=true;
+function activateVerifiedStocks(){
+ suiteAccessVerified=true;
+ document.documentElement.classList.add('suite-auth-ready');
+ if(suiteFirstRefreshPending){suiteFirstRefreshPending=false;void refreshQuotes()}
+}
+function rejectStocksAccess(){
+ suiteAccessVerified=false;
+ document.documentElement.classList.remove('suite-auth-ready');
+}
+async function stockFetch(path,options={}){
+ if(!suiteAccessVerified||!suiteHandoff)throw Error('Homepage sign-in or guest access required');
+ const response=await fetch(path,{...options,headers:{...(options.headers||{}),Authorization:'Bearer '+suiteHandoff}});
+ if(response.status===401||response.status===403){
+  rejectStocksAccess();
+  suiteHandoff='';
+  try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
+  location.replace(suiteBase+'/#suite_signin=required');
+  throw Error('Homepage session expired or revoked');
+ }
+ if(response.status===503){
+  rejectStocksAccess();
+  suiteFeedback('Homepage verification unavailable. Retry when connected.');
+  throw Error('Homepage verification unavailable');
+ }
+ return response;
+}
 let suiteHandoff='';
 function readSuiteHandoff(){
  const fragment=new URLSearchParams(location.hash.slice(1));
@@ -1604,9 +1655,11 @@ function readSuiteHandoff(){
  if(delivered!==null || browserOnly){
   history.replaceState(null,'',location.pathname+location.search);
   if(browserOnly){
-   // Homepage confirms no active login; do not loop back during this visit.
-   explicitBrowserOnly=true;
    try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
+   rejectStocksAccess();
+   suiteBlockedLocalMode=true;
+   location.replace(suiteBase+'/#suite_signin=required');
+   return;
   }else if(/^[a-f0-9]{64}$/.test(delivered)){
    try{sessionStorage.setItem(suiteHandoffKey,delivered)}catch(_){}
   }else {
@@ -1642,7 +1695,7 @@ function updateSuiteAccountClock(){
   SuiteBannerStatus.signedIn(suiteGuest);
   suiteIdentityEl.hidden=false;
  }else{
-  suiteIdentityEl.textContent='Not signed in · Browser-only settings';
+  suiteIdentityEl.textContent='Homepage sign-in or guest access required';
   suiteIdentityEl.hidden=false;
  }
 }
@@ -1809,45 +1862,38 @@ async function suiteRecord(){
  return response.json();
 }
 async function refreshSuiteSession(){
+ if(suiteBlockedLocalMode)return;
  // Preserve the visible identity and countdown during verification.
- if(location.protocol!=='https:' || location.hostname!=='stocks.themauris.org'){
-  suiteSignedIn=false;updateSuiteAccountClock();
-  suiteFeedback('Not signed in · Browser-only settings');return;
- }
- if(!suiteHandoff && !explicitBrowserOnly){
-  // Only Homepage can read the persistent host-only cookie/session ID.
-  // Its trusted bridge returns an authorized child bearer or local mode.
+ if(!suiteHandoff){
+  rejectStocksAccess();
   location.replace(suiteBase+'/launch/stocks');
   return;
  }
- if(!suiteHandoff){
-  suiteSignedIn=false;updateSuiteAccountClock();
-  suiteFeedback('Not signed in · Browser-only settings');return;
- }
  try{
   const profile=await suiteRequest('/api/session/profile');
-  if(profile.status===401){suiteSignedIn=false;updateSuiteAccountClock();suiteFeedback('Account access expired · Open MauriStocks from Homepage.');return}
+  if(profile.status===401||profile.status===403){rejectStocksAccess();suiteSignedIn=false;updateSuiteAccountClock();location.replace(suiteBase+'/#suite_signin=required');return}
   if(!profile.ok)throw Error('Account verification HTTP '+profile.status);
   const data=await profile.json();
   suiteExpiresAt=Date.parse(data.expiresAt)||0;
   const identity=typeof data.user==='string'?data.user:'';
-  if(data.role==='guest'){
+  if(data.role==='guest'&&identity){
    suiteGuest=identity;
    suiteSignedIn=false;
    suiteAccountIdentity=null;
    SuiteBannerStatus.signedIn(identity);
    suiteIdentityEl.hidden=false;
-   suiteFeedback('Guest settings stay in this browser; Homepage does not save them.');
+   activateVerifiedStocks();suiteFeedback('Guest access');
    return;
   }
   suiteGuest='';
-  if(!identity){suiteFeedback('Account identity unavailable; browser settings remain local.');return}
+  if(!identity||(data.role!=='user'&&data.role!=='admin')){rejectStocksAccess();suiteFeedback('Homepage identity not verified.');return}
   if(suiteAccountIdentity!==identity){suiteRevision=null;suiteInitialOverwriteApproved=false;suiteAccountIdentity=identity}
   suiteSignedIn=true;
+  activateVerifiedStocks();
   updateSuiteAccountClock();
   // Revalidating the session must not erase pending or confirmed save feedback.
   void reconcileAccountOnSignIn(identity);
- }catch(e){suiteFeedback('Account connection unavailable; browser settings remain local.')}
+ }catch(e){rejectStocksAccess();suiteFeedback('Homepage verification unavailable. Retry when connected.')}
 }
 // Save Changes is the single commit point for all settings. User events
 // only update pendingSettings and the live UI; they do not write storage.
@@ -1884,12 +1930,12 @@ async function commitSettings(){
  suiteFeedback('Settings saved in this browser.');
  if(!suiteSignedIn){
   accountSyncNeeded=false;
-  suiteFeedback('Settings saved to browser only. Sign in to save to Homepage.');
+  suiteFeedback(suiteGuest?'Settings saved.':'Homepage sign-in required.');
  }else{
   accountSyncNeeded=true;
   const saved=await saveWatchlistToAccount();
   accountSyncNeeded=!saved;
-  if(saved&&hasUnsavedChanges())suiteFeedback('Saved to browser and account; newer edits are still unsaved.');
+  if(saved&&hasUnsavedChanges())suiteFeedback('Settings saved; newer edits are still unsaved.');
  }
  settingsSaveBusy=false;updateWatchlistButtons();
 }
@@ -1913,7 +1959,7 @@ async function saveWatchlistToAccount(){
   if(response.status===409){suiteRevision=null;suiteInitialOverwriteApproved=false;throw Error('Account changed on another device (409). Browser settings retained; review account before retrying.')}
   if(!response.ok)throw Error('Browser saved; account save failed (HTTP '+response.status+').');
   const saved=await response.json();suiteRevision=saved.revision;
-  suiteFeedback('Settings saved to browser and account.');
+  suiteFeedback('Settings saved.');
   return true;
  }catch(e){
   suiteFeedback(e.message+' Click Save Changes to retry.');
@@ -1958,8 +2004,7 @@ updateSuiteAccountClock();
 refreshSuiteSession();
 window.addEventListener('focus',refreshSuiteSession);
 setHeatView(heatView);
-// Populate the restored watchlist immediately, even when auto refresh is Never.
-refreshQuotes();
+// Initial quotes load only after verified Homepage personal or guest access.
 </script></body></html>`
 
 func renderStocksPage() string {
@@ -1968,7 +2013,7 @@ func renderStocksPage() string {
   AppName:"Mauri's Stock Quotes",Version:appVersion,Build:appBuild,
   Description:"Optional timed refresh · No ads or live charts · Unofficial quote source",
   TannerURL:"/tanner.jpg",HomeURL:"https://home.themauris.org/",
-  AccountState:banner.BrowserOnly,
+  AccountState:banner.Unavailable,
  });err!=nil {panic(err)}
  page:=strings.ReplaceAll(pageTemplate,"__SUITE_BUTTON_CSS__",string(suiteui.ButtonCSS))
  page=strings.ReplaceAll(page,"__SUITE_BANNER_CSS__",string(banner.CSS(suiteui.DesignCSS)))
@@ -2133,12 +2178,12 @@ func main() {
     next(w,r)
    }
   }
- 	mux.HandleFunc("/api/quotes",track(quotesHandler))
- mux.HandleFunc("/api/market-caps",track(marketCapsHandler))
- mux.HandleFunc("/api/market-top",track(topMarketHandler))
- mux.HandleFunc("/api/company", track(companyHandler))
- mux.HandleFunc("/company", track(companyRedirectHandler))
- mux.HandleFunc("/api/most-active", track(mostActiveHandler))
+ 	mux.HandleFunc("/api/quotes",track(guardStocksAPI(quotesHandler)))
+ mux.HandleFunc("/api/market-caps",track(guardStocksAPI(marketCapsHandler)))
+ mux.HandleFunc("/api/market-top",track(guardStocksAPI(topMarketHandler)))
+ mux.HandleFunc("/api/company", track(guardStocksAPI(companyHandler)))
+ mux.HandleFunc("/company", track(guardStocksAPI(companyRedirectHandler)))
+ mux.HandleFunc("/api/most-active", track(guardStocksAPI(mostActiveHandler)))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { _, _ = w.Write([]byte("ok")) })
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {

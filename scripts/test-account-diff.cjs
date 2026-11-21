@@ -55,8 +55,8 @@ assert.match(source,/<span id="watchlist-status" role="status" aria-live="polite
 assert.ok(!source.includes('id="suite-sync-status"'),'second account status must not exist');
 assert.ok(!source.includes("getElementById('suite-sync-status')"),'account messages must use the shared status');
 assert.ok(source.includes("function suiteFeedback(text){wlStatus.textContent=text;wlStatus.hidden=!text}"),'account and local save messages share one status line');
-assert.ok(source.includes("suiteFeedback('Settings saved to browser and account.')"),'successful PUT must show combined confirmation');
-assert.ok(source.includes("suiteFeedback('Settings saved to browser only. Sign in to save to Homepage.')"),'browser-only confirmation remains explicit');
+assert.ok(source.includes("suiteFeedback('Settings saved.')"),'successful verified account PUT must show simple confirmation');
+assert.ok(source.includes("suiteFeedback(suiteGuest?'Settings saved.':'Homepage sign-in required.')"),'verified guest saves are temporary, not personal account saves');
 assert.ok(source.includes("throw Error('Browser saved; account save failed (HTTP '+response.status+').')"),'failure distinguishes browser commit from failed account save');
 
 // One global comparison header replaces repeated cell labels on desktop.
@@ -170,7 +170,7 @@ function makeSaveHarness({signedIn=true,remoteOK=true,failKey=null}={}){
  let calls=0,lastFeedback='',buttonUpdates=0,allowRemote=remoteOK;
  const state={
   pendingSettings:new Map(),accountSyncNeeded:false,settingsSaveBusy:false,
-  suiteSignedIn:signedIn,marketMode:'watchlist',activeWatchlist:'Candidates',
+  suiteSignedIn:signedIn,suiteGuest:'',marketMode:'watchlist',activeWatchlist:'Candidates',
   dynamicName:'Most Active — Top 20 (Dynamic)',input:{value:'AAPL'},
   watchlists:{Candidates:'AAPL'},wlStatus:{textContent:''},
   watchlistChanged:()=>false,normalizeSymbols:v=>v,
@@ -218,7 +218,7 @@ async function testExplicitSave(){
  await local.commit();
  assert.equal(local.db.get('mauri_stock_refresh_interval'),'5');
  assert.equal(local.calls(),0,'browser-only save must not send account requests');
- assert.match(local.feedback(),/Settings saved to browser only/);
+ assert.match(local.feedback(),/Homepage sign-in required/);
 
  const protectedList=makeSaveHarness();
  protectedList.state.watchlistChanged=()=>true;

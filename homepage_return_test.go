@@ -19,7 +19,7 @@ func TestDashboardHasSameTabHomepageReturn(t *testing.T) {
  if strings.Contains(source,"suiteRenewButton") || strings.Contains(source,"renewSuiteAccount(") {t.Fatal("no separate app-token renewal UI is permitted")}
  if !strings.Contains(source,"fragment.get('suite_mode')==='local'") || !strings.Contains(source,"sessionStorage.removeItem(suiteHandoffKey)") {t.Fatal("browser-only launch must discard stale handoff")}
  if strings.Contains(source,"suiteRenewButton.textContent=suiteSignedIn&&left>0?'Renew':'Open Homepage'") {t.Fatal("redundant Open Homepage action remains")}
- if !strings.Contains(source,"Not signed in · Browser-only settings") {t.Fatal("signed-out state feedback missing")}
+ if !strings.Contains(source,"Homepage sign-in or guest access required") {t.Fatal("signed-out state feedback missing")}
  if !strings.Contains(page,".suite-banner__home:hover{text-decoration:underline}") {t.Fatal("shared hover style missing")}
 
 }
