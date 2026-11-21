@@ -1630,9 +1630,22 @@ function rejectStocksAccess(){
  suiteAccessVerified=false;
  document.documentElement.classList.remove('suite-auth-ready');
 }
-function stockFetch(path,options={}){
- if(!suiteAccessVerified||!suiteHandoff)return Promise.reject(Error('Homepage sign-in or guest access required'));
- return fetch(path,{...options,headers:{...(options.headers||{}),Authorization:'Bearer '+suiteHandoff}});
+async function stockFetch(path,options={}){
+ if(!suiteAccessVerified||!suiteHandoff)throw Error('Homepage sign-in or guest access required');
+ const response=await fetch(path,{...options,headers:{...(options.headers||{}),Authorization:'Bearer '+suiteHandoff}});
+ if(response.status===401||response.status===403){
+  rejectStocksAccess();
+  suiteHandoff='';
+  try{sessionStorage.removeItem(suiteHandoffKey)}catch(_){}
+  location.replace(suiteBase+'/#suite_signin=required');
+  throw Error('Homepage session expired or revoked');
+ }
+ if(response.status===503){
+  rejectStocksAccess();
+  suiteFeedback('Homepage verification unavailable. Retry when connected.');
+  throw Error('Homepage verification unavailable');
+ }
+ return response;
 }
 let suiteHandoff='';
 function readSuiteHandoff(){
