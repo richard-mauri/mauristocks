@@ -1172,6 +1172,29 @@ function researchURL(q){
  default:return '';
  }
 }
+// Corporate links need an authenticated lookup. A top-level navigation to
+// /company cannot attach the child bearer; do not put it in a query string.
+document.addEventListener('click',async event=>{
+ const anchor=event.target.closest?.('a[href^="/company?symbol="]');
+ if(!anchor)return;
+ event.preventDefault();
+ const symbol=new URL(anchor.href,location.href).searchParams.get('symbol')||'';
+ if(!/^[A-Z0-9][A-Z0-9.^=-]{0,17}$/.test(symbol))return;
+ const popup=window.open('about:blank','_blank');
+ if(popup)popup.opener=null;
+ try{
+  const response=await stockFetch('/api/company?symbol='+encodeURIComponent(symbol),{cache:'no-store'});
+  if(!response.ok)throw Error('No verified corporate website');
+  const data=await response.json();
+  const destination=new URL(data.website);
+  if(!['https:','http:'].includes(destination.protocol)||destination.username||destination.password)throw Error('Invalid website URL');
+  if(popup)popup.location.replace(destination.href);
+  else window.open(destination.href,'_blank','noopener,noreferrer');
+ }catch(_){
+  if(popup)popup.close();
+  suiteFeedback('Corporate website unavailable for '+symbol+'.');
+ }
+});
 function symbolCell(tr,q){
  const td=document.createElement('td');td.className='symbol-cell';
  const symbol=String(q.symbol||'').toUpperCase();
